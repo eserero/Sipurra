@@ -122,6 +122,7 @@ class ViewModelFactory(
             libraryApi = komgaApi.libraryApi,
             collectionApi = komgaApi.collectionsApi,
             readListsApi = komgaApi.readListApi,
+            bookApi = komgaApi.bookApi,
             seriesApi = komgaApi.seriesApi,
             referentialApi = komgaApi.referentialApi,
 

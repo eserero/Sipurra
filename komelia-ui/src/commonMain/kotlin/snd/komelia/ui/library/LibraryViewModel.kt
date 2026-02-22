@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import snd.komelia.AppNotifications
+import snd.komelia.komga.api.KomgaBookApi
 import snd.komelia.komga.api.KomgaCollectionsApi
 import snd.komelia.komga.api.KomgaLibraryApi
 import snd.komelia.komga.api.KomgaReadListApi
@@ -51,6 +52,7 @@ class LibraryViewModel(
     private val collectionApi: KomgaCollectionsApi,
     private val readListsApi: KomgaReadListApi,
     private val taskEmitter: OfflineTaskEmitter,
+    bookApi: KomgaBookApi,
     seriesApi: KomgaSeriesApi,
     referentialApi: KomgaReferentialApi,
 
@@ -73,6 +75,7 @@ class LibraryViewModel(
     private val reloadJobsFlow = MutableSharedFlow<Unit>(1, 0, DROP_OLDEST)
 
     val seriesTabState = LibrarySeriesTabState(
+        bookApi = bookApi,
         seriesApi = seriesApi,
         referentialApi = referentialApi,
         notifications = appNotifications,

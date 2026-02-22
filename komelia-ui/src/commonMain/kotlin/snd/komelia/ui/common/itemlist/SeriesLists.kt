@@ -34,6 +34,7 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyGridState
 import sh.calvin.reorderable.rememberReorderableLazyGridState
 import snd.komelia.ui.LocalPlatform
+import snd.komelia.ui.LocalUseNewLibraryUI
 import snd.komelia.ui.common.cards.DraggableImageCard
 import snd.komelia.ui.common.cards.SeriesImageCard
 import snd.komelia.ui.common.components.Pagination
@@ -75,14 +76,16 @@ fun SeriesLazyCardGrid(
     }
 
 
+    val useNewLibraryUI = LocalUseNewLibraryUI.current
+    val cardSpacing = if (useNewLibraryUI) 7.dp else 15.dp
+    val horizontalPadding = if (useNewLibraryUI) 10.dp else 20.dp
     Box(modifier) {
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Adaptive(minSize),
-            horizontalArrangement = Arrangement.spacedBy(15.dp),
-            verticalArrangement = Arrangement.spacedBy(15.dp),
-            contentPadding = PaddingValues(bottom = 50.dp),
-            modifier = Modifier.padding(horizontal = 20.dp)
+            horizontalArrangement = Arrangement.spacedBy(cardSpacing),
+            verticalArrangement = Arrangement.spacedBy(cardSpacing),
+            contentPadding = PaddingValues(start = horizontalPadding, end = horizontalPadding, bottom = 50.dp),
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 beforeContent()

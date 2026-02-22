@@ -22,5 +22,9 @@ object AppSettingsTable : Table("AppSettings") {
     val updateLastCheckedReleaseVersion = text("update_last_checked_release_version").nullable()
     val updateDismissedVersion = text("update_dismissed_version").nullable()
 
+    val navBarColor = text("nav_bar_color").nullable()
+    val accentColor = text("accent_color").nullable()
+    val useNewLibraryUI = bool("use_new_library_ui").default(true)
+
     override val primaryKey = PrimaryKey(version)
 }

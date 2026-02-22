@@ -1,0 +1,1 @@
+ALTER TABLE AppSettings ADD COLUMN use_new_library_ui INTEGER NOT NULL DEFAULT 1;

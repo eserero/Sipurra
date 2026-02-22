@@ -12,12 +12,16 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Shape
+import snd.komelia.ui.LocalAccentColor
+import snd.komelia.ui.LocalUseNewLibraryUI
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -117,9 +121,27 @@ fun NoPaddingChip(
 object AppFilterChipDefaults {
 
     @Composable
-    fun filterChipColors() = FilterChipDefaults.filterChipColors(
-        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        selectedContainerColor = MaterialTheme.colorScheme.primary,
-        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-    )
+    fun shape(): Shape {
+        return if (LocalUseNewLibraryUI.current) RoundedCornerShape(percent = 50)
+        else FilterChipDefaults.shape
+    }
+
+    @Composable
+    fun filterChipColors(): androidx.compose.material3.SelectableChipColors {
+        val accent = LocalAccentColor.current ?: MaterialTheme.colorScheme.primary
+        val onAccent = if (0.299 * accent.red + 0.587 * accent.green + 0.114 * accent.blue > 0.5f)
+            Color.Black else Color.White
+        return FilterChipDefaults.filterChipColors(
+            containerColor = Color.Transparent,
+            labelColor = accent,
+            selectedContainerColor = accent,
+            selectedLabelColor = onAccent,
+        )
+    }
+
+    @Composable
+    fun filterChipBorder(selected: Boolean): BorderStroke? {
+        val accent = LocalAccentColor.current ?: MaterialTheme.colorScheme.primary
+        return if (selected) null else BorderStroke(1.dp, accent)
+    }
 }

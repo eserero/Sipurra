@@ -1,5 +1,6 @@
 package snd.komelia.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,9 +12,13 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalLibrary
@@ -35,6 +40,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
@@ -157,42 +164,131 @@ class MainScreen(
         vm: MainScreenViewModel
     ) {
         val coroutineScope = rememberCoroutineScope()
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.surface,
-            bottomBar = {
-                BottomNavigationBar(
-                    navigator = navigator,
-                    toggleLibrariesDrawer = { coroutineScope.launch { vm.toggleNavBar() } },
-                    modifier = Modifier
-                )
-            },
-        ) { paddingValues ->
-            val layoutDirection = LocalLayoutDirection.current
+        val useNewLibraryUI = LocalUseNewLibraryUI.current
 
-            ModalNavigationDrawer(
-                drawerState = vm.navBarState,
-                drawerContent = { LibrariesNavBar(vm, navigator) },
-                content = {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .padding(
-                                start = paddingValues.calculateStartPadding(layoutDirection),
-                                end = paddingValues.calculateEndPadding(layoutDirection),
-                                top = paddingValues.calculateTopPadding(),
-                                bottom = paddingValues.calculateBottomPadding(),
-                            )
-                            .consumeWindowInsets(paddingValues)
-                    ) {
-                        CurrentScreen()
-                    }
+        if (useNewLibraryUI) {
+            Box(Modifier.fillMaxSize().statusBarsPadding()) {
+                ModalNavigationDrawer(
+                    drawerState = vm.navBarState,
+                    drawerContent = { LibrariesNavBar(vm, navigator) },
+                    content = { CurrentScreen() }
+                )
+                Column(
+                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                ) {
+                    PillBottomNavigationBar(
+                        navigator = navigator,
+                        toggleLibrariesDrawer = { coroutineScope.launch { vm.toggleNavBar() } },
+                    )
+                    Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
                 }
-            )
+            }
+        } else {
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.surface,
+                bottomBar = {
+                    StandardBottomNavigationBar(
+                        navigator = navigator,
+                        toggleLibrariesDrawer = { coroutineScope.launch { vm.toggleNavBar() } },
+                        modifier = Modifier
+                    )
+                },
+            ) { paddingValues ->
+                val layoutDirection = LocalLayoutDirection.current
+                ModalNavigationDrawer(
+                    drawerState = vm.navBarState,
+                    drawerContent = { LibrariesNavBar(vm, navigator) },
+                    content = {
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .padding(
+                                    start = paddingValues.calculateStartPadding(layoutDirection),
+                                    end = paddingValues.calculateEndPadding(layoutDirection),
+                                    top = paddingValues.calculateTopPadding(),
+                                    bottom = paddingValues.calculateBottomPadding(),
+                                )
+                                .consumeWindowInsets(paddingValues)
+                        ) {
+                            CurrentScreen()
+                        }
+                    }
+                )
+            }
         }
     }
 
     @Composable
-    private fun BottomNavigationBar(
+    private fun PillBottomNavigationBar(
+        navigator: Navigator,
+        toggleLibrariesDrawer: () -> Unit,
+    ) {
+        val pillColor = LocalNavBarColor.current ?: MaterialTheme.colorScheme.surfaceVariant
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = pillColor,
+                shadowElevation = 12.dp,
+                tonalElevation = 4.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    PillNavItem(
+                        icon = Icons.Default.LocalLibrary,
+                        onClick = { toggleLibrariesDrawer() },
+                        isSelected = false,
+                    )
+                    PillNavItem(
+                        icon = Icons.Default.Home,
+                        onClick = { navigator.replaceAll(HomeScreen()) },
+                        isSelected = navigator.lastItem is HomeScreen,
+                    )
+                    PillNavItem(
+                        icon = Icons.Default.Search,
+                        onClick = { navigator.push(SearchScreen(null)) },
+                        isSelected = navigator.lastItem is SearchScreen,
+                    )
+                    PillNavItem(
+                        icon = Icons.Default.Settings,
+                        onClick = { navigator.parent!!.push(MobileSettingsScreen()) },
+                        isSelected = navigator.lastItem is SettingsScreen,
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun PillNavItem(
+        icon: ImageVector,
+        onClick: () -> Unit,
+        isSelected: Boolean,
+    ) {
+        val pillColor = LocalNavBarColor.current ?: MaterialTheme.colorScheme.surfaceVariant
+        val bgColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
+        val iconTint = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer
+                       else contentColorFor(pillColor)
+        Box(
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(bgColor)
+                .clickable { onClick() }
+                .cursorForHand()
+                .padding(12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, contentDescription = null, tint = iconTint)
+        }
+    }
+
+    @Composable
+    private fun StandardBottomNavigationBar(
         navigator: Navigator,
         toggleLibrariesDrawer: () -> Unit,
         modifier: Modifier
@@ -222,7 +318,6 @@ class MainScreen(
                         modifier = Modifier.weight(1f)
                     )
 
-
                     CompactNavButton(
                         text = "Search",
                         icon = Icons.Default.Search,
@@ -238,7 +333,6 @@ class MainScreen(
                         isSelected = navigator.lastItem is SettingsScreen,
                         modifier = Modifier.weight(1f)
                     )
-
                 }
                 Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
             }
@@ -271,7 +365,6 @@ class MainScreen(
             }
         }
     }
-
 
     @Composable
     private fun NavBar(

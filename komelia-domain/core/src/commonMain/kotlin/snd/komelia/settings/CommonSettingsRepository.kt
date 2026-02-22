@@ -39,4 +39,13 @@ interface CommonSettingsRepository {
 
     fun getAppTheme(): Flow<AppTheme>
     suspend fun putAppTheme(theme: AppTheme)
+
+    fun getNavBarColor(): Flow<Long?>
+    suspend fun putNavBarColor(color: Long?)
+
+    fun getAccentColor(): Flow<Long?>
+    suspend fun putAccentColor(color: Long?)
+
+    fun getUseNewLibraryUI(): Flow<Boolean>
+    suspend fun putUseNewLibraryUI(enabled: Boolean)
 }

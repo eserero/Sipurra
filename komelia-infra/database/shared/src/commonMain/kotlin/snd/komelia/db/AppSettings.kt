@@ -21,4 +21,8 @@ data class AppSettings(
     val updateLastCheckedTimestamp: Instant? = null,
     val updateLastCheckedReleaseVersion: AppVersion? = null,
     val updateDismissedVersion: AppVersion? = null,
+
+    val navBarColor: Long? = null,
+    val accentColor: Long? = null,
+    val useNewLibraryUI: Boolean = true,
 )

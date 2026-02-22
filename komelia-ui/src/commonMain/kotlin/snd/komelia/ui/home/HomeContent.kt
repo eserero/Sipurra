@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -26,8 +28,6 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -38,12 +38,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.ui.LocalPlatform
+import snd.komelia.ui.LocalUseNewLibraryUI
 import snd.komelia.ui.common.cards.BookImageCard
+import snd.komelia.ui.common.components.AppFilterChipDefaults
 import snd.komelia.ui.common.cards.SeriesImageCard
 import snd.komelia.ui.common.menus.BookMenuActions
 import snd.komelia.ui.common.menus.SeriesMenuActions
@@ -66,15 +69,20 @@ fun HomeContent(
     onBookReadClick: (KomeliaBook, Boolean) -> Unit,
 ) {
     val gridState = rememberLazyGridState()
+    val columnState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    val useNewLibraryUI = LocalUseNewLibraryUI.current
     Column {
         Toolbar(
             filters = filters,
             currentFilterNumber = activeFilterNumber,
             onEditStart = onEditStart,
-            onFilterChange = {
-                onFilterChange(it)
-                coroutineScope.launch { gridState.animateScrollToItem(0) }
+            onFilterChange = { newFilter ->
+                onFilterChange(newFilter)
+                coroutineScope.launch {
+                    if (useNewLibraryUI && newFilter == 0) columnState.animateScrollToItem(0)
+                    else gridState.animateScrollToItem(0)
+                }
             },
         )
         DisplayContent(
@@ -82,6 +90,7 @@ fun HomeContent(
             activeFilterNumber = activeFilterNumber,
 
             gridState = gridState,
+            columnState = columnState,
             cardWidth = cardWidth,
             onSeriesClick = onSeriesClick,
             seriesMenuActions = seriesMenuActions,
@@ -99,11 +108,7 @@ private fun Toolbar(
     onFilterChange: (Int) -> Unit,
     onEditStart: () -> Unit
 ) {
-    val chipColors = FilterChipDefaults.filterChipColors(
-        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        selectedContainerColor = MaterialTheme.colorScheme.primary,
-        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-    )
+    val chipColors = AppFilterChipDefaults.filterChipColors()
     val nonEmptyFilters = remember(filters) {
         filters.filter {
             when (it) {
@@ -140,12 +145,14 @@ private fun Toolbar(
 
             if (filters.size > 1) {
                 item {
+                    val selected = currentFilterNumber == 0
                     FilterChip(
                         onClick = { onFilterChange(0) },
-                        selected = currentFilterNumber == 0,
+                        selected = selected,
                         label = { Text("All") },
                         colors = chipColors,
-                        border = null,
+                        shape = AppFilterChipDefaults.shape(),
+                        border = AppFilterChipDefaults.filterChipBorder(selected),
                     )
                 }
             }
@@ -157,12 +164,14 @@ private fun Toolbar(
                     }
                 }
                 if (display) {
+                    val selected = currentFilterNumber == data.filter.order || filters.size == 1
                     FilterChip(
                         onClick = { onFilterChange(data.filter.order) },
-                        selected = currentFilterNumber == data.filter.order || filters.size == 1,
+                        selected = selected,
                         label = { Text(data.filter.label) },
                         colors = chipColors,
-                        border = null,
+                        shape = AppFilterChipDefaults.shape(),
+                        border = AppFilterChipDefaults.filterChipBorder(selected),
                     )
                 }
             }
@@ -200,6 +209,7 @@ private fun DisplayContent(
     filters: List<HomeFilterData>,
     activeFilterNumber: Int,
     gridState: LazyGridState,
+    columnState: LazyListState,
     cardWidth: Dp,
     onSeriesClick: (KomgaSeries) -> Unit,
     seriesMenuActions: SeriesMenuActions,
@@ -207,33 +217,111 @@ private fun DisplayContent(
     onBookClick: (KomeliaBook) -> Unit,
     onBookReadClick: (KomeliaBook, Boolean) -> Unit,
 ) {
-    LazyVerticalGrid(
-        modifier = Modifier.padding(horizontal = 20.dp),
-        state = gridState,
-        columns = GridCells.Adaptive(cardWidth),
-        horizontalArrangement = Arrangement.spacedBy(15.dp),
-        verticalArrangement = Arrangement.spacedBy(15.dp),
-        contentPadding = PaddingValues(bottom = 50.dp)
-    ) {
-        for (data in filters) {
-            if (activeFilterNumber == 0 || data.filter.order == activeFilterNumber) {
-                when (data) {
-                    is BookFilterData -> BookFilterEntry(
-                        label = data.filter.label,
-                        books = data.books,
-                        bookMenuActions = bookMenuActions,
-                        onBookClick = onBookClick,
-                        onBookReadClick = onBookReadClick,
-                    )
-
-                    is SeriesFilterData -> SeriesFilterEntries(
-                        label = data.filter.label,
-                        series = data.series,
-                        onSeriesClick = onSeriesClick,
-                        seriesMenuActions = seriesMenuActions,
-                    )
-
+    val useNewLibraryUI = LocalUseNewLibraryUI.current
+    if (useNewLibraryUI && activeFilterNumber == 0) {
+        LazyColumn(
+            state = columnState,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            contentPadding = PaddingValues(bottom = 50.dp),
+        ) {
+            for (data in filters) {
+                val isEmpty = when (data) {
+                    is BookFilterData -> data.books.isEmpty()
+                    is SeriesFilterData -> data.series.isEmpty()
                 }
+                if (!isEmpty) {
+                    item {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            SectionHeader(data.filter.label)
+                            SectionRow(
+                                data = data,
+                                cardWidth = cardWidth,
+                                onSeriesClick = onSeriesClick,
+                                seriesMenuActions = seriesMenuActions,
+                                bookMenuActions = bookMenuActions,
+                                onBookClick = onBookClick,
+                                onBookReadClick = onBookReadClick,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        LazyVerticalGrid(
+            modifier = Modifier.padding(horizontal = 20.dp),
+            state = gridState,
+            columns = GridCells.Adaptive(cardWidth),
+            horizontalArrangement = Arrangement.spacedBy(15.dp),
+            verticalArrangement = Arrangement.spacedBy(15.dp),
+            contentPadding = PaddingValues(bottom = 50.dp)
+        ) {
+            for (data in filters) {
+                if (activeFilterNumber == 0 || data.filter.order == activeFilterNumber) {
+                    when (data) {
+                        is BookFilterData -> BookFilterEntry(
+                            label = data.filter.label,
+                            books = data.books,
+                            bookMenuActions = bookMenuActions,
+                            onBookClick = onBookClick,
+                            onBookReadClick = onBookReadClick,
+                        )
+
+                        is SeriesFilterData -> SeriesFilterEntries(
+                            label = data.filter.label,
+                            series = data.series,
+                            onSeriesClick = onSeriesClick,
+                            seriesMenuActions = seriesMenuActions,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(label: String) {
+    Text(
+        label,
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+    )
+}
+
+@Composable
+private fun SectionRow(
+    data: HomeFilterData,
+    cardWidth: Dp,
+    onSeriesClick: (KomgaSeries) -> Unit,
+    seriesMenuActions: SeriesMenuActions,
+    bookMenuActions: BookMenuActions,
+    onBookClick: (KomeliaBook) -> Unit,
+    onBookReadClick: (KomeliaBook, Boolean) -> Unit,
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+    ) {
+        when (data) {
+            is BookFilterData -> items(data.books) { book ->
+                BookImageCard(
+                    book = book,
+                    onBookClick = { onBookClick(book) },
+                    onBookReadClick = { onBookReadClick(book, it) },
+                    bookMenuActions = bookMenuActions,
+                    showSeriesTitle = true,
+                    modifier = Modifier.width(cardWidth),
+                )
+            }
+
+            is SeriesFilterData -> items(data.series) { series ->
+                SeriesImageCard(
+                    series = series,
+                    onSeriesClick = { onSeriesClick(series) },
+                    seriesMenuActions = seriesMenuActions,
+                    modifier = Modifier.width(cardWidth),
+                )
             }
         }
     }
@@ -249,12 +337,11 @@ private fun LazyGridScope.BookFilterEntry(
     if (books.isEmpty()) return
 
     item(span = { GridItemSpan(maxLineSpan) }) {
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(label, style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.width(10.dp))
-            HorizontalDivider()
-        }
+        Text(
+            label,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+            modifier = Modifier.padding(vertical = 4.dp),
+        )
     }
     items(books) { book ->
         BookImageCard(
@@ -276,13 +363,11 @@ private fun LazyGridScope.SeriesFilterEntries(
 ) {
     if (series.isEmpty()) return
     item(span = { GridItemSpan(maxLineSpan) }) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(label, style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.width(10.dp))
-            HorizontalDivider()
-        }
+        Text(
+            label,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+            modifier = Modifier.padding(vertical = 4.dp),
+        )
     }
 
     items(series) {

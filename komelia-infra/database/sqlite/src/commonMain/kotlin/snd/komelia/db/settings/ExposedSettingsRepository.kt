@@ -39,6 +39,9 @@ class ExposedSettingsRepository(database: Database) : ExposedRepository(database
                 it[updateLastCheckedTimestamp] = settings.updateLastCheckedTimestamp?.toString()
                 it[updateLastCheckedReleaseVersion] = settings.updateLastCheckedReleaseVersion?.toString()
                 it[updateDismissedVersion] = settings.updateDismissedVersion?.toString()
+                it[navBarColor] = settings.navBarColor?.toString(16)
+                it[accentColor] = settings.accentColor?.toString(16)
+                it[useNewLibraryUI] = settings.useNewLibraryUI
             }
         }
     }
@@ -60,6 +63,9 @@ class ExposedSettingsRepository(database: Database) : ExposedRepository(database
                 ?.let { AppVersion.fromString(it) },
             updateDismissedVersion = get(AppSettingsTable.updateDismissedVersion)
                 ?.let { AppVersion.fromString(it) },
+            navBarColor = get(AppSettingsTable.navBarColor)?.toLong(16),
+            accentColor = get(AppSettingsTable.accentColor)?.toLong(16),
+            useNewLibraryUI = get(AppSettingsTable.useNewLibraryUI),
         )
     }
 

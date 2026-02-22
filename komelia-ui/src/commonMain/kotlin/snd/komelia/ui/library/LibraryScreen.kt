@@ -50,6 +50,8 @@ import snd.komelia.ui.library.view.LibraryReadListsContent
 import snd.komelia.ui.platform.BackPressHandler
 import snd.komelia.ui.platform.ScreenPullToRefreshBox
 import snd.komelia.ui.readlist.ReadListScreen
+import snd.komelia.ui.book.bookScreen
+import snd.komelia.ui.reader.readerScreen
 import snd.komelia.ui.series.list.SeriesListContent
 import snd.komelia.ui.series.seriesScreen
 import snd.komga.client.common.KomgaAuthor
@@ -150,6 +152,11 @@ class LibraryScreen(
                     onPageChange = seriesTabState::onPageChange,
 
                     minSize = seriesTabState.cardWidth.collectAsState().value,
+
+                    keepReadingBooks = seriesTabState.keepReadingBooks,
+                    bookMenuActions = seriesTabState.bookMenuActions(),
+                    onBookClick = { navigator.push(bookScreen(it)) },
+                    onBookReadClick = { book, mark -> navigator.push(readerScreen(book, mark)) },
                 )
             }
         }
@@ -283,7 +290,8 @@ fun LibraryToolBar(
                     selected = currentTab == SERIES,
                     label = { Text("Series") },
                     colors = chipColors,
-                    border = null,
+                    shape = AppFilterChipDefaults.shape(),
+                    border = AppFilterChipDefaults.filterChipBorder(selected = currentTab == SERIES),
                 )
             }
 
@@ -294,7 +302,8 @@ fun LibraryToolBar(
                     selected = currentTab == COLLECTIONS,
                     label = { Text("Collections") },
                     colors = chipColors,
-                    border = null,
+                    shape = AppFilterChipDefaults.shape(),
+                    border = AppFilterChipDefaults.filterChipBorder(selected = currentTab == COLLECTIONS),
                 )
             }
 
@@ -305,7 +314,8 @@ fun LibraryToolBar(
                     selected = currentTab == READ_LISTS,
                     label = { Text("Read Lists") },
                     colors = chipColors,
-                    border = null,
+                    shape = AppFilterChipDefaults.shape(),
+                    border = AppFilterChipDefaults.filterChipBorder(selected = currentTab == READ_LISTS),
                 )
             }
 

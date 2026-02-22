@@ -3,6 +3,8 @@ package snd.komelia.ui.settings.appearance
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.StateScreenModel
@@ -20,12 +22,18 @@ class AppSettingsViewModel(
 ) : StateScreenModel<LoadState<Unit>>(LoadState.Uninitialized) {
     var cardWidth by mutableStateOf(defaultCardWidth.dp)
     var currentTheme by mutableStateOf(AppTheme.DARK)
+    var navBarColor by mutableStateOf<Color?>(null)
+    var accentColor by mutableStateOf<Color?>(null)
+    var useNewLibraryUI by mutableStateOf(true)
 
     suspend fun initialize() {
         if (state.value !is LoadState.Uninitialized) return
         mutableState.value = LoadState.Loading
         cardWidth = settingsRepository.getCardWidth().map { it.dp }.first()
         currentTheme = settingsRepository.getAppTheme().first()
+        navBarColor = settingsRepository.getNavBarColor().first()?.let { Color(it.toInt()) }
+        accentColor = settingsRepository.getAccentColor().first()?.let { Color(it.toInt()) }
+        useNewLibraryUI = settingsRepository.getUseNewLibraryUI().first()
         mutableState.value = LoadState.Success(Unit)
     }
 
@@ -37,6 +45,21 @@ class AppSettingsViewModel(
     fun onAppThemeChange(theme: AppTheme) {
         this.currentTheme = theme
         screenModelScope.launch { settingsRepository.putAppTheme(theme) }
+    }
+
+    fun onNavBarColorChange(color: Color?) {
+        this.navBarColor = color
+        screenModelScope.launch { settingsRepository.putNavBarColor(color?.toArgb()?.toLong()) }
+    }
+
+    fun onAccentColorChange(color: Color?) {
+        this.accentColor = color
+        screenModelScope.launch { settingsRepository.putAccentColor(color?.toArgb()?.toLong()) }
+    }
+
+    fun onUseNewLibraryUIChange(enabled: Boolean) {
+        this.useNewLibraryUI = enabled
+        screenModelScope.launch { settingsRepository.putUseNewLibraryUI(enabled) }
     }
 
 }

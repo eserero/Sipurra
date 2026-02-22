@@ -5,11 +5,19 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -26,9 +34,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import snd.komelia.komga.api.model.KomeliaBook
+import snd.komelia.ui.LocalUseNewLibraryUI
 import snd.komelia.ui.LocalWindowWidth
+import snd.komelia.ui.common.cards.BookImageCard
 import snd.komelia.ui.common.components.PageSizeSelectionDropdown
 import snd.komelia.ui.common.itemlist.SeriesLazyCardGrid
+import snd.komelia.ui.common.menus.BookMenuActions
 import snd.komelia.ui.common.menus.SeriesMenuActions
 import snd.komelia.ui.common.menus.bulk.BottomPopupBulkActionsPanel
 import snd.komelia.ui.common.menus.bulk.BulkActionsContainer
@@ -64,7 +77,13 @@ fun SeriesListContent(
     onPageSizeChange: (Int) -> Unit,
 
     minSize: Dp,
+
+    keepReadingBooks: List<KomeliaBook> = emptyList(),
+    bookMenuActions: BookMenuActions? = null,
+    onBookClick: (KomeliaBook) -> Unit = {},
+    onBookReadClick: (KomeliaBook, Boolean) -> Unit = { _, _ -> },
 ) {
+    val useNewLibraryUI = LocalUseNewLibraryUI.current
     Column {
         if (editMode) {
             BulkActionsToolbar(
@@ -89,15 +108,46 @@ fun SeriesListContent(
 
             beforeContent = {
                 AnimatedVisibility(!editMode) {
-                    ToolBar(
-                        seriesTotalCount = seriesTotalCount,
-                        pageSize = pageSize,
-                        onPageSizeChange = onPageSizeChange,
-                        isLoading = isLoading,
-                        filterState = filterState
-                    )
+                    Column {
+                        if (useNewLibraryUI && keepReadingBooks.isNotEmpty() && bookMenuActions != null) {
+                            LibrarySectionHeader("Keep Reading")
+                            val gridPadding = 10.dp
+                            val density = LocalDensity.current
+                            LazyRow(
+                                modifier = Modifier.layout { measurable, constraints ->
+                                    val insetPx = with(density) { gridPadding.roundToPx() }
+                                    val placeable = measurable.measure(
+                                        constraints.copy(maxWidth = constraints.maxWidth + insetPx * 2)
+                                    )
+                                    layout(constraints.maxWidth, placeable.height) {
+                                        placeable.place(-insetPx, 0)
+                                    }
+                                },
+                                contentPadding = PaddingValues(horizontal = gridPadding),
+                                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                            ) {
+                                items(keepReadingBooks) { book ->
+                                    BookImageCard(
+                                        book = book,
+                                        onBookClick = { onBookClick(book) },
+                                        onBookReadClick = { onBookReadClick(book, it) },
+                                        bookMenuActions = bookMenuActions,
+                                        showSeriesTitle = true,
+                                        modifier = Modifier.width(minSize),
+                                    )
+                                }
+                            }
+                        }
+                        if (useNewLibraryUI) LibrarySectionHeader("Browse")
+                        ToolBar(
+                            seriesTotalCount = seriesTotalCount,
+                            pageSize = pageSize,
+                            onPageSizeChange = onPageSizeChange,
+                            isLoading = isLoading,
+                            filterState = filterState
+                        )
+                    }
                 }
-
             },
             minSize = minSize,
         )
@@ -198,4 +248,13 @@ private fun ToolBar(
             }
         }
     }
+}
+
+@Composable
+private fun LibrarySectionHeader(label: String) {
+    Text(
+        label,
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold),
+        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+    )
 }

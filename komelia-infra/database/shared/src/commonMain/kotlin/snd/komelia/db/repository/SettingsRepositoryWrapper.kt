@@ -103,4 +103,28 @@ class SettingsRepositoryWrapper(
         wrapper.transform { it.copy(appTheme = theme) }
     }
 
+    override fun getNavBarColor(): Flow<Long?> {
+        return wrapper.state.map { it.navBarColor }.distinctUntilChanged()
+    }
+
+    override suspend fun putNavBarColor(color: Long?) {
+        wrapper.transform { it.copy(navBarColor = color) }
+    }
+
+    override fun getAccentColor(): Flow<Long?> {
+        return wrapper.state.map { it.accentColor }.distinctUntilChanged()
+    }
+
+    override suspend fun putAccentColor(color: Long?) {
+        wrapper.transform { it.copy(accentColor = color) }
+    }
+
+    override fun getUseNewLibraryUI(): Flow<Boolean> {
+        return wrapper.state.map { it.useNewLibraryUI }.distinctUntilChanged()
+    }
+
+    override suspend fun putUseNewLibraryUI(enabled: Boolean) {
+        wrapper.transform { it.copy(useNewLibraryUI = enabled) }
+    }
+
 }

@@ -2,6 +2,7 @@ package snd.komelia.ui
 
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEvent
 import com.dokar.sonner.ToasterState
 import kotlinx.coroutines.flow.SharedFlow
@@ -34,3 +35,6 @@ val LocalBookDownloadEvents =
     staticCompositionLocalOf<SharedFlow<DownloadEvent>?> { error("Book download event flow was not initialized") }
 val LocalOfflineMode = staticCompositionLocalOf<StateFlow<Boolean>> { error("offline mode flow was not initialized") }
 val LocalKomgaState = staticCompositionLocalOf<KomgaAuthenticationState> { error("komga state was not initialized") }
+val LocalNavBarColor = compositionLocalOf<Color?> { null }
+val LocalAccentColor = compositionLocalOf<Color?> { null }
+val LocalUseNewLibraryUI = compositionLocalOf { true }
