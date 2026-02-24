@@ -16,3 +16,21 @@ build/
 /output
 /.kotlin
 /cmake/build*
+
+# Tooling / AI assistants
+.github/
+.gemini/
+.claude/
+agent-os/
+.beans/
+.beans.yml
+CLAUDE.md
+
+# Design / working files
+New UI/
+
+# Pre-existing vendored third-party repos
+third_party/secret-service/
+
+# Prebuilt native libraries
+**/androidMain/jniLibs/**/*.so

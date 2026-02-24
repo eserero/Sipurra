@@ -60,9 +60,12 @@ import cafe.adriel.voyager.navigator.CurrentScreen
 import cafe.adriel.voyager.navigator.Navigator
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
+import snd.komelia.ui.book.BookScreen
 import snd.komelia.ui.book.bookScreen
 import snd.komelia.ui.home.HomeScreen
 import snd.komelia.ui.library.LibraryScreen
+import snd.komelia.ui.oneshot.OneshotScreen
+import snd.komelia.ui.series.SeriesScreen
 import snd.komelia.ui.platform.PlatformType.DESKTOP
 import snd.komelia.ui.platform.PlatformType.MOBILE
 import snd.komelia.ui.platform.PlatformType.WEB_KOMF
@@ -178,13 +181,18 @@ class MainScreen(
                         drawerContent = { LibrariesNavBar(vm, navigator) },
                         content = { CurrentScreen() }
                     )
+                    val isImmersiveScreen = navigator.lastItem is SeriesScreen ||
+                            navigator.lastItem is BookScreen ||
+                            navigator.lastItem is OneshotScreen
                     Column(
                         modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                     ) {
-                        PillBottomNavigationBar(
-                            navigator = navigator,
-                            toggleLibrariesDrawer = { coroutineScope.launch { vm.toggleNavBar() } },
-                        )
+                        if (!isImmersiveScreen) {
+                            PillBottomNavigationBar(
+                                navigator = navigator,
+                                toggleLibrariesDrawer = { coroutineScope.launch { vm.toggleNavBar() } },
+                            )
+                        }
                         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
                     }
                 }

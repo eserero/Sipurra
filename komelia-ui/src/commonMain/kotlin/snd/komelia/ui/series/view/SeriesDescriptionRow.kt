@@ -53,6 +53,7 @@ fun SeriesDescriptionRow(
     deleted: Boolean,
     alternateTitles: List<KomgaAlternativeTitle>,
     onFilterClick: (SeriesScreenFilter) -> Unit,
+    showReleaseYear: Boolean = true,
     modifier: Modifier
 ) {
     val strings = LocalStrings.current.seriesView
@@ -62,7 +63,7 @@ fun SeriesDescriptionRow(
         horizontalAlignment = Alignment.Start
     ) {
 
-        if (releaseDate != null)
+        if (showReleaseYear && releaseDate != null)
             Text("Release Year: ${releaseDate.year}", fontSize = 10.sp)
 
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

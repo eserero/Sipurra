@@ -43,7 +43,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -55,6 +54,7 @@ import snd.komelia.image.coil.SeriesDefaultThumbnailRequest
 import snd.komelia.ui.LocalAccentColor
 import snd.komelia.ui.LocalPlatform
 import snd.komelia.ui.LocalUseNewLibraryUI
+import snd.komelia.ui.common.immersive.ImmersiveDetailFab
 import snd.komelia.ui.common.immersive.ImmersiveDetailScaffold
 import snd.komelia.ui.platform.PlatformType
 
@@ -119,12 +119,12 @@ class OneshotScreen(
                     }
                 },
                 fabContent = {
-                    Button(
-                        onClick = {},
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    ) {
-                        Text("Boilerplate FAB")
-                    }
+                    ImmersiveDetailFab(
+                        onReadClick = {},
+                        onReadIncognitoClick = {},
+                        onDownloadClick = {},
+                        accentColor = LocalAccentColor.current,
+                    )
                 },
                 cardContent = { expandFraction ->
                     Column(
