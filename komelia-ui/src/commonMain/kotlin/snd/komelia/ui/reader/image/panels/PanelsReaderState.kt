@@ -97,6 +97,7 @@ class PanelsReaderState(
     val readingDirection = MutableStateFlow(LEFT_TO_RIGHT)
 
     val fullPageDisplayMode = MutableStateFlow(PanelsFullPageDisplayMode.NONE)
+    val tapToZoom = MutableStateFlow(true)
 
     suspend fun initialize() {
         readingDirection.value = when (readerState.series.value?.metadata?.readingDirection) {
@@ -105,6 +106,7 @@ class PanelsReaderState(
             else -> settingsRepository.getPagedReaderReadingDirection().first()
         }
         fullPageDisplayMode.value = settingsRepository.getPanelsFullPageDisplayMode().first()
+        tapToZoom.value = settingsRepository.getPanelReaderTapToZoom().first()
 
         screenScaleState.setScrollState(null)
         screenScaleState.setScrollOrientation(Orientation.Vertical, false)
@@ -210,6 +212,11 @@ class PanelsReaderState(
         this.fullPageDisplayMode.value = mode
         stateScope.launch { settingsRepository.putPanelsFullPageDisplayMode(mode) }
         launchPageLoad(currentPageIndex.value.page)
+    }
+
+    fun onTapToZoomChange(enabled: Boolean) {
+        this.tapToZoom.value = enabled
+        stateScope.launch { settingsRepository.putPanelReaderTapToZoom(enabled) }
     }
 
     fun nextPanel() {

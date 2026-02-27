@@ -56,6 +56,8 @@ class ExposedImageReaderSettingsRepository(database: Database) : ExposedReposito
                         ortUpscalerTileSize = it[ImageReaderSettingsTable.ortUpscalerTileSize],
                         panelsFullPageDisplayMode = it[ImageReaderSettingsTable.panelsFullPageDisplayMode]
                             .let { mode -> PanelsFullPageDisplayMode.valueOf(mode) },
+                        pagedReaderTapToZoom = it[ImageReaderSettingsTable.pagedReaderTapToZoom],
+                        panelReaderTapToZoom = it[ImageReaderSettingsTable.panelReaderTapToZoom],
                     )
                 }
         }
@@ -88,6 +90,8 @@ class ExposedImageReaderSettingsRepository(database: Database) : ExposedReposito
                 it[ortDeviceId] = settings.ortUpscalerDeviceId
                 it[ortUpscalerTileSize] = settings.ortUpscalerTileSize
                 it[panelsFullPageDisplayMode] = settings.panelsFullPageDisplayMode.name
+                it[pagedReaderTapToZoom] = settings.pagedReaderTapToZoom
+                it[panelReaderTapToZoom] = settings.panelReaderTapToZoom
             }
         }
     }

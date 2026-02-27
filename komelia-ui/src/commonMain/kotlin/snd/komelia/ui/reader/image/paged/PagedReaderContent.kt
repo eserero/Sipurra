@@ -74,6 +74,7 @@ fun BoxScope.PagedReaderContent(
     val currentSpreadIndex = pagedReaderState.currentSpreadIndex.collectAsState().value
     val layout = pagedReaderState.layout.collectAsState().value
     val layoutOffset = pagedReaderState.layoutOffset.collectAsState().value
+    val tapToZoom = pagedReaderState.tapToZoom.collectAsState().value
 
     val currentContainerSize = screenScaleState.areaSize.collectAsState().value
 
@@ -118,6 +119,7 @@ fun BoxScope.PagedReaderContent(
         onPrevPageClick = { coroutineScope.launch { pagedReaderState.previousPage() } },
         contentAreaSize = currentContainerSize,
         scaleState = screenScaleState,
+        tapToZoom = tapToZoom,
         isSettingsMenuOpen = showSettingsMenu,
         onSettingsMenuToggle = { onShowSettingsMenuChange(!showSettingsMenu) },
         modifier = Modifier.onKeyEvent { event ->

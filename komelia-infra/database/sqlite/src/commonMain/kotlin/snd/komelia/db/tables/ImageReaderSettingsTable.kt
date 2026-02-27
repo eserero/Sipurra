@@ -35,6 +35,8 @@ object ImageReaderSettingsTable : Table("ImageReaderSettings") {
     val ortUpscalerUserModelPath = text("onnx_runtime_model_path").nullable()
 
     val panelsFullPageDisplayMode = text("panels_full_page_display_mode").default("NONE")
+    val pagedReaderTapToZoom = bool("paged_reader_tap_to_zoom").default(true)
+    val panelReaderTapToZoom = bool("panel_reader_tap_to_zoom").default(true)
 
     override val primaryKey = PrimaryKey(bookId)
 }

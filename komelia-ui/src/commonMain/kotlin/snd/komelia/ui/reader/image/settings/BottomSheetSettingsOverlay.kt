@@ -309,6 +309,7 @@ private fun PagedModeSettings(
 ) {
     val strings = LocalStrings.current.pagedReader
     val scaleType = pageState.scaleType.collectAsState().value
+    val tapToZoom = pageState.tapToZoom.collectAsState().value
     Column {
 
         Text(strings.scaleType)
@@ -386,6 +387,12 @@ private fun PagedModeSettings(
             )
         }
 
+        SwitchWithLabel(
+            checked = tapToZoom,
+            onCheckedChange = pageState::onTapToZoomChange,
+            label = { Text("Tap to zoom") },
+            contentPadding = PaddingValues(horizontal = 10.dp),
+        )
     }
 
 }
@@ -396,6 +403,7 @@ private fun PanelsModeSettings(
     state: PanelsReaderState,
 ) {
     val strings = LocalStrings.current.pagedReader
+    val tapToZoom = state.tapToZoom.collectAsState().value
     Column {
 
         val readingDirection = state.readingDirection.collectAsState().value
@@ -426,6 +434,13 @@ private fun PanelsModeSettings(
                 )
             }
         }
+
+        SwitchWithLabel(
+            checked = tapToZoom,
+            onCheckedChange = state::onTapToZoomChange,
+            label = { Text("Tap to zoom") },
+            contentPadding = PaddingValues(horizontal = 10.dp),
+        )
     }
 
 }

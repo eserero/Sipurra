@@ -82,4 +82,10 @@ interface ImageReaderSettingsRepository {
 
     fun getPanelsFullPageDisplayMode(): Flow<PanelsFullPageDisplayMode>
     suspend fun putPanelsFullPageDisplayMode(mode: PanelsFullPageDisplayMode)
+
+    fun getPagedReaderTapToZoom(): Flow<Boolean>
+    suspend fun putPagedReaderTapToZoom(enabled: Boolean)
+
+    fun getPanelReaderTapToZoom(): Flow<Boolean>
+    suspend fun putPanelReaderTapToZoom(enabled: Boolean)
 }

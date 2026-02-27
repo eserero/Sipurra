@@ -203,4 +203,20 @@ class ReaderSettingsRepositoryWrapper(
     override suspend fun putPanelsFullPageDisplayMode(mode: PanelsFullPageDisplayMode) {
         wrapper.transform { it.copy(panelsFullPageDisplayMode = mode) }
     }
+
+    override fun getPagedReaderTapToZoom(): Flow<Boolean> {
+        return wrapper.mapState { it.pagedReaderTapToZoom }
+    }
+
+    override suspend fun putPagedReaderTapToZoom(enabled: Boolean) {
+        wrapper.transform { it.copy(pagedReaderTapToZoom = enabled) }
+    }
+
+    override fun getPanelReaderTapToZoom(): Flow<Boolean> {
+        return wrapper.mapState { it.panelReaderTapToZoom }
+    }
+
+    override suspend fun putPanelReaderTapToZoom(enabled: Boolean) {
+        wrapper.transform { it.copy(panelReaderTapToZoom = enabled) }
+    }
 }

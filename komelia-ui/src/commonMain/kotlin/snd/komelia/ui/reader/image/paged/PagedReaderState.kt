@@ -91,6 +91,7 @@ class PagedReaderState(
     val layoutOffset = MutableStateFlow(false)
     val scaleType = MutableStateFlow(LayoutScaleType.SCREEN)
     val readingDirection = MutableStateFlow(LEFT_TO_RIGHT)
+    val tapToZoom = MutableStateFlow(true)
 
     suspend fun initialize() {
         layout.value = settingsRepository.getPagedReaderDisplayLayout().first()
@@ -100,6 +101,7 @@ class PagedReaderState(
             KomgaReadingDirection.RIGHT_TO_LEFT -> RIGHT_TO_LEFT
             else -> settingsRepository.getPagedReaderReadingDirection().first()
         }
+        tapToZoom.value = settingsRepository.getPagedReaderTapToZoom().first()
 
         screenScaleState.setScrollState(null)
         screenScaleState.setScrollOrientation(Orientation.Vertical, false)
@@ -548,6 +550,11 @@ class PagedReaderState(
         this.readingDirection.value = readingDirection
         screenScaleState.setScrollOrientation(Orientation.Horizontal, readingDirection == RIGHT_TO_LEFT)
         stateScope.launch { settingsRepository.putPagedReaderReadingDirection(readingDirection) }
+    }
+
+    fun onTapToZoomChange(enabled: Boolean) {
+        this.tapToZoom.value = enabled
+        stateScope.launch { settingsRepository.putPagedReaderTapToZoom(enabled) }
     }
 
     private suspend fun calculateScreenScale(

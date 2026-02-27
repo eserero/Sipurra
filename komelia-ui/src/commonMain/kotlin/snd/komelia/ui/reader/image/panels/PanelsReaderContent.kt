@@ -58,6 +58,7 @@ fun BoxScope.PanelsReaderContent(
     }
     val page = panelsReaderState.currentPage.collectAsState().value
     val currentContainerSize = screenScaleState.areaSize.collectAsState().value
+    val tapToZoom = panelsReaderState.tapToZoom.collectAsState().value
 
     val coroutineScope = rememberCoroutineScope()
     ReaderControlsOverlay(
@@ -66,6 +67,7 @@ fun BoxScope.PanelsReaderContent(
         onPrevPageClick = panelsReaderState::previousPanel,
         contentAreaSize = currentContainerSize,
         scaleState = screenScaleState,
+        tapToZoom = tapToZoom,
         isSettingsMenuOpen = showSettingsMenu,
         onSettingsMenuToggle = { onShowSettingsMenuChange(!showSettingsMenu) },
         modifier = Modifier.onKeyEvent { event ->

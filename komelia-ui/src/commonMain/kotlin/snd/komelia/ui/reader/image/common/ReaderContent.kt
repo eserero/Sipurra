@@ -197,6 +197,7 @@ fun ReaderControlsOverlay(
     onSettingsMenuToggle: () -> Unit,
     contentAreaSize: IntSize,
     scaleState: ScreenScaleState,
+    tapToZoom: Boolean,
     modifier: Modifier,
     content: @Composable () -> Unit,
 ) {
@@ -222,7 +223,8 @@ fun ReaderControlsOverlay(
                 contentAreaSize,
                 readingDirection,
                 onSettingsMenuToggle,
-                isSettingsMenuOpen
+                isSettingsMenuOpen,
+                tapToZoom
             ) {
                 detectTapGestures(
                     onTap = { offset ->
@@ -233,9 +235,9 @@ fun ReaderControlsOverlay(
                             else -> rightAction()
                         }
                     },
-                    onDoubleTap = { offset ->
+                    onDoubleTap = if (tapToZoom) { offset ->
                         scaleState.toggleZoom(offset - areaCenter)
-                    }
+                    } else null
                 )
             },
         contentAlignment = Alignment.Center

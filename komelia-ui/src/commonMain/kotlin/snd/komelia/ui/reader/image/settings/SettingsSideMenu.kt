@@ -422,6 +422,14 @@ private fun ColumnScope.PagedReaderSettingsContent(
                 contentPadding = PaddingValues(horizontal = 10.dp)
             )
         }
+
+        val tapToZoom = pageState.tapToZoom.collectAsState().value
+        SwitchWithLabel(
+            checked = tapToZoom,
+            onCheckedChange = pageState::onTapToZoomChange,
+            label = { Text("Tap to zoom") },
+            contentPadding = PaddingValues(horizontal = 10.dp)
+        )
     }
 }
 
@@ -432,6 +440,7 @@ private fun PanelsReaderSettingsContent(
     val strings = LocalStrings.current.pagedReader
     val readingDirection = state.readingDirection.collectAsState().value
     val displayMode = state.fullPageDisplayMode.collectAsState().value
+    val tapToZoom = state.tapToZoom.collectAsState().value
 
     Column {
 
@@ -458,6 +467,13 @@ private fun PanelsReaderSettingsContent(
             inputFieldModifier = Modifier.fillMaxWidth(),
             label = { Text("Show full page") },
             inputFieldColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+
+        SwitchWithLabel(
+            checked = tapToZoom,
+            onCheckedChange = state::onTapToZoomChange,
+            label = { Text("Tap to zoom") },
+            contentPadding = PaddingValues(horizontal = 10.dp)
         )
     }
 }
