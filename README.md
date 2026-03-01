@@ -1,5 +1,31 @@
 # Komelia - Komga media client
 
+## Fork Improvements
+This is a fork of [Komelia](https://github.com/Gaysuist/Komelia) with several enhancements and new features:
+
+### Library UI Changes
+*   **Immersive Detail Screens:** New immersive layout for Book, Series, and Oneshot screens where the cover artwork integrates with the status bar using adaptive color gradients.
+*   **Shared-Element Transitions:** Cover images now animate and expand directly from the library list into the detail view when opened.
+*   **Material 3 Components:** Implementation of a floating pill-shaped navigation bar, squarish Material 3 chips, and updated FABs and menus.
+*   **Transparent Styling:** Selection dropdowns and filters now use a transparent, shadowless background.
+*   **"Below" Card Layout:** New card style that displays metadata in a single-line-per-segment format below the thumbnail.
+
+### Reader Changes
+*   **Adaptive Backgrounds:** New background system that samples colors from all four image edges to create blooming or gradient effects that fill the screen.
+*   **Kinetic Swipe:** Implementation of a kinetic "sticky" swipe system for paged reading with full RTL (Right-to-Left) support.
+*   **Panel Navigation:** Unified smooth pan-and-zoom controls and full-page context sequences for panel-to-panel navigation.
+*   **Improved Panel Detection:** Upgraded AI model (rf-detr-med) for more accurate automatic panel identification.
+*   **Spring Physics:** Density-aware spring physics for consistent gesture response across different screen types.
+*   **"Tap to Zoom" Toggle:** Ability to enable or disable single-tap zooming independently for paged and panel modes.
+
+### Settings
+*   **Accent Presets:** Selection of predefined accent color presets and an adaptive color system.
+*   **Card Layout:** Option to toggle between the standard and the new "Below" info card layout.
+*   **Background Configuration:** Detailed settings for adaptive background bloom, gradient styles, and corner blending.
+*   **Gesture Controls:** Toggles for tap-to-zoom and mode-specific navigation behaviors.
+
+---
+
 ### Downloads:
 
 - Latest prebuilt release is available at https://github.com/Snd-R/Komelia/releases
