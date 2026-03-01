@@ -179,7 +179,7 @@ private fun InputField(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     Surface(
-        shadowElevation = 1.dp,
+        shadowElevation = 0.dp,
         color = color,
         modifier = Modifier
             .cursorForHand()
@@ -309,7 +309,7 @@ fun <T> FilterDropdownChoice(
         contentPadding = PaddingValues(5.dp),
         label = label?.let { { Text(it) } },
         inputFieldColor = MaterialTheme.colorScheme.surfaceVariant,
-        modifier = modifier.clip(RoundedCornerShape(5.dp)),
+        modifier = modifier,
         inputFieldModifier = Modifier.fillMaxWidth()
     )
 }
@@ -331,7 +331,7 @@ fun <T> FilterDropdownMultiChoice(
         label = label?.let { { FilterLabelAndCount(label, selectedOptions.size) } },
         placeholder = placeholder,
         inputFieldColor = MaterialTheme.colorScheme.surfaceVariant,
-        modifier = modifier.clip(RoundedCornerShape(5.dp)),
+        modifier = modifier,
         inputFieldModifier = Modifier.fillMaxWidth()
     )
 }

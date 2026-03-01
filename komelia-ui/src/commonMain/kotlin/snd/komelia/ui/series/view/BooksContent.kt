@@ -4,6 +4,7 @@ import androidx.compose.animation.Animatable
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -279,10 +281,15 @@ private fun BooksToolBar(
 
                 Box(
                     Modifier
-                        .background(
-                            if (booksLayout == LIST) MaterialTheme.colorScheme.surfaceVariant
-                            else MaterialTheme.colorScheme.surface
+                        .then(
+                            if (booksLayout == LIST) Modifier.border(
+                                Dp.Hairline,
+                                MaterialTheme.colorScheme.outline,
+                                RoundedCornerShape(8.dp)
+                            )
+                            else Modifier
                         )
+                        .clip(RoundedCornerShape(8.dp))
                         .clickable { onBooksLayoutChange(LIST) }
                         .cursorForHand()
                         .padding(10.dp)
@@ -295,10 +302,15 @@ private fun BooksToolBar(
 
                 Box(
                     Modifier
-                        .background(
-                            if (booksLayout == GRID) MaterialTheme.colorScheme.surfaceVariant
-                            else MaterialTheme.colorScheme.surface
+                        .then(
+                            if (booksLayout == GRID) Modifier.border(
+                                Dp.Hairline,
+                                MaterialTheme.colorScheme.outline,
+                                RoundedCornerShape(8.dp)
+                            )
+                            else Modifier
                         )
+                        .clip(RoundedCornerShape(8.dp))
                         .clickable { onBooksLayoutChange(GRID) }
                         .cursorForHand()
                         .padding(10.dp)

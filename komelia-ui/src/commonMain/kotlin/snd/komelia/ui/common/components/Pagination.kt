@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
@@ -139,7 +140,7 @@ fun PageSizeSelectionDropdown(
         ),
         onOptionChange = { onPageSizeChange(it.value) },
         contentPadding = PaddingValues(5.dp),
-        inputFieldColor = MaterialTheme.colorScheme.surface,
+        inputFieldColor = Color.Transparent,
         inputFieldModifier = Modifier
             .widthIn(min = 70.dp)
             .clip(RoundedCornerShape(5.dp))

@@ -107,6 +107,8 @@ class OneshotViewModel(
         }.launchIn(screenModelScope)
 
         startKomgaEventListener()
+        collectionsState.initialize()
+        readListsState.initialize()
 
         reloadFlow.onEach {
             reloadEventsEnabled.first { it }

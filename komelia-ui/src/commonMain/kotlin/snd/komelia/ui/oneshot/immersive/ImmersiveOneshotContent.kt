@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -51,21 +52,18 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
-import snd.komelia.ui.LocalAnimatedVisibilityScope
-import snd.komelia.ui.LocalSharedTransitionScope
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime
 import snd.komelia.DefaultDateTimeFormats.localDateTimeFormat
 import snd.komelia.image.coil.SeriesDefaultThumbnailRequest
-import snd.komelia.ui.LocalKomgaEvents
-import snd.komga.client.sse.KomgaEvent.ThumbnailBookEvent
-import snd.komga.client.sse.KomgaEvent.ThumbnailSeriesEvent
-import kotlin.math.roundToInt
 import snd.komelia.komga.api.model.KomeliaBook
-import snd.komelia.ui.book.BookInfoColumn
+import snd.komelia.ui.LocalAnimatedVisibilityScope
+import snd.komelia.ui.LocalKomgaEvents
+import snd.komelia.ui.LocalSharedTransitionScope
+import snd.komelia.ui.collection.SeriesCollectionsContent
+import snd.komelia.ui.common.components.AppFilterChipDefaults
 import snd.komelia.ui.common.images.ThumbnailImage
 import snd.komelia.ui.common.immersive.ImmersiveDetailFab
 import snd.komelia.ui.common.immersive.ImmersiveDetailScaffold
@@ -75,14 +73,20 @@ import snd.komelia.ui.dialogs.ConfirmationDialog
 import snd.komelia.ui.dialogs.permissions.DownloadNotificationRequestDialog
 import snd.komelia.ui.library.SeriesScreenFilter
 import snd.komelia.ui.readlist.BookReadListsContent
-import snd.komelia.ui.collection.SeriesCollectionsContent
+import snd.komelia.ui.series.view.SeriesChipTags
 import snd.komelia.ui.series.view.SeriesDescriptionRow
+import snd.komelia.ui.series.view.SeriesSummary
 import snd.komga.client.collection.KomgaCollection
 import snd.komga.client.library.KomgaLibrary
 import snd.komga.client.readlist.KomgaReadList
 import snd.komga.client.series.KomgaSeries
+import snd.komga.client.sse.KomgaEvent.ThumbnailBookEvent
+import snd.komga.client.sse.KomgaEvent.ThumbnailSeriesEvent
+import kotlin.math.roundToInt
 
 private val emphasizedAccelerateEasing = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
+
+private enum class OneshotImmersiveTab { TAGS, COLLECTIONS, READ_LISTS }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -147,6 +151,8 @@ fun ImmersiveOneshotContent(
         }
     } else Modifier
 
+    var currentTab by remember { mutableStateOf(OneshotImmersiveTab.TAGS) }
+
     Box(modifier = Modifier.fillMaxSize()) {
 
         ImmersiveDetailScaffold(
@@ -182,6 +188,8 @@ fun ImmersiveOneshotContent(
                         onCollectionClick = onCollectionClick,
                         onSeriesClick = onSeriesClick,
                         cardWidth = cardWidth,
+                        currentTab = currentTab,
+                        onTabChange = { currentTab = it }
                     )
                 }
             }
@@ -281,6 +289,8 @@ private fun OneshotCardContent(
     onCollectionClick: (KomgaCollection) -> Unit,
     onSeriesClick: (KomgaSeries) -> Unit,
     cardWidth: Dp,
+    currentTab: OneshotImmersiveTab,
+    onTabChange: (OneshotImmersiveTab) -> Unit,
 ) {
     val thumbnailOffset = (126.dp * expandFraction).coerceAtLeast(0.dp)
     val thumbnailTopGap = 20.dp
@@ -395,57 +405,105 @@ private fun OneshotCardContent(
         }
 
         // Summary
-        if (book.metadata.summary.isNotBlank()) {
-            item {
-                Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Text(
-                        text = book.metadata.summary,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Box(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                SeriesSummary(
+                    seriesSummary = series.metadata.summary,
+                    bookSummary = book.metadata.summary,
+                    bookSummaryNumber = book.metadata.number.toString(),
+                )
             }
         }
 
         // Divider
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
 
-        // Book metadata (authors, tags, links, file info, ISBN)
+        // Tab row
         item {
-            Box(Modifier.padding(horizontal = 16.dp)) {
-                BookInfoColumn(
-                    publisher = series.metadata.publisher,
-                    genres = series.metadata.genres,
-                    authors = book.metadata.authors,
-                    tags = book.metadata.tags,
-                    links = book.metadata.links,
-                    sizeInMiB = book.size,
-                    mediaType = book.media.mediaType,
-                    isbn = book.metadata.isbn,
-                    fileUrl = book.url,
-                    onFilterClick = onFilterClick,
+            OneshotImmersiveTabRow(
+                currentTab = currentTab,
+                onTabChange = onTabChange,
+                showCollectionsTab = collections.isNotEmpty(),
+                showReadListsTab = readLists.isNotEmpty(),
+            )
+        }
+
+        when (currentTab) {
+            OneshotImmersiveTab.TAGS -> {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Box(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                        SeriesChipTags(
+                            series = series,
+                            onFilterClick = onFilterClick,
+                        )
+                    }
+                }
+            }
+
+            OneshotImmersiveTab.COLLECTIONS -> {
+                // Collections
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    SeriesCollectionsContent(
+                        collections = collections,
+                        onCollectionClick = onCollectionClick,
+                        onSeriesClick = onSeriesClick,
+                        cardWidth = cardWidth,
+                    )
+                }
+            }
+
+            OneshotImmersiveTab.READ_LISTS -> {
+                // Reading lists
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    BookReadListsContent(
+                        readLists = readLists,
+                        onReadListClick = onReadListClick,
+                        onBookClick = onReadlistBookClick,
+                        cardWidth = cardWidth,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OneshotImmersiveTabRow(
+    currentTab: OneshotImmersiveTab,
+    onTabChange: (OneshotImmersiveTab) -> Unit,
+    showCollectionsTab: Boolean,
+    showReadListsTab: Boolean,
+) {
+    val chipColors = AppFilterChipDefaults.filterChipColors()
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            FilterChip(
+                onClick = { onTabChange(OneshotImmersiveTab.TAGS) },
+                selected = currentTab == OneshotImmersiveTab.TAGS,
+                label = { Text("Tags") },
+                colors = chipColors,
+                border = null,
+            )
+            if (showCollectionsTab) {
+                FilterChip(
+                    onClick = { onTabChange(OneshotImmersiveTab.COLLECTIONS) },
+                    selected = currentTab == OneshotImmersiveTab.COLLECTIONS,
+                    label = { Text("Collections") },
+                    colors = chipColors,
+                    border = null,
+                )
+            }
+            if (showReadListsTab) {
+                FilterChip(
+                    onClick = { onTabChange(OneshotImmersiveTab.READ_LISTS) },
+                    selected = currentTab == OneshotImmersiveTab.READ_LISTS,
+                    label = { Text("Read Lists") },
+                    colors = chipColors,
+                    border = null,
                 )
             }
         }
-
-        // Reading lists
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            BookReadListsContent(
-                readLists = readLists,
-                onReadListClick = onReadListClick,
-                onBookClick = onReadlistBookClick,
-                cardWidth = cardWidth,
-            )
-        }
-
-        // Collections
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            SeriesCollectionsContent(
-                collections = collections,
-                onCollectionClick = onCollectionClick,
-                onSeriesClick = onSeriesClick,
-                cardWidth = cardWidth,
-            )
-        }
+        HorizontalDivider()
     }
 }
 
