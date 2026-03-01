@@ -424,10 +424,17 @@ private fun ColumnScope.PagedReaderSettingsContent(
         }
 
         val tapToZoom = pageState.tapToZoom.collectAsState().value
+        val adaptiveBackground = pageState.adaptiveBackground.collectAsState().value
         SwitchWithLabel(
             checked = tapToZoom,
             onCheckedChange = pageState::onTapToZoomChange,
             label = { Text("Tap to zoom") },
+            contentPadding = PaddingValues(horizontal = 10.dp)
+        )
+        SwitchWithLabel(
+            checked = adaptiveBackground,
+            onCheckedChange = pageState::onAdaptiveBackgroundChange,
+            label = { Text(strings.adaptiveBackground) },
             contentPadding = PaddingValues(horizontal = 10.dp)
         )
     }
@@ -441,6 +448,7 @@ private fun PanelsReaderSettingsContent(
     val readingDirection = state.readingDirection.collectAsState().value
     val displayMode = state.fullPageDisplayMode.collectAsState().value
     val tapToZoom = state.tapToZoom.collectAsState().value
+    val adaptiveBackground = state.adaptiveBackground.collectAsState().value
 
     Column {
 
@@ -473,6 +481,12 @@ private fun PanelsReaderSettingsContent(
             checked = tapToZoom,
             onCheckedChange = state::onTapToZoomChange,
             label = { Text("Tap to zoom") },
+            contentPadding = PaddingValues(horizontal = 10.dp)
+        )
+        SwitchWithLabel(
+            checked = adaptiveBackground,
+            onCheckedChange = state::onAdaptiveBackgroundChange,
+            label = { Text(strings.adaptiveBackground) },
             contentPadding = PaddingValues(horizontal = 10.dp)
         )
     }

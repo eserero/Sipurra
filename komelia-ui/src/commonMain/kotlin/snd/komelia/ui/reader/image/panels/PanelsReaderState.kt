@@ -37,6 +37,7 @@ import snd.komelia.image.ImageRect
 import snd.komelia.image.KomeliaPanelDetector
 import snd.komelia.image.ReaderImage.PageId
 import snd.komelia.image.ReaderImageResult
+import snd.komelia.image.getEdgeColors
 import snd.komelia.onnxruntime.OnnxRuntimeException
 import snd.komelia.settings.ImageReaderSettingsRepository
 import snd.komelia.settings.model.PagedReadingDirection
@@ -99,6 +100,7 @@ class PanelsReaderState(
 
     val fullPageDisplayMode = MutableStateFlow(PanelsFullPageDisplayMode.NONE)
     val tapToZoom = MutableStateFlow(true)
+    val adaptiveBackground = MutableStateFlow(false)
 
     val pageNavigationEvents = MutableSharedFlow<PageNavigationEvent>(extraBufferCapacity = 1)
 
@@ -110,6 +112,7 @@ class PanelsReaderState(
         }
         fullPageDisplayMode.value = settingsRepository.getPanelsFullPageDisplayMode().first()
         tapToZoom.value = settingsRepository.getPanelReaderTapToZoom().first()
+        adaptiveBackground.value = settingsRepository.getPanelReaderAdaptiveBackground().first()
 
         screenScaleState.setScrollState(null)
         screenScaleState.setScrollOrientation(Orientation.Vertical, false)
@@ -181,6 +184,17 @@ class PanelsReaderState(
     private var density = 1f
     fun setDensity(density: Float) {
         this.density = density
+    }
+
+    suspend fun getPage(page: PageMetadata): PanelsPage {
+        val pageId = page.toPageId()
+        val cached = imageCache.get(pageId)
+        return if (cached != null && !cached.isCancelled) {
+            cached.await()
+        } else {
+            val job = launchDownload(page)
+            job.await()
+        }
     }
 
     suspend fun getImage(page: PageMetadata): ReaderImageResult {
@@ -267,6 +281,11 @@ class PanelsReaderState(
     fun onTapToZoomChange(enabled: Boolean) {
         this.tapToZoom.value = enabled
         stateScope.launch { settingsRepository.putPanelReaderTapToZoom(enabled) }
+    }
+
+    fun onAdaptiveBackgroundChange(enabled: Boolean) {
+        this.adaptiveBackground.value = enabled
+        stateScope.launch { settingsRepository.putPanelReaderAdaptiveBackground(enabled) }
     }
 
     fun nextPanel() {
@@ -413,11 +432,13 @@ class PanelsReaderState(
                 it?.copy(
                     metadata = pageMeta,
                     imageResult = null,
-                    panelData = null
+                    panelData = null,
+                    edgeColors = null
                 ) ?: PanelsPage(
                     metadata = pageMeta,
                     imageResult = null,
-                    panelData = null
+                    panelData = null,
+                    edgeColors = null
                 )
             }
             currentPageIndex.update { PageIndex(pageIndex, 0) }
@@ -514,8 +535,20 @@ class PanelsReaderState(
                     panelData = null
                 )
 
-            val imageSize = IntSize(originalImage.width, originalImage.height)
-            val (panels, duration) = measureTimedValue {
+                        val imageSize = IntSize(originalImage.width, originalImage.height)
+                        val edgeColors = if (adaptiveBackground.value) {
+                            val containerSize = screenScaleState.areaSize.value
+                            val isVerticalGaps = if (containerSize.width == 0 || containerSize.height == 0) true
+                            else {
+                                val containerRatio = containerSize.width.toDouble() / containerSize.height
+                                val imageRatio = imageSize.width.toDouble() / imageSize.height
+                                imageRatio < containerRatio
+                            }
+                            originalImage.getEdgeColors(isVerticalGaps)
+                        } else null
+            
+                        val (panels, duration) = measureTimedValue {
+            
                 try {
                     onnxRuntimeRfDetr.detect(originalImage).map { it.boundingBox }
                 } catch (e: OnnxRuntimeException) {
@@ -537,7 +570,8 @@ class PanelsReaderState(
             return@async PanelsPage(
                 metadata = meta,
                 imageResult = imageResult,
-                panelData = panelData
+                panelData = panelData,
+                edgeColors = edgeColors
             )
         }
         imageCache.put(pageId, loadJob)
@@ -641,6 +675,7 @@ class PanelsReaderState(
         val metadata: PageMetadata,
         val imageResult: ReaderImageResult?,
         val panelData: PanelData?,
+        val edgeColors: Pair<Int, Int>? = null,
     )
 
     data class PanelData(

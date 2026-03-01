@@ -176,6 +176,7 @@ val EnStrings = AppStrings(
         layoutDoublePages = "Double pages",
         layoutDoublePagesNoCover = "Double pages (no cover)",
         offsetPages = "Offset pages",
+        adaptiveBackground = "Adaptive background",
     ),
     continuousReader = ContinuousReaderStrings(
         sidePadding = "Side padding",

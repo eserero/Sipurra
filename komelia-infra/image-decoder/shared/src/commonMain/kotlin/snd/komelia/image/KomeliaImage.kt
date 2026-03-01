@@ -27,6 +27,7 @@ interface KomeliaImage : AutoCloseable {
     suspend fun mapLookupTable(table: ByteArray): KomeliaImage
 
     suspend fun getBytes(): ByteArray
+    suspend fun averageColor(): Int?
 }
 
 data class ImageDimensions(

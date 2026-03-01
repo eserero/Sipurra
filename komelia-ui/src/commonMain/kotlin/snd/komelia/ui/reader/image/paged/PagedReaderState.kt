@@ -33,6 +33,7 @@ import snd.komelia.AppNotifications
 import snd.komelia.image.BookImageLoader
 import snd.komelia.image.ReaderImage.PageId
 import snd.komelia.image.ReaderImageResult
+import snd.komelia.image.getEdgeColors
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.settings.ImageReaderSettingsRepository
 import snd.komelia.settings.model.LayoutScaleType
@@ -92,6 +93,7 @@ class PagedReaderState(
     val scaleType = MutableStateFlow(LayoutScaleType.SCREEN)
     val readingDirection = MutableStateFlow(LEFT_TO_RIGHT)
     val tapToZoom = MutableStateFlow(true)
+    val adaptiveBackground = MutableStateFlow(false)
 
     val pageNavigationEvents = MutableSharedFlow<PageNavigationEvent>(extraBufferCapacity = 1)
 
@@ -104,6 +106,7 @@ class PagedReaderState(
             else -> settingsRepository.getPagedReaderReadingDirection().first()
         }
         tapToZoom.value = settingsRepository.getPagedReaderTapToZoom().first()
+        adaptiveBackground.value = settingsRepository.getPagedReaderAdaptiveBackground().first()
 
         screenScaleState.setScrollState(null)
         screenScaleState.setScrollOrientation(Orientation.Vertical, false)
@@ -374,7 +377,22 @@ class PagedReaderState(
             if (cached != null && !cached.isCancelled) cached
             else pageLoadScope.async {
                 val imageResult = imageLoader.loadReaderImage(meta.bookId, meta.pageNumber)
-                Page(meta, imageResult)
+                val edgeColors = if (adaptiveBackground.value && imageResult is ReaderImageResult.Success) {
+                    val originalImage = imageResult.image.getOriginalImage().getOrNull()
+                    if (originalImage != null) {
+                        val containerSize = screenScaleState.areaSize.value
+                        val isVerticalGaps = if (containerSize.width == 0 || containerSize.height == 0) true
+                        else {
+                            val containerRatio = containerSize.width.toDouble() / containerSize.height
+                            val imageRatio = originalImage.width.toDouble() / originalImage.height
+                            imageRatio < containerRatio
+                        }
+
+                        val colors = originalImage.getEdgeColors(isVerticalGaps)
+                        colors
+                    } else null
+                } else null
+                Page(meta, imageResult, edgeColors)
             }.also { imageCache.put(pageId, it) }
         }
 
@@ -422,17 +440,31 @@ class PagedReaderState(
         launchSpreadLoadJob(pagesMeta)
     }
 
-    suspend fun getImage(page: PageMetadata): ReaderImageResult {
+    suspend fun getPage(page: PageMetadata): Page {
         val pageId = page.toPageId()
         val cached = imageCache.get(pageId)
         return if (cached != null && !cached.isCancelled) {
-            cached.await().imageResult ?: ReaderImageResult.Error(Exception("Image result is null"))
+            cached.await()
         } else {
             val job = pageLoadScope.async {
-                val result = imageLoader.loadReaderImage(page.bookId, page.pageNumber)
-                Page(page, result)
+                val imageResult = imageLoader.loadReaderImage(page.bookId, page.pageNumber)
+                val edgeColors = if (adaptiveBackground.value && imageResult is ReaderImageResult.Success) {
+                    val originalImage = imageResult.image.getOriginalImage().getOrNull()
+                    if (originalImage != null) {
+                        val containerSize = screenScaleState.areaSize.value
+                        val isVerticalGaps = if (containerSize.width == 0 || containerSize.height == 0) true
+                        else {
+                            val containerRatio = containerSize.width.toDouble() / containerSize.height
+                            val imageRatio = originalImage.width.toDouble() / originalImage.height
+                            imageRatio < containerRatio
+                        }
+
+                        originalImage.getEdgeColors(isVerticalGaps)
+                    } else null
+                } else null
+                Page(page, imageResult, edgeColors)
             }.also { imageCache.put(pageId, it) }
-            job.await().imageResult ?: ReaderImageResult.Error(Exception("Image result is null"))
+            job.await()
         }
     }
 
@@ -577,6 +609,11 @@ class PagedReaderState(
         stateScope.launch { settingsRepository.putPagedReaderTapToZoom(enabled) }
     }
 
+    fun onAdaptiveBackgroundChange(enabled: Boolean) {
+        this.adaptiveBackground.value = enabled
+        stateScope.launch { settingsRepository.putPagedReaderAdaptiveBackground(enabled) }
+    }
+
     private suspend fun calculateScreenScale(
         pages: List<Page>,
         areaSize: IntSize,
@@ -706,6 +743,7 @@ class PagedReaderState(
     data class Page(
         val metadata: PageMetadata,
         val imageResult: ReaderImageResult?,
+        val edgeColors: Pair<Int, Int>? = null,
     )
 
 

@@ -105,6 +105,37 @@ class WorkerImage(
         return result.bytes.asByteArray()
     }
 
+    override suspend fun averageColor(): Int? {
+        val resized = resize(1, 1, false, ReduceKernel.DEFAULT)
+        val bytes = resized.getBytes()
+        resized.close()
+        if (bytes.isEmpty()) return null
+
+        return when (bands) {
+            4 -> {
+                val r = bytes[0].toInt() and 0xFF
+                val g = bytes[1].toInt() and 0xFF
+                val b = bytes[2].toInt() and 0xFF
+                val a = bytes[3].toInt() and 0xFF
+                (a shl 24) or (r shl 16) or (g shl 8) or b
+            }
+
+            3 -> {
+                val r = bytes[0].toInt() and 0xFF
+                val g = bytes[1].toInt() and 0xFF
+                val b = bytes[2].toInt() and 0xFF
+                (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+            }
+
+            1 -> {
+                val v = bytes[0].toInt() and 0xFF
+                (0xFF shl 24) or (v shl 16) or (v shl 8) or v
+            }
+
+            else -> null
+        }
+    }
+
     override fun close() {
         coroutineScope.launch {
             val message = closeImageRequest(worker.getNextId(), imageId)

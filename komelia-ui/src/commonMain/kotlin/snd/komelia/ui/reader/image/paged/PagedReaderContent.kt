@@ -52,6 +52,7 @@ import snd.komelia.ui.reader.image.paged.PagedReaderState.Page
 import snd.komelia.ui.reader.image.paged.PagedReaderState.TransitionPage
 import snd.komelia.ui.reader.image.paged.PagedReaderState.TransitionPage.BookEnd
 import snd.komelia.ui.reader.image.paged.PagedReaderState.TransitionPage.BookStart
+import snd.komelia.ui.reader.image.common.AdaptiveBackground
 import kotlin.math.abs
 
 @Composable
@@ -81,6 +82,7 @@ fun BoxScope.PagedReaderContent(
     val layout = pagedReaderState.layout.collectAsState().value
     val layoutOffset = pagedReaderState.layoutOffset.collectAsState().value
     val tapToZoom = pagedReaderState.tapToZoom.collectAsState().value
+    val adaptiveBackground = pagedReaderState.adaptiveBackground.collectAsState().value
 
     val currentContainerSize = screenScaleState.areaSize.collectAsState().value
 
@@ -167,35 +169,55 @@ fun BoxScope.PagedReaderContent(
                 TransitionPage(transitionPage)
             } else {
                 if (spreads.isNotEmpty()) {
-                    HorizontalPager(
-                        state = pagerState,
-                        userScrollEnabled = false,
-                        reverseLayout = readingDirection == RIGHT_TO_LEFT,
-                        modifier = Modifier.fillMaxSize(),
-                        key = { if (it < spreads.size) spreads[it].first().pageNumber else it }
-                    ) { pageIdx ->
-                        if (pageIdx >= spreads.size) return@HorizontalPager
-                        val spreadMetadata = spreads[pageIdx]
-                        val spreadPages = remember(spreadMetadata) {
-                            spreadMetadata.map { meta ->
-                                val imageResult = mutableStateOf<ReaderImageResult?>(null)
-                                meta to imageResult
+                        HorizontalPager(
+                            state = pagerState,
+                            userScrollEnabled = false,
+                            reverseLayout = readingDirection == RIGHT_TO_LEFT,
+                            modifier = Modifier.fillMaxSize(),
+                            key = { if (it < spreads.size) spreads[it].first().pageNumber else it }
+                        ) { pageIdx ->
+                            if (pageIdx >= spreads.size) return@HorizontalPager
+                            val spreadMetadata = spreads[pageIdx]
+                            val spreadPages = remember(spreadMetadata) {
+                                spreadMetadata.map { meta ->
+                                    val pageState = mutableStateOf<Page?>(null)
+                                    meta to pageState
+                                }
+                            }
+
+                            spreadPages.forEach { (meta, pageState) ->
+                                LaunchedEffect(meta) {
+                                    pageState.value = pagedReaderState.getPage(meta)
+                                }
+                            }
+
+                            val pages = spreadPages.map { (meta, pageState) ->
+                                pageState.value ?: Page(meta, null)
+                            }
+
+                            val edgeColors = if (adaptiveBackground && pages.size == 1) pages.first().edgeColors else null
+                            val isVerticalGaps = remember(pages, currentContainerSize) {
+                                val imageSize = pages.firstOrNull()?.imageResult?.let {
+                                    if (it is ReaderImageResult.Success) it.image.displaySize.value else null
+                                }
+                                if (imageSize == null || currentContainerSize.width == 0 || currentContainerSize.height == 0) true
+                                else {
+                                    val containerRatio = currentContainerSize.width.toDouble() / currentContainerSize.height
+                                    val imageRatio = imageSize.width.toDouble() / imageSize.height
+                                    imageRatio < containerRatio
+                                }
+                            }
+
+                            AdaptiveBackground(
+                                edgeColors = edgeColors,
+                                isVerticalGaps = isVerticalGaps,
+                            ) {
+                                when (layout) {
+                                    SINGLE_PAGE -> pages.firstOrNull()?.let { SinglePageLayout(it) }
+                                    DOUBLE_PAGES, DOUBLE_PAGES_NO_COVER -> DoublePageLayout(pages, readingDirection)
+                                }
                             }
                         }
-
-                        spreadPages.forEach { (meta, imageResultState) ->
-                            LaunchedEffect(meta) {
-                                imageResultState.value = pagedReaderState.getImage(meta)
-                            }
-                        }
-
-                        val pages = spreadPages.map { (meta, resultState) -> Page(meta, resultState.value) }
-
-                        when (layout) {
-                            SINGLE_PAGE -> pages.firstOrNull()?.let { SinglePageLayout(it) }
-                            DOUBLE_PAGES, DOUBLE_PAGES_NO_COVER -> DoublePageLayout(pages, readingDirection)
-                        }
-                    }
                 }
             }
         }

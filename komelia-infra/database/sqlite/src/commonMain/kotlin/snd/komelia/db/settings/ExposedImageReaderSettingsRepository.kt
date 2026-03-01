@@ -58,6 +58,8 @@ class ExposedImageReaderSettingsRepository(database: Database) : ExposedReposito
                             .let { mode -> PanelsFullPageDisplayMode.valueOf(mode) },
                         pagedReaderTapToZoom = it[ImageReaderSettingsTable.pagedReaderTapToZoom],
                         panelReaderTapToZoom = it[ImageReaderSettingsTable.panelReaderTapToZoom],
+                        pagedReaderAdaptiveBackground = it[ImageReaderSettingsTable.pagedReaderAdaptiveBackground],
+                        panelReaderAdaptiveBackground = it[ImageReaderSettingsTable.panelReaderAdaptiveBackground],
                     )
                 }
         }
@@ -92,6 +94,8 @@ class ExposedImageReaderSettingsRepository(database: Database) : ExposedReposito
                 it[panelsFullPageDisplayMode] = settings.panelsFullPageDisplayMode.name
                 it[pagedReaderTapToZoom] = settings.pagedReaderTapToZoom
                 it[panelReaderTapToZoom] = settings.panelReaderTapToZoom
+                it[pagedReaderAdaptiveBackground] = settings.pagedReaderAdaptiveBackground
+                it[panelReaderAdaptiveBackground] = settings.panelReaderAdaptiveBackground
             }
         }
     }

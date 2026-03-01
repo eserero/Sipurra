@@ -303,6 +303,7 @@ data class PagedReaderStrings(
     val layoutDoublePages: String,
     val layoutDoublePagesNoCover: String,
     val offsetPages: String,
+    val adaptiveBackground: String,
 ) {
     fun forScaleType(type: LayoutScaleType): String {
         return when (type) {

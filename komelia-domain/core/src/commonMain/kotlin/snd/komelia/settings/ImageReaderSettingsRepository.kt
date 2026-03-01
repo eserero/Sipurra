@@ -88,4 +88,10 @@ interface ImageReaderSettingsRepository {
 
     fun getPanelReaderTapToZoom(): Flow<Boolean>
     suspend fun putPanelReaderTapToZoom(enabled: Boolean)
+
+    fun getPagedReaderAdaptiveBackground(): Flow<Boolean>
+    suspend fun putPagedReaderAdaptiveBackground(enabled: Boolean)
+
+    fun getPanelReaderAdaptiveBackground(): Flow<Boolean>
+    suspend fun putPanelReaderAdaptiveBackground(enabled: Boolean)
 }

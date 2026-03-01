@@ -41,8 +41,9 @@ data class ImageReaderSettings(
     val ortUpscalerDeviceId: Int = 0,
     val ortUpscalerTileSize: Int = 512,
 
-        val panelsFullPageDisplayMode: PanelsFullPageDisplayMode = PanelsFullPageDisplayMode.NONE,
-        val pagedReaderTapToZoom: Boolean = true,
-        val panelReaderTapToZoom: Boolean = true,
-    )
-    
+    val panelsFullPageDisplayMode: PanelsFullPageDisplayMode = PanelsFullPageDisplayMode.NONE,
+    val pagedReaderTapToZoom: Boolean = true,
+    val panelReaderTapToZoom: Boolean = true,
+    val pagedReaderAdaptiveBackground: Boolean = false,
+    val panelReaderAdaptiveBackground: Boolean = false,
+)

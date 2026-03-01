@@ -219,4 +219,20 @@ class ReaderSettingsRepositoryWrapper(
     override suspend fun putPanelReaderTapToZoom(enabled: Boolean) {
         wrapper.transform { it.copy(panelReaderTapToZoom = enabled) }
     }
+
+    override fun getPagedReaderAdaptiveBackground(): Flow<Boolean> {
+        return wrapper.mapState { it.pagedReaderAdaptiveBackground }
+    }
+
+    override suspend fun putPagedReaderAdaptiveBackground(enabled: Boolean) {
+        wrapper.transform { it.copy(pagedReaderAdaptiveBackground = enabled) }
+    }
+
+    override fun getPanelReaderAdaptiveBackground(): Flow<Boolean> {
+        return wrapper.mapState { it.panelReaderAdaptiveBackground }
+    }
+
+    override suspend fun putPanelReaderAdaptiveBackground(enabled: Boolean) {
+        wrapper.transform { it.copy(panelReaderAdaptiveBackground = enabled) }
+    }
 }

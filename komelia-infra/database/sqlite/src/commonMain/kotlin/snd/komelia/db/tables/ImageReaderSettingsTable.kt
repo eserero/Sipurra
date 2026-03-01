@@ -37,6 +37,8 @@ object ImageReaderSettingsTable : Table("ImageReaderSettings") {
     val panelsFullPageDisplayMode = text("panels_full_page_display_mode").default("NONE")
     val pagedReaderTapToZoom = bool("paged_reader_tap_to_zoom").default(true)
     val panelReaderTapToZoom = bool("panel_reader_tap_to_zoom").default(true)
+    val pagedReaderAdaptiveBackground = bool("paged_reader_adaptive_background").default(false)
+    val panelReaderAdaptiveBackground = bool("panel_reader_adaptive_background").default(false)
 
     override val primaryKey = PrimaryKey(bookId)
 }

@@ -46,6 +46,7 @@ import snd.komelia.ui.reader.image.paged.PagedReaderState.PageNavigationEvent
 import snd.komelia.ui.reader.image.paged.PagedReaderState.TransitionPage
 import snd.komelia.ui.reader.image.paged.PagedReaderState.TransitionPage.BookEnd
 import snd.komelia.ui.reader.image.paged.PagedReaderState.TransitionPage.BookStart
+import snd.komelia.ui.reader.image.common.AdaptiveBackground
 
 @Composable
 fun BoxScope.PanelsReaderContent(
@@ -73,6 +74,7 @@ fun BoxScope.PanelsReaderContent(
     val currentPageIndex = panelsReaderState.currentPageIndex.collectAsState().value
     val currentContainerSize = screenScaleState.areaSize.collectAsState().value
     val tapToZoom = panelsReaderState.tapToZoom.collectAsState().value
+    val adaptiveBackground = panelsReaderState.adaptiveBackground.collectAsState().value
 
     val pagerState = rememberPagerState(
         initialPage = currentPageIndex.page,
@@ -131,28 +133,46 @@ fun BoxScope.PanelsReaderContent(
                 TransitionPage(transitionPage)
             } else {
                 if (metadata.isNotEmpty()) {
-                    HorizontalPager(
-                        state = pagerState,
-                        userScrollEnabled = false,
-                        reverseLayout = readingDirection == RIGHT_TO_LEFT,
-                        modifier = Modifier.fillMaxSize(),
-                        key = { if (it < metadata.size) metadata[it].pageNumber else it }
-                    ) { pageIdx ->
-                        if (pageIdx >= metadata.size) return@HorizontalPager
-                        val pageMeta = metadata[pageIdx]
-                        
-                        val imageResultState = remember(pageMeta) { mutableStateOf<ReaderImageResult?>(null) }
-                        LaunchedEffect(pageMeta) {
-                            imageResultState.value = panelsReaderState.getImage(pageMeta)
-                        }
-
-                        Box(
+                        HorizontalPager(
+                            state = pagerState,
+                            userScrollEnabled = false,
+                            reverseLayout = readingDirection == RIGHT_TO_LEFT,
                             modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ReaderImageContent(imageResultState.value)
+                            key = { if (it < metadata.size) metadata[it].pageNumber else it }
+                        ) { pageIdx ->
+                            if (pageIdx >= metadata.size) return@HorizontalPager
+                            val pageMeta = metadata[pageIdx]
+
+                            val pageState = remember(pageMeta) { mutableStateOf<PanelsReaderState.PanelsPage?>(null) }
+                            LaunchedEffect(pageMeta) {
+                                pageState.value = panelsReaderState.getPage(pageMeta)
+                            }
+
+                            val edgeColors = if (adaptiveBackground) pageState.value?.edgeColors else null
+                            val isVerticalGaps = remember(pageState.value, currentContainerSize) {
+                                val imageSize = pageState.value?.imageResult?.let {
+                                    if (it is ReaderImageResult.Success) it.image.displaySize.value else null
+                                }
+                                if (imageSize == null || currentContainerSize.width == 0 || currentContainerSize.height == 0) true
+                                else {
+                                    val containerRatio = currentContainerSize.width.toDouble() / currentContainerSize.height
+                                    val imageRatio = imageSize.width.toDouble() / imageSize.height
+                                    imageRatio < containerRatio
+                                }
+                            }
+
+                            AdaptiveBackground(
+                                edgeColors = edgeColors,
+                                isVerticalGaps = isVerticalGaps,
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    ReaderImageContent(pageState.value?.imageResult)
+                                }
+                            }
                         }
-                    }
                 }
             }
         }
