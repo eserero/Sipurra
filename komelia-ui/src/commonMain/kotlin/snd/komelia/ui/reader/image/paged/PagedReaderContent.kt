@@ -70,6 +70,7 @@ fun BoxScope.PagedReaderContent(
     pagedReaderState: PagedReaderState,
     volumeKeysNavigation: Boolean,
     tapNavigationMode: ReaderTapNavigationMode,
+    onLongPress: (Offset) -> Unit = {},
 ) {
     if (showHelpDialog) {
         PagedReaderHelpDialog(onDismissRequest = { onShowHelpDialogChange(false) })
@@ -153,6 +154,7 @@ fun BoxScope.PagedReaderContent(
         tapNavigationMode = tapNavigationMode,
         isSettingsMenuOpen = showSettingsMenu,
         onSettingsMenuToggle = { onShowSettingsMenuChange(!showSettingsMenu) },
+        onLongPress = onLongPress,
         modifier = Modifier.onKeyEvent { event ->
             pagedReaderOnKeyEvents(
                 event = event,

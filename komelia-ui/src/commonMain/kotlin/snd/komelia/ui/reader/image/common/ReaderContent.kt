@@ -4,6 +4,12 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -19,6 +25,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType.Companion.KeyUp
 import androidx.compose.ui.input.key.isAltPressed
@@ -28,8 +35,10 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import snd.komelia.ui.common.components.AnimatedDropdownMenu
 import kotlinx.coroutines.launch
 import snd.komelia.settings.model.ReaderTapNavigationMode
 import snd.komelia.settings.model.ReaderType.CONTINUOUS
@@ -65,6 +74,12 @@ fun ReaderContent(
 ) {
     var showHelpDialog by remember { mutableStateOf(false) }
     var showSettingsMenu by remember { mutableStateOf(false) }
+    var showImageContextMenu by remember { mutableStateOf(false) }
+    var contextMenuAnchorOffset by remember { mutableStateOf(Offset.Zero) }
+    val onLongPress: (Offset) -> Unit = { offset ->
+        contextMenuAnchorOffset = offset
+        showImageContextMenu = true
+    }
     if (LocalPlatform.current == MOBILE) {
         val windowState = LocalWindowState.current
         DisposableEffect(showSettingsMenu) {
@@ -133,7 +148,8 @@ fun ReaderContent(
                     screenScaleState = screenScaleState,
                     pagedReaderState = pagedReaderState,
                     volumeKeysNavigation = volumeKeysNavigation,
-                    tapNavigationMode = tapNavigationMode
+                    tapNavigationMode = tapNavigationMode,
+                    onLongPress = onLongPress
                 )
             }
 
@@ -146,7 +162,8 @@ fun ReaderContent(
                     screenScaleState = screenScaleState,
                     continuousReaderState = continuousReaderState,
                     volumeKeysNavigation = volumeKeysNavigation,
-                    tapNavigationMode = tapNavigationMode
+                    tapNavigationMode = tapNavigationMode,
+                    onLongPress = onLongPress
                 )
             }
 
@@ -160,10 +177,32 @@ fun ReaderContent(
                     screenScaleState = screenScaleState,
                     panelsReaderState = panelsReaderState,
                     volumeKeysNavigation = volumeKeysNavigation,
-                    tapNavigationMode = tapNavigationMode
+                    tapNavigationMode = tapNavigationMode,
+                    onLongPress = onLongPress
                 )
             }
 
+        }
+
+        Box(
+            Modifier.offset {
+                IntOffset(contextMenuAnchorOffset.x.toInt(), contextMenuAnchorOffset.y.toInt())
+            }
+        ) {
+            AnimatedDropdownMenu(
+                expanded = showImageContextMenu,
+                onDismissRequest = { showImageContextMenu = false },
+                transformOrigin = TransformOrigin(0f, 0f)
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Save image") },
+                    leadingIcon = { Icon(Icons.Rounded.Download, contentDescription = null) },
+                    onClick = {
+                        showImageContextMenu = false
+                        commonReaderState.saveCurrentPageToDownloads()
+                    }
+                )
+            }
         }
 
         SettingsOverlay(
@@ -205,6 +244,7 @@ fun ReaderControlsOverlay(
     scaleState: ScreenScaleState,
     tapToZoom: Boolean,
     modifier: Modifier,
+    onLongPress: ((Offset) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -223,9 +263,11 @@ fun ReaderControlsOverlay(
                 onSettingsMenuToggle,
                 isSettingsMenuOpen,
                 tapNavigationMode,
-                tapToZoom
+                tapToZoom,
+                onLongPress
             ) {
                 detectTapGestures(
+                    onLongPress = onLongPress,
                     onTap = { offset ->
                         val width = contentAreaSize.width.toFloat()
                         val height = contentAreaSize.height.toFloat()

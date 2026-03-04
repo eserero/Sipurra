@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import snd.komelia.AppNotification
 import snd.komelia.AppNotifications
+import snd.komelia.ui.platform.imageExtension
+import snd.komelia.ui.platform.sanitizeFilename
+import snd.komelia.ui.platform.saveImageToDownloads
 import snd.komelia.color.repository.BookColorCorrectionRepository
 import snd.komelia.image.ReaderImage.PageId
 import snd.komelia.image.ReduceKernel
@@ -310,6 +313,21 @@ class ReaderState(
     fun onColorCorrectionDisable() {
         stateScope.launch {
             booksState.value?.currentBook?.let { colorCorrectionRepository.deleteSettings(it.id) }
+        }
+    }
+
+    fun saveCurrentPageToDownloads() {
+        val bookState = booksState.value ?: return
+        val pageNumber = readProgressPage.value
+        val book = bookState.currentBook
+        stateScope.launch {
+            appNotifications.runCatchingToNotifications {
+                val bytes = bookApi.getPage(book.id, pageNumber)
+                val ext = bytes.imageExtension()
+                val filename = "${book.name.sanitizeFilename()}_p${pageNumber.toString().padStart(3, '0')}.$ext"
+                saveImageToDownloads(bytes, filename)
+                appNotifications.add(AppNotification.Success("Page $pageNumber saved to Downloads"))
+            }
         }
     }
 

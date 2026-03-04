@@ -47,6 +47,7 @@ import snd.komelia.ui.reader.image.paged.PagedReaderState.PageNavigationEvent
 import snd.komelia.ui.reader.image.paged.PagedReaderState.TransitionPage
 import snd.komelia.ui.reader.image.paged.PagedReaderState.TransitionPage.BookEnd
 import snd.komelia.ui.reader.image.paged.PagedReaderState.TransitionPage.BookStart
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.IntSize
@@ -63,6 +64,7 @@ fun BoxScope.PanelsReaderContent(
     panelsReaderState: PanelsReaderState,
     volumeKeysNavigation: Boolean,
     tapNavigationMode: ReaderTapNavigationMode,
+    onLongPress: (Offset) -> Unit = {},
 ) {
     if (showHelpDialog) {
         PagedReaderHelpDialog(onDismissRequest = { onShowHelpDialogChange(false) })
@@ -142,6 +144,7 @@ fun BoxScope.PanelsReaderContent(
             tapNavigationMode = tapNavigationMode,
             isSettingsMenuOpen = showSettingsMenu,
             onSettingsMenuToggle = { onShowSettingsMenuChange(!showSettingsMenu) },
+            onLongPress = onLongPress,
             modifier = Modifier.onKeyEvent { event ->
                 pagedReaderOnKeyEvents(
                     event = event,

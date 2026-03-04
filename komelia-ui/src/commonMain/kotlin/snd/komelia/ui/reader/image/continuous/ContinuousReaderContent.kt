@@ -43,6 +43,7 @@ import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection.Ltr
@@ -72,6 +73,7 @@ fun BoxScope.ContinuousReaderContent(
     continuousReaderState: ContinuousReaderState,
     volumeKeysNavigation: Boolean,
     tapNavigationMode: ReaderTapNavigationMode,
+    onLongPress: (Offset) -> Unit = {},
 ) {
     val coroutineScope = rememberCoroutineScope()
     val readingDirection = continuousReaderState.readingDirection.collectAsState().value
@@ -114,6 +116,7 @@ fun BoxScope.ContinuousReaderContent(
         tapNavigationMode = tapNavigationMode,
         isSettingsMenuOpen = showSettingsMenu,
         onSettingsMenuToggle = { onShowSettingsMenuChange(!showSettingsMenu) },
+        onLongPress = onLongPress,
         modifier = Modifier.onKeyEvent { event ->
             var consumed = true
 
