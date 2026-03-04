@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -56,8 +55,6 @@ import snd.komga.client.series.KomgaSeries
 @Composable
 fun HomeContent(
     filters: List<HomeFilterData>,
-    onEditStart: () -> Unit,
-
     activeFilterNumber: Int,
     onFilterChange: (Int) -> Unit,
 
@@ -76,7 +73,6 @@ fun HomeContent(
         Toolbar(
             filters = filters,
             currentFilterNumber = activeFilterNumber,
-            onEditStart = onEditStart,
             onFilterChange = { newFilter ->
                 onFilterChange(newFilter)
                 coroutineScope.launch {
@@ -106,7 +102,6 @@ private fun Toolbar(
     filters: List<HomeFilterData>,
     currentFilterNumber: Int,
     onFilterChange: (Int) -> Unit,
-    onEditStart: () -> Unit
 ) {
     val chipColors = AppFilterChipDefaults.filterChipColors()
     val nonEmptyFilters = remember(filters) {
@@ -123,7 +118,7 @@ private fun Toolbar(
 
         LazyRow(
             state = lazyRowState,
-            modifier = Modifier.animateContentSize().padding(end = 48.dp),
+            modifier = Modifier.animateContentSize(),
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -163,16 +158,6 @@ private fun Toolbar(
                     )
                 }
             }
-            item {
-                Spacer(Modifier.width(40.dp))
-            }
-        }
-
-        IconButton(
-            onClick = onEditStart,
-            modifier = Modifier.align(Alignment.CenterEnd)
-        ) {
-            Icon(Icons.Rounded.MoreVert, null)
         }
 
         if (LocalPlatform.current != PlatformType.MOBILE) {

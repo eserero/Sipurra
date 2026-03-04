@@ -1,14 +1,30 @@
 package snd.komelia.ui.home
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import snd.komelia.ui.LoadState
+import snd.komelia.ui.LocalAccentColor
 import snd.komelia.ui.LocalKomgaState
 import snd.komelia.ui.LocalOfflineMode
 import snd.komelia.ui.LocalReloadEvents
@@ -51,6 +67,7 @@ class HomeScreen(private val libraryId: KomgaLibraryId? = null) : ReloadableScre
             onDispose { vm.stopKomgaEventsHandler() }
         }
 
+        val accentColor = LocalAccentColor.current
         ScreenPullToRefreshBox(screenState = vm.state, onRefresh = vm::reload) {
             when (val state = vm.state.collectAsState().value) {
                 is LoadState.Error -> ErrorContent(
@@ -63,7 +80,6 @@ class HomeScreen(private val libraryId: KomgaLibraryId? = null) : ReloadableScre
                         filters = vm.currentFilters.collectAsState().value,
                         activeFilterNumber = vm.activeFilterNumber.collectAsState().value,
                         onFilterChange = vm::onFilterChange,
-                        onEditStart = { navigator.replaceAll(FilterEditScreen(vm.currentFilters.value)) },
 
                         cardWidth = vm.cardWidth.collectAsState().value,
                         onSeriesClick = { navigator push seriesScreen(it) },
@@ -75,6 +91,21 @@ class HomeScreen(private val libraryId: KomgaLibraryId? = null) : ReloadableScre
                         },
                     )
 
+            }
+
+            FloatingActionButton(
+                onClick = { navigator.replaceAll(FilterEditScreen(vm.currentFilters.value)) },
+                containerColor = accentColor ?: MaterialTheme.colorScheme.primaryContainer,
+                contentColor = if (accentColor != null) {
+                    if (accentColor.luminance() > 0.5f) Color.Black else Color.White
+                } else MaterialTheme.colorScheme.onPrimaryContainer,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(bottom = 16.dp, end = 16.dp)
+            ) {
+                Icon(Icons.Rounded.Edit, null)
             }
         }
     }

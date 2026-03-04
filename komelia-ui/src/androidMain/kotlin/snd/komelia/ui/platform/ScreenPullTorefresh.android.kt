@@ -1,7 +1,9 @@
 package snd.komelia.ui.platform
 
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,7 +36,8 @@ actual fun ScreenPullToRefreshBox(
         onRefresh = {
             onRefresh()
             isRefreshing = true
-        }
+        },
+        modifier = Modifier.fillMaxSize()
     ) {
         content()
     }
