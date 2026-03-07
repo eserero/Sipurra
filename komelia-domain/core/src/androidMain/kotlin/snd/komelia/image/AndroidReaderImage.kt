@@ -12,10 +12,13 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.toSize
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import snd.komelia.image.AndroidBitmap.toBitmap
 import snd.komelia.image.ReaderImage.PageId
@@ -47,11 +50,50 @@ class AndroidReaderImage(
     @Volatile
     private var cachedUpscaledImage: KomeliaImage? = null
 
+    override val upscaleStatus = MutableStateFlow<UpscaleStatus>(UpscaleStatus.Idle)
+
     init {
         ncnnUpscaler?.isReady
             ?.drop(1)
             ?.filter { it }
             ?.onEach { retryUpscaleOnLoad() }
+            ?.launchIn(processingScope)
+
+        // Feature 1: React to upscaleOnLoad toggle
+        ncnnUpscaler?.settingsFlow
+            ?.drop(1)
+            ?.map { it?.upscaleOnLoad ?: false }
+            ?.distinctUntilChanged()
+            ?.onEach { upscaleOnLoad ->
+                if (upscaleOnLoad) {
+                    retryUpscaleOnLoad()
+                } else {
+                    val old = cachedUpscaledImage
+                    cachedUpscaledImage = null
+                    upscaleStatus.value = UpscaleStatus.Idle
+                    if (old != null && old !== image.value) old.close()
+                    reloadLastRequest()
+                }
+            }
+            ?.launchIn(processingScope)
+
+        // Feature 4: React to engine/model changes - always clear old upscale result
+        ncnnUpscaler?.settingsFlow
+            ?.drop(1)
+            ?.map { Pair(it?.engine, it?.model) }
+            ?.distinctUntilChanged()
+            ?.onEach { _ ->
+                val upscaleOnLoad = ncnnUpscaler.settingsFlow.value?.upscaleOnLoad ?: false
+                val old = cachedUpscaledImage
+                cachedUpscaledImage = null
+                upscaleStatus.value = UpscaleStatus.Idle
+                if (old != null && old !== image.value) old.close()
+                if (upscaleOnLoad) {
+                    retryUpscaleOnLoad()
+                } else {
+                    reloadLastRequest()
+                }
+            }
             ?.launchIn(processingScope)
     }
 
@@ -72,12 +114,34 @@ class AndroidReaderImage(
         )
     }
 
+    override fun requestUpdate(maxDisplaySize: IntSize, zoomFactor: Float, visibleDisplaySize: IntRect) {
+        AndroidNcnnUpscaler.currentPageNumber.set(pageId.pageNumber)
+        super.requestUpdate(maxDisplaySize, zoomFactor, visibleDisplaySize)
+    }
+
     override suspend fun loadImage() {
         super.loadImage()
         val currentImage = image.value ?: return
-        val upscaled = ncnnUpscaler?.checkAndUpscale(currentImage) ?: return
-        if (upscaled !== currentImage) {
+        val willUpscale = ncnnUpscaler?.willUpscale(currentImage) == true
+        if (willUpscale) {
+            upscaleStatus.value = UpscaleStatus.Upscaling
+            AndroidNcnnUpscaler.registerActivity(pageId.pageNumber)
+        }
+        val upscaled = try {
+            ncnnUpscaler?.checkAndUpscale(currentImage, pageId.pageNumber)
+        } catch (e: Throwable) {
+            if (willUpscale) AndroidNcnnUpscaler.unregisterActivity(pageId.pageNumber, UpscaleStatus.Idle)
+            upscaleStatus.value = UpscaleStatus.Idle
+            throw e
+        }
+        currentCoroutineContext().ensureActive()
+        if (upscaled != null && upscaled !== currentImage) {
             cachedUpscaledImage = upscaled
+            upscaleStatus.value = UpscaleStatus.Upscaled
+            if (willUpscale) AndroidNcnnUpscaler.unregisterActivity(pageId.pageNumber, UpscaleStatus.Upscaled)
+        } else {
+            upscaleStatus.value = UpscaleStatus.Idle
+            if (willUpscale) AndroidNcnnUpscaler.unregisterActivity(pageId.pageNumber, UpscaleStatus.Idle)
         }
     }
 
@@ -139,11 +203,26 @@ class AndroidReaderImage(
     private suspend fun retryUpscaleOnLoad() {
         if (cachedUpscaledImage != null) return   // already upscaled, skip
         val currentImage = image.value ?: return
-        val upscaled = ncnnUpscaler?.checkAndUpscale(currentImage) ?: return
-        if (upscaled !== currentImage) {
-            cachedUpscaledImage = upscaled
-            reloadLastRequest()
+        upscaleStatus.value = UpscaleStatus.Upscaling
+        AndroidNcnnUpscaler.registerActivity(pageId.pageNumber)
+        var resultStatus: UpscaleStatus = UpscaleStatus.Idle
+        val upscaled = try {
+            ncnnUpscaler?.checkAndUpscale(currentImage, pageId.pageNumber)
+        } catch (e: Throwable) {
+            AndroidNcnnUpscaler.unregisterActivity(pageId.pageNumber, UpscaleStatus.Idle)
+            upscaleStatus.value = UpscaleStatus.Idle
+            throw e
         }
+        currentCoroutineContext().ensureActive()
+        if (upscaled != null && upscaled !== currentImage) {
+            cachedUpscaledImage = upscaled
+            upscaleStatus.value = UpscaleStatus.Upscaled
+            resultStatus = UpscaleStatus.Upscaled
+            reloadLastRequest()
+        } else {
+            upscaleStatus.value = UpscaleStatus.Idle
+        }
+        AndroidNcnnUpscaler.unregisterActivity(pageId.pageNumber, resultStatus)
     }
 
     private suspend fun upscaleImage(
@@ -155,7 +234,20 @@ class AndroidReaderImage(
             cachedUpscaledImage === image -> image          // image IS the cached upscaled version — use directly
             cachedUpscaledImage != null -> cachedUpscaledImage  // have a 2x cache for original image
             else -> {
-                val newUpscaled = ncnnUpscaler?.upscale(image)
+                upscaleStatus.value = UpscaleStatus.Upscaling
+                AndroidNcnnUpscaler.registerActivity(pageId.pageNumber)
+                val newUpscaled = try {
+                    ncnnUpscaler?.upscale(image, pageId.pageNumber)
+                } catch (e: Throwable) {
+                    AndroidNcnnUpscaler.unregisterActivity(pageId.pageNumber, UpscaleStatus.Idle)
+                    throw e
+                }
+                if (newUpscaled != null) {
+                    upscaleStatus.value = UpscaleStatus.Upscaled
+                    AndroidNcnnUpscaler.unregisterActivity(pageId.pageNumber, UpscaleStatus.Upscaled)
+                } else {
+                    AndroidNcnnUpscaler.unregisterActivity(pageId.pageNumber, UpscaleStatus.Idle)
+                }
                 cachedUpscaledImage = newUpscaled
                 newUpscaled
             }
@@ -198,7 +290,20 @@ class AndroidReaderImage(
             cachedUpscaledImage === image -> image          // image IS the cached upscaled version — use directly
             cachedUpscaledImage != null -> cachedUpscaledImage  // have a 2x cache for original image
             else -> {
-                val newUpscaled = ncnnUpscaler?.upscale(image)
+                upscaleStatus.value = UpscaleStatus.Upscaling
+                AndroidNcnnUpscaler.registerActivity(pageId.pageNumber)
+                val newUpscaled = try {
+                    ncnnUpscaler?.upscale(image, pageId.pageNumber)
+                } catch (e: Throwable) {
+                    AndroidNcnnUpscaler.unregisterActivity(pageId.pageNumber, UpscaleStatus.Idle)
+                    throw e
+                }
+                if (newUpscaled != null) {
+                    upscaleStatus.value = UpscaleStatus.Upscaled
+                    AndroidNcnnUpscaler.unregisterActivity(pageId.pageNumber, UpscaleStatus.Upscaled)
+                } else {
+                    AndroidNcnnUpscaler.unregisterActivity(pageId.pageNumber, UpscaleStatus.Idle)
+                }
                 cachedUpscaledImage = newUpscaled
                 newUpscaled
             }
@@ -256,6 +361,8 @@ class AndroidReaderImage(
             }
         }
         cachedUpscaledImage = null
+        upscaleStatus.value = UpscaleStatus.Idle
+        AndroidNcnnUpscaler.unregisterActivity(pageId.pageNumber, UpscaleStatus.Idle)
     }
 
     private suspend fun KomeliaImage.toReaderImageData(): ReaderImageData {

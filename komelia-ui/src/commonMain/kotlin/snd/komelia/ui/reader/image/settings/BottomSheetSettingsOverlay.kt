@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -62,6 +63,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import snd.komelia.image.ReduceKernel
+import snd.komelia.image.UpscaleStatus
 import snd.komelia.image.UpsamplingMode
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.settings.model.ContinuousReadingDirection
@@ -132,47 +134,57 @@ fun BottomSheetSettingsOverlay(
     val windowWidth = LocalWindowWidth.current
     val accentColor = LocalAccentColor.current
     var showSettingsDialog by remember { mutableStateOf(false) }
+    val allUpscaleActivities by ncnnSettingsState.globalUpscaleActivities.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Row(
+        Column(
             modifier = Modifier
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .fillMaxWidth()
                 .windowInsetsPadding(
                     WindowInsets.statusBars
                         .add(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal))
-                ),
-            verticalAlignment = Alignment.CenterVertically
+                )
         ) {
-            IconButton(
-                onClick = onBackPress,
-                modifier = Modifier.size(46.dp)
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
-            }
-
-            book?.let {
-                Column(
-                    Modifier.weight(1f)
-                        .padding(horizontal = 10.dp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onBackPress,
+                    modifier = Modifier.size(46.dp)
                 ) {
-                    val titleStyle =
-                        if (windowWidth == COMPACT) MaterialTheme.typography.titleMedium
-                        else MaterialTheme.typography.titleLarge
-
-                    Text(
-                        it.seriesTitle,
-                        maxLines = 1,
-                        style = titleStyle,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        it.metadata.title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
-                    )
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                 }
+
+                book?.let {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(
+                            Modifier.weight(1f)
+                                .padding(horizontal = 10.dp)
+                        ) {
+                            val titleStyle =
+                                if (windowWidth == COMPACT) MaterialTheme.typography.titleMedium
+                                else MaterialTheme.typography.titleLarge
+
+                            Text(
+                                it.seriesTitle,
+                                maxLines = 1,
+                                style = titleStyle,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                it.metadata.title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
+                            )
+                        }
+                    }
+                }
+            }
+            AnimatedVisibility(visible = allUpscaleActivities.isNotEmpty()) {
+                UpscaleActivityIndicator(allUpscaleActivities)
             }
         }
 
@@ -672,6 +684,31 @@ private fun BottomSheetImageSettings(
         }
     }
 
+}
+
+@Composable
+private fun UpscaleActivityIndicator(activities: Map<Int, UpscaleStatus>) {
+    if (activities.isEmpty()) return
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(end = 8.dp)
+    ) {
+        activities.entries.sortedBy { it.key }.forEach { (page, status) ->
+            when (status) {
+                UpscaleStatus.Upscaling -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 1.5.dp)
+                    Spacer(Modifier.width(2.dp))
+                    Text("p$page", style = MaterialTheme.typography.labelSmall)
+                    Spacer(Modifier.width(6.dp))
+                }
+                UpscaleStatus.Upscaled -> {
+                    Text("p$page ✓", style = MaterialTheme.typography.labelSmall)
+                    Spacer(Modifier.width(6.dp))
+                }
+                UpscaleStatus.Idle -> {}
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)

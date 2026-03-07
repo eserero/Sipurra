@@ -58,6 +58,7 @@ abstract class TilingReaderImage(
 ) : ReaderImage {
     final override val painter = MutableStateFlow<TiledPainter?>(null)
     final override val error = MutableStateFlow<Throwable?>(null)
+    override val upscaleStatus: StateFlow<UpscaleStatus> = MutableStateFlow(UpscaleStatus.Idle)
 
     final override val originalSize = MutableStateFlow<IntSize?>(null)
     final override val displaySize = MutableStateFlow<IntSize?>(null)

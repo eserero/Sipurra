@@ -132,7 +132,7 @@ object AppFilterChipDefaults {
             Color.Black else Color.White
         return FilterChipDefaults.filterChipColors(
             containerColor = Color.Transparent,
-            labelColor = accent,
+            labelColor = MaterialTheme.colorScheme.onSurface,
             selectedContainerColor = accent,
             selectedLabelColor = onAccent,
         )

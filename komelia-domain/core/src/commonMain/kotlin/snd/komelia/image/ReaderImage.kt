@@ -6,6 +6,12 @@ import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.roundToInt
 
+sealed class UpscaleStatus {
+    data object Idle : UpscaleStatus()
+    data object Upscaling : UpscaleStatus()
+    data object Upscaled : UpscaleStatus()
+}
+
 interface ReaderImage : AutoCloseable {
     val pageId: PageId
 
@@ -14,6 +20,7 @@ interface ReaderImage : AutoCloseable {
     val currentSize: StateFlow<IntSize?>
     val painter: StateFlow<Painter?>
     val error: StateFlow<Throwable?>
+    val upscaleStatus: StateFlow<UpscaleStatus>
 
     /**
      * request an asynchronous update.
