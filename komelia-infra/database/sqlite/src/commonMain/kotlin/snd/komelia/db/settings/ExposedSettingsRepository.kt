@@ -43,6 +43,9 @@ class ExposedSettingsRepository(database: Database) : ExposedRepository(database
                 it[accentColor] = settings.accentColor?.toString(16)
                 it[useNewLibraryUI] = settings.useNewLibraryUI
                 it[cardLayoutBelow] = settings.cardLayoutBelow
+                it[immersiveColorEnabled] = settings.immersiveColorEnabled
+                it[immersiveColorAlpha] = settings.immersiveColorAlpha
+                it[lastSelectedLibraryId] = settings.lastSelectedLibraryId
             }
         }
     }
@@ -68,6 +71,9 @@ class ExposedSettingsRepository(database: Database) : ExposedRepository(database
             accentColor = get(AppSettingsTable.accentColor)?.toLong(16),
             useNewLibraryUI = get(AppSettingsTable.useNewLibraryUI),
             cardLayoutBelow = get(AppSettingsTable.cardLayoutBelow),
+            immersiveColorEnabled = get(AppSettingsTable.immersiveColorEnabled),
+            immersiveColorAlpha = get(AppSettingsTable.immersiveColorAlpha),
+            lastSelectedLibraryId = get(AppSettingsTable.lastSelectedLibraryId),
         )
     }
 

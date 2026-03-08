@@ -49,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -61,6 +62,8 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import snd.komelia.ui.LocalAnimatedVisibilityScope
+import snd.komelia.ui.LocalImmersiveColorAlpha
+import snd.komelia.ui.LocalImmersiveColorEnabled
 import snd.komelia.ui.LocalRawNavBarHeight
 import snd.komelia.ui.LocalRawStatusBarHeight
 import snd.komelia.ui.LocalSharedTransitionScope
@@ -113,7 +116,14 @@ fun ImmersiveDetailScaffold(
     cardContent: @Composable ColumnScope.(expandFraction: Float) -> Unit,
 ) {
     val density = LocalDensity.current
-    val backgroundColor = cardColor ?: MaterialTheme.colorScheme.surfaceVariant
+    val immersiveColorEnabled = LocalImmersiveColorEnabled.current
+    val immersiveColorAlpha = LocalImmersiveColorAlpha.current
+    val surface = MaterialTheme.colorScheme.surface
+    val backgroundColor = if (cardColor != null && immersiveColorEnabled) {
+        cardColor.copy(alpha = immersiveColorAlpha).compositeOver(surface)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
 
     // Read shared transition scopes OUTSIDE BoxWithConstraints (which uses SubcomposeLayout).
     // SubcomposeLayout defers content composition to the layout phase, so any CompositionLocal

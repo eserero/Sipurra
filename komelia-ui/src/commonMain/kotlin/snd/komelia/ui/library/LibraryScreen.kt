@@ -1,23 +1,22 @@
 package snd.komelia.ui.library
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -27,8 +26,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
@@ -40,6 +40,7 @@ import snd.komelia.ui.LoadState.Error
 import snd.komelia.ui.LoadState.Loading
 import snd.komelia.ui.LoadState.Success
 import snd.komelia.ui.LoadState.Uninitialized
+import snd.komelia.ui.LocalAccentColor
 import snd.komelia.ui.LocalKomgaState
 import snd.komelia.ui.LocalMainScreenViewModel
 import snd.komelia.ui.LocalOfflineMode
@@ -47,9 +48,10 @@ import snd.komelia.ui.LocalReloadEvents
 import snd.komelia.ui.LocalViewModelFactory
 import snd.komelia.ui.ReloadableScreen
 import snd.komelia.ui.collection.CollectionScreen
-import snd.komelia.ui.common.components.AppFilterChipDefaults
+import snd.komelia.ui.common.components.AppSuggestionChipDefaults
 import snd.komelia.ui.common.components.ErrorContent
 import snd.komelia.ui.common.components.LoadingMaxSizeIndicator
+import snd.komelia.ui.common.components.PageSizeSelectionDropdown
 import snd.komelia.ui.common.menus.LibraryActionsMenu
 import snd.komelia.ui.common.menus.LibraryMenuActions
 import snd.komelia.ui.library.LibraryTab.COLLECTIONS
@@ -99,11 +101,50 @@ class LibraryScreen(
                 is Error -> ErrorContent(message = state.exception.message ?: "Unknown Error", onReload = vm::reload)
                 Uninitialized, Loading, is Success -> {
                     Column {
+                        val (totalCountInfo, onPageSizeChange) = when (vm.currentTab) {
+                            SERIES -> {
+                                val state = vm.seriesTabState
+                                Triple(
+                                    state.totalSeriesCount,
+                                    "series",
+                                    state.pageLoadSize.collectAsState().value
+                                ) to state::onPageSizeChange
+                            }
+
+                            COLLECTIONS -> {
+                                val state = vm.collectionsTabState
+                                Triple(
+                                    state.totalCollections,
+                                    if (state.totalCollections > 1) "collections" else "collection",
+                                    state.pageSize
+                                ) to state::onPageSizeChange
+                            }
+
+                            READ_LISTS -> {
+                                val state = vm.readListsTabState
+                                Triple(
+                                    state.totalReadLists,
+                                    if (state.totalReadLists > 1) "read lists" else "read list",
+                                    state.pageSize
+                                ) to state::onPageSizeChange
+                            }
+                        }
+                        val (totalCount, countLabel, pageSize) = totalCountInfo
+
                         if (vm.showToolbar.collectAsState().value) {
                             LibraryToolBar(
                                 library = vm.library.collectAsState().value,
-                                currentTab = vm.currentTab,
                                 libraryActions = vm.libraryActions(),
+                                totalCount = totalCount,
+                                countLabel = countLabel,
+                                pageSize = pageSize,
+                                onPageSizeChange = onPageSizeChange
+                            )
+                        }
+
+                        val segmentedButtons = @Composable {
+                            LibrarySegmentedButtons(
+                                currentTab = vm.currentTab,
                                 collectionsCount = vm.collectionsCount,
                                 readListsCount = vm.readListsCount,
                                 onBrowseClick = vm::toBrowseTab,
@@ -113,9 +154,9 @@ class LibraryScreen(
                         }
 
                         when (vm.currentTab) {
-                            SERIES -> BrowseTab(vm.seriesTabState)
-                            COLLECTIONS -> CollectionsTab(vm.collectionsTabState)
-                            READ_LISTS -> ReadListsTab(vm.readListsTabState)
+                            SERIES -> BrowseTab(vm.seriesTabState, segmentedButtons)
+                            COLLECTIONS -> CollectionsTab(vm.collectionsTabState, segmentedButtons)
+                            READ_LISTS -> ReadListsTab(vm.readListsTabState, segmentedButtons)
                         }
                     }
                 }
@@ -125,7 +166,7 @@ class LibraryScreen(
     }
 
     @Composable
-    private fun BrowseTab(seriesTabState: LibrarySeriesTabState) {
+    private fun BrowseTab(seriesTabState: LibrarySeriesTabState, beforeContent: @Composable () -> Unit) {
         val navigator = LocalNavigator.currentOrThrow
         LaunchedEffect(libraryId) { seriesTabState.initialize(seriesFilter) }
         DisposableEffect(Unit) {
@@ -140,7 +181,6 @@ class LibraryScreen(
             )
 
             else -> {
-                val loading = state is Loading || state is Uninitialized
                 SeriesListContent(
                     series = seriesTabState.series,
                     seriesActions = seriesTabState.seriesMenuActions(),
@@ -152,7 +192,6 @@ class LibraryScreen(
                     selectedSeries = seriesTabState.selectedSeries,
                     onSeriesSelect = seriesTabState::onSeriesSelect,
 
-                    isLoading = loading,
                     filterState = seriesTabState.filterState,
 
                     currentPage = seriesTabState.currentSeriesPage,
@@ -167,13 +206,14 @@ class LibraryScreen(
                     bookMenuActions = seriesTabState.bookMenuActions(),
                     onBookClick = { navigator.push(bookScreen(it)) },
                     onBookReadClick = { book, mark -> navigator.push(readerScreen(book, mark)) },
+                    beforeContent = beforeContent
                 )
             }
         }
     }
 
     @Composable
-    private fun CollectionsTab(collectionsTabState: LibraryCollectionsTabState) {
+    private fun CollectionsTab(collectionsTabState: LibraryCollectionsTabState, beforeContent: @Composable () -> Unit) {
         val navigator = LocalNavigator.currentOrThrow
         LaunchedEffect(libraryId) { collectionsTabState.initialize() }
         DisposableEffect(Unit) {
@@ -203,7 +243,8 @@ class LibraryScreen(
                     onPageChange = collectionsTabState::onPageChange,
                     onPageSizeChange = collectionsTabState::onPageSizeChange,
 
-                    minSize = collectionsTabState.cardWidth.collectAsState().value
+                    minSize = collectionsTabState.cardWidth.collectAsState().value,
+                    beforeContent = beforeContent
                 )
 
             }
@@ -212,7 +253,7 @@ class LibraryScreen(
     }
 
     @Composable
-    private fun ReadListsTab(readListTabState: LibraryReadListsTabState) {
+    private fun ReadListsTab(readListTabState: LibraryReadListsTabState, beforeContent: @Composable () -> Unit) {
         val navigator = LocalNavigator.currentOrThrow
         LaunchedEffect(libraryId) { readListTabState.initialize() }
         DisposableEffect(Unit) {
@@ -238,7 +279,8 @@ class LibraryScreen(
                     onPageChange = readListTabState::onPageChange,
                     onPageSizeChange = readListTabState::onPageSizeChange,
 
-                    minSize = readListTabState.cardWidth.collectAsState().value
+                    minSize = readListTabState.cardWidth.collectAsState().value,
+                    beforeContent = beforeContent
                 )
             }
         }
@@ -246,101 +288,135 @@ class LibraryScreen(
 
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryToolBar(
     library: KomgaLibrary?,
-    currentTab: LibraryTab,
     libraryActions: LibraryMenuActions,
-    collectionsCount: Int,
-    readListsCount: Int,
-    onBrowseClick: () -> Unit,
-    onCollectionsClick: () -> Unit,
-    onReadListsClick: () -> Unit,
+    totalCount: Int,
+    countLabel: String,
+    pageSize: Int,
+    onPageSizeChange: (Int) -> Unit,
 ) {
-
-    val chipColors = AppFilterChipDefaults.filterChipColors()
     var showOptionsMenu by remember { mutableStateOf(false) }
     val isAdmin = LocalKomgaState.current.authenticatedUser.collectAsState().value?.roleAdmin() ?: true
     val isOffline = LocalOfflineMode.current.collectAsState().value
     val mainScreenVm = LocalMainScreenViewModel.current
     val coroutineScope = rememberCoroutineScope()
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Spacer(Modifier.width(15.dp))
-        Text(
-            library?.let { library.name } ?: "All Libraries",
-            modifier = Modifier.width(68.dp).clickable { coroutineScope.launch { mainScreenVm.toggleNavBar() } },
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+    Column(modifier = Modifier.fillMaxWidth()) {
+        TopAppBar(
+            title = {
+                Text(
+                    library?.let { library.name } ?: "All Libraries",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
+            navigationIcon = {
+                IconButton(onClick = { coroutineScope.launch { mainScreenVm.toggleNavBar() } }) {
+                    Icon(Icons.Rounded.Menu, contentDescription = null)
+                }
+            },
+            actions = {
+                if (totalCount != 0) {
+                    SuggestionChip(
+                        onClick = {},
+                        label = { Text("$totalCount $countLabel") },
+                        shape = AppSuggestionChipDefaults.shape(),
+                        modifier = Modifier.padding(end = 5.dp)
+                    )
+
+                    PageSizeSelectionDropdown(pageSize, onPageSizeChange)
+                }
+
+                if (library != null && (isAdmin || isOffline)) {
+                    Box {
+                        IconButton(
+                            onClick = { showOptionsMenu = true }
+                        ) {
+                            Icon(
+                                Icons.Rounded.MoreVert,
+                                contentDescription = null,
+                            )
+                        }
+
+                        LibraryActionsMenu(
+                            library = library,
+                            actions = libraryActions,
+                            expanded = showOptionsMenu,
+                            onDismissRequest = { showOptionsMenu = false }
+                        )
+                    }
+                }
+            }
         )
+    }
+}
 
-        LazyRow(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (collectionsCount > 0 || readListsCount > 0)
-                item {
-                    FilterChip(
-                        onClick = onBrowseClick,
-                        selected = currentTab == SERIES,
-                        label = { Text("Series") },
-                        colors = chipColors,
-                        shape = AppFilterChipDefaults.shape(),
-                        border = AppFilterChipDefaults.filterChipBorder(selected = currentTab == SERIES),
-                    )
-                }
-
-            if (collectionsCount > 0)
-                item {
-                    FilterChip(
-                        onClick = onCollectionsClick,
-                        selected = currentTab == COLLECTIONS,
-                        label = { Text("Collections") },
-                        colors = chipColors,
-                        shape = AppFilterChipDefaults.shape(),
-                        border = AppFilterChipDefaults.filterChipBorder(selected = currentTab == COLLECTIONS),
-                    )
-                }
-
-            if (readListsCount > 0)
-                item {
-                    FilterChip(
-                        onClick = onReadListsClick,
-                        selected = currentTab == READ_LISTS,
-                        label = { Text("Read Lists") },
-                        colors = chipColors,
-                        shape = AppFilterChipDefaults.shape(),
-                        border = AppFilterChipDefaults.filterChipBorder(selected = currentTab == READ_LISTS),
-                    )
-                }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LibrarySegmentedButtons(
+    currentTab: LibraryTab,
+    collectionsCount: Int,
+    readListsCount: Int,
+    onBrowseClick: () -> Unit,
+    onCollectionsClick: () -> Unit,
+    onReadListsClick: () -> Unit,
+) {
+    if (collectionsCount > 0 || readListsCount > 0) {
+        val tabCount = getTabCount(collectionsCount, readListsCount)
+        val accentColor = LocalAccentColor.current
+        val colors = if (accentColor != null) {
+            SegmentedButtonDefaults.colors(
+                activeContainerColor = accentColor,
+                activeContentColor = if (accentColor.luminance() > 0.5f) Color.Black else Color.White
+            )
+        } else {
+            SegmentedButtonDefaults.colors()
         }
 
-        if (library != null && (isAdmin || isOffline)) {
-            Box {
-                IconButton(
-                    onClick = { showOptionsMenu = true }
-                ) {
-                    Icon(
-                        Icons.Rounded.MoreVert,
-                        contentDescription = null,
-                    )
-                }
-
-                LibraryActionsMenu(
-                    library = library,
-                    actions = libraryActions,
-                    expanded = showOptionsMenu,
-                    onDismissRequest = { showOptionsMenu = false }
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            SegmentedButton(
+                selected = currentTab == SERIES,
+                onClick = onBrowseClick,
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = tabCount),
+                label = { Text("Series") },
+                colors = colors
+            )
+            var index = 1
+            if (collectionsCount > 0) {
+                SegmentedButton(
+                    selected = currentTab == COLLECTIONS,
+                    onClick = onCollectionsClick,
+                    shape = SegmentedButtonDefaults.itemShape(index = index++, count = tabCount),
+                    label = { Text("Collections") },
+                    colors = colors
+                )
+            }
+            if (readListsCount > 0) {
+                SegmentedButton(
+                    selected = currentTab == READ_LISTS,
+                    onClick = onReadListsClick,
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = tabCount),
+                    label = { Text("Read Lists") },
+                    colors = colors
                 )
             }
         }
     }
 }
 
+private fun getTabCount(collectionsCount: Int, readListsCount: Int): Int {
+    var count = 1
+    if (collectionsCount > 0) count++
+    if (readListsCount > 0) count++
+    return count
+}
 
 data class SeriesScreenFilter(
     val publicationStatus: List<KomgaSeriesStatus>? = null,

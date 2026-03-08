@@ -68,9 +68,11 @@ import snd.komelia.DefaultDateTimeFormats.localDateTimeFormat
 import snd.komelia.image.coil.BookDefaultThumbnailRequest
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.ui.book.BookInfoColumn
+import coil3.compose.rememberAsyncImagePainter
 import snd.komelia.ui.common.images.ThumbnailImage
 import snd.komelia.ui.common.immersive.ImmersiveDetailFab
 import snd.komelia.ui.common.immersive.ImmersiveDetailScaffold
+import snd.komelia.ui.common.immersive.extractDominantColor
 import snd.komelia.ui.common.menus.BookActionsMenu
 import snd.komelia.ui.common.menus.BookMenuActions
 import snd.komelia.ui.dialogs.ConfirmationDialog
@@ -196,11 +198,16 @@ fun ImmersiveBookContent(
             // Memoize to avoid a new Random requestCache on every recomposition, which would
             // cause ThumbnailImage's remember(data,cacheKey) to rebuild the ImageRequest and flash.
             val coverData = remember(pageBook.id) { BookDefaultThumbnailRequest(pageBook.id) }
+            val coverPainter = rememberAsyncImagePainter(model = coverData)
+            val dominantColor = remember(pageBook.id) { mutableStateOf<Color?>(null) }
+            LaunchedEffect(pageBook.id) {
+                dominantColor.value = extractDominantColor(coverPainter)
+            }
 
             ImmersiveDetailScaffold(
                 coverData = coverData,
                 coverKey = pageBook.id.value,
-                cardColor = null,
+                cardColor = dominantColor.value,
                 immersive = true,
                 initiallyExpanded = initiallyExpanded,
                 onExpandChange = onExpandChange,

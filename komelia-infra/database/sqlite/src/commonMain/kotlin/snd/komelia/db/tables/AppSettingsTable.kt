@@ -26,6 +26,9 @@ object AppSettingsTable : Table("AppSettings") {
     val accentColor = text("accent_color").nullable()
     val useNewLibraryUI = bool("use_new_library_ui").default(true)
     val cardLayoutBelow = bool("card_layout_below").default(false)
+    val immersiveColorEnabled = bool("immersive_color_enabled").default(true)
+    val immersiveColorAlpha = float("immersive_color_alpha").default(0.12f)
+    val lastSelectedLibraryId = text("last_selected_library_id").nullable()
 
     override val primaryKey = PrimaryKey(version)
-}
+    }

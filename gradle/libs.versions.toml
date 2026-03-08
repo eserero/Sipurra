@@ -11,6 +11,7 @@ androidx-core-ktx = "1.17.0"
 androidx-datastore = "1.1.7"
 androix-documentfile = "1.1.0"
 androidx-window = "1.5.0"
+androidx-palette = "1.0.0"
 androidx-workManager = "2.11.0"
 
 cache4k = "0.14.0"
@@ -57,6 +58,7 @@ androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx
 androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "androidx-datastore" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "androix-documentfile" }
 androidx-window = { module = "androidx.window:window", version.ref = "androidx-window" }
+androidx-palette = { module = "androidx.palette:palette-ktx", version.ref = "androidx-palette" }
 androidx-workManager = { module = "androidx.work:work-runtime", version.ref = "androidx-workManager" }
 androidx-workManager-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-workManager" }
 

@@ -59,9 +59,10 @@ class LibraryViewModel(
     private val appNotifications: AppNotifications,
     private val komgaEvents: SharedFlow<KomgaEvent>,
     libraryFlow: Flow<KomgaLibrary?>,
-    settingsRepository: CommonSettingsRepository,
+    private val settingsRepository: CommonSettingsRepository,
 ) : StateScreenModel<LoadState<Unit>>(Uninitialized) {
-    val library = libraryFlow.stateIn(screenModelScope, SharingStarted.Eagerly, null)
+    val library = libraryFlow.onEach { settingsRepository.putLastSelectedLibraryId(it?.id) }
+        .stateIn(screenModelScope, SharingStarted.Eagerly, null)
     val cardWidth = settingsRepository.getCardWidth().map { Dp(it.toFloat()) }
         .stateIn(screenModelScope, SharingStarted.Eagerly, defaultCardWidth.dp)
 

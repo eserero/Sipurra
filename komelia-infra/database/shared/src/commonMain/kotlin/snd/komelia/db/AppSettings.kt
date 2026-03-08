@@ -26,4 +26,7 @@ data class AppSettings(
     val accentColor: Long? = null,
     val useNewLibraryUI: Boolean = true,
     val cardLayoutBelow: Boolean = false,
+    val immersiveColorEnabled: Boolean = true,
+    val immersiveColorAlpha: Float = 0.12f,
+    val lastSelectedLibraryId: String? = null,
 )

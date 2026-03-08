@@ -1,28 +1,26 @@
 package snd.komelia.ui
 
-import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsBottomHeight
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.LocalLibrary
@@ -34,27 +32,20 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -77,7 +68,6 @@ import snd.komelia.ui.book.bookScreen
 import snd.komelia.ui.home.HomeScreen
 import snd.komelia.ui.library.LibraryScreen
 import snd.komelia.ui.oneshot.OneshotScreen
-import snd.komelia.ui.series.SeriesScreen
 import snd.komelia.ui.platform.PlatformType.DESKTOP
 import snd.komelia.ui.platform.PlatformType.MOBILE
 import snd.komelia.ui.platform.PlatformType.WEB_KOMF
@@ -85,6 +75,7 @@ import snd.komelia.ui.platform.WindowSizeClass
 import snd.komelia.ui.platform.WindowSizeClass.FULL
 import snd.komelia.ui.platform.cursorForHand
 import snd.komelia.ui.search.SearchScreen
+import snd.komelia.ui.series.SeriesScreen
 import snd.komelia.ui.series.seriesScreen
 import snd.komelia.ui.settings.MobileSettingsScreen
 import snd.komelia.ui.settings.SettingsScreen
@@ -201,14 +192,13 @@ class MainScreen(
                     if (useNewLibraryUI) {
                         AppNavigationBar(
                             navigator = navigator,
-                            toggleLibrariesDrawer = { coroutineScope.launch { vm.toggleNavBar() } },
-                            containerColor = if (isImmersiveScreen) MaterialTheme.colorScheme.surfaceVariant
-                            else LocalNavBarColor.current ?: MaterialTheme.colorScheme.surface
+                            vm = vm,
+                            containerColor = LocalNavBarColor.current ?: MaterialTheme.colorScheme.surfaceVariant
                         )
                     } else {
                         StandardBottomNavigationBar(
                             navigator = navigator,
-                            toggleLibrariesDrawer = { coroutineScope.launch { vm.toggleNavBar() } },
+                            vm = vm,
                             modifier = Modifier
                         )
                     }
@@ -252,8 +242,8 @@ class MainScreen(
     @Composable
     private fun AppNavigationBar(
         navigator: Navigator,
-        toggleLibrariesDrawer: () -> Unit,
-        containerColor: Color = LocalNavBarColor.current ?: MaterialTheme.colorScheme.surface,
+        vm: MainScreenViewModel,
+        containerColor: Color = LocalNavBarColor.current ?: MaterialTheme.colorScheme.surfaceVariant,
     ) {
         val accentColor = LocalAccentColor.current
         val itemColors = if (accentColor != null) {
@@ -270,8 +260,8 @@ class MainScreen(
         ) {
             NavigationBarItem(
                 alwaysShowLabel = true,
-                selected = false,
-                onClick = toggleLibrariesDrawer,
+                selected = navigator.lastItem is LibraryScreen,
+                onClick = vm::navigateToLibrary,
                 icon = { Icon(Icons.Rounded.LocalLibrary, null) },
                 label = { Text("Libraries") },
                 colors = itemColors
@@ -309,11 +299,11 @@ class MainScreen(
     @Composable
     private fun StandardBottomNavigationBar(
         navigator: Navigator,
-        toggleLibrariesDrawer: () -> Unit,
+        vm: MainScreenViewModel,
         modifier: Modifier
     ) {
         Surface(
-            color = MaterialTheme.colorScheme.surface,
+            color = MaterialTheme.colorScheme.surfaceVariant,
         ) {
             Column {
                 HorizontalDivider()
@@ -324,8 +314,8 @@ class MainScreen(
                     CompactNavButton(
                         text = "Libraries",
                         icon = Icons.Rounded.LocalLibrary,
-                        onClick = { toggleLibrariesDrawer() },
-                        isSelected = false,
+                        onClick = vm::navigateToLibrary,
+                        isSelected = navigator.lastItem is LibraryScreen,
                         modifier = Modifier.weight(1f)
                     )
 
@@ -371,6 +361,7 @@ class MainScreen(
         val accentColor = LocalAccentColor.current
         Surface(
             modifier = modifier,
+            color = Color.Transparent,
             contentColor =
             if (isSelected) accentColor ?: MaterialTheme.colorScheme.secondary
             else contentColorFor(MaterialTheme.colorScheme.surfaceVariant)

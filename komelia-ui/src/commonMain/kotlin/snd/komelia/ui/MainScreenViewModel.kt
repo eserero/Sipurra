@@ -16,6 +16,7 @@ import snd.komelia.AppNotifications
 import snd.komelia.komga.api.KomgaLibraryApi
 import snd.komelia.offline.settings.OfflineSettingsRepository
 import snd.komelia.offline.tasks.OfflineTaskEmitter
+import snd.komelia.settings.CommonSettingsRepository
 import snd.komelia.ui.book.BookScreen
 import snd.komelia.ui.collection.CollectionScreen
 import snd.komelia.ui.common.menus.LibraryMenuActions
@@ -42,6 +43,7 @@ class MainScreenViewModel(
     private val komgaEvents: SharedFlow<KomgaEvent>,
     private val screenReloadFlow: MutableSharedFlow<Unit>,
     private val offlineSettingsRepository: OfflineSettingsRepository,
+    private val settingsRepository: CommonSettingsRepository,
     private val taskEmitter: OfflineTaskEmitter,
     val searchBarState: SearchBarState,
     val notificationsState: NotificationsState,
@@ -49,6 +51,9 @@ class MainScreenViewModel(
 ) : ScreenModel {
 
     val isOffline = offlineSettingsRepository.getOfflineMode().stateIn(screenModelScope, SharingStarted.Eagerly, false)
+    val lastSelectedLibraryId = settingsRepository.getLastSelectedLibraryId()
+        .stateIn(screenModelScope, SharingStarted.Eagerly, null)
+
     private val navigatorFlow = MutableStateFlow<Navigator?>(null)
     private val navigator
         get() = navigatorFlow.value ?: error("main screen navigator is not initialized")
@@ -68,6 +73,12 @@ class MainScreenViewModel(
     suspend fun toggleNavBar() {
         if (navBarState.currentValue == DrawerValue.Closed) navBarState.open()
         else navBarState.close()
+    }
+
+    fun navigateToLibrary() {
+        if (navigator.lastItem !is LibraryScreen) {
+            navigator.replaceAll(LibraryScreen(lastSelectedLibraryId.value))
+        }
     }
 
     fun getLibraryActions(): LibraryMenuActions {

@@ -35,6 +35,7 @@ fun CollectionLazyCardGrid(
     onPageChange: (Int) -> Unit,
     minSize: Dp = 200.dp,
     scrollState: LazyGridState = rememberLazyGridState(),
+    beforeContent: (@Composable () -> Unit)? = null,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val useNewLibraryUI = LocalUseNewLibraryUI.current
@@ -48,6 +49,11 @@ fun CollectionLazyCardGrid(
             verticalArrangement = Arrangement.spacedBy(cardSpacing),
             contentPadding = PaddingValues(start = horizontalPadding, end = horizontalPadding, bottom = 30.dp),
         ) {
+            beforeContent?.let {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    it()
+                }
+            }
             item(
                 span = { GridItemSpan(maxLineSpan) },
             ) {

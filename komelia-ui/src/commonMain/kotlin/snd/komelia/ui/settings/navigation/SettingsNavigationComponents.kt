@@ -34,7 +34,7 @@ fun SettingsGroup(
 ) {
     val theme = LocalTheme.current
     val containerColor = if (theme.type == Theme.ThemeType.DARK) Color(43, 43, 43)
-    else MaterialTheme.colorScheme.primaryContainer
+    else MaterialTheme.colorScheme.surfaceVariant
 
     Column(
         modifier = Modifier

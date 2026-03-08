@@ -70,6 +70,10 @@ fun AppearanceSettingsContent(
     onUseNewLibraryUIChange: (Boolean) -> Unit,
     cardLayoutBelow: Boolean,
     onCardLayoutBelowChange: (Boolean) -> Unit,
+    immersiveColorEnabled: Boolean,
+    onImmersiveColorEnabledChange: (Boolean) -> Unit,
+    immersiveColorAlpha: Float,
+    onImmersiveColorAlphaChange: (Float) -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -141,6 +145,42 @@ fun AppearanceSettingsContent(
                 selectedOptionContent = { ColorLabel(it) },
                 optionContent = { ColorLabel(it) }
             )
+
+            HorizontalDivider()
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("Immersive card color", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "Tint the detail card background with the cover's dominant color",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = immersiveColorEnabled,
+                    onCheckedChange = onImmersiveColorEnabledChange,
+                    modifier = Modifier.cursorForHand(),
+                )
+            }
+
+            if (immersiveColorEnabled) {
+                Text(
+                    "Tint strength: ${(immersiveColorAlpha * 100).roundToInt()}%",
+                    modifier = Modifier.padding(horizontal = 10.dp),
+                )
+                Slider(
+                    value = immersiveColorAlpha,
+                    onValueChange = onImmersiveColorAlphaChange,
+                    valueRange = 0.05f..0.30f,
+                    colors = AppSliderDefaults.colors(accentColor = accentColor),
+                    modifier = Modifier.cursorForHand().padding(end = 20.dp),
+                )
+            }
         }
 
         HorizontalDivider()

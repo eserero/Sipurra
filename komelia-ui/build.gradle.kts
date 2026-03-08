@@ -94,6 +94,7 @@ kotlin {
         }
 
         androidMain.dependencies {
+            implementation(libs.androidx.palette)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.datastore)
             implementation(libs.commons.compress)

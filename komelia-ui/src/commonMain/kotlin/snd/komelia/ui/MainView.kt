@@ -75,6 +75,8 @@ fun MainView(
     var accentColor by remember { mutableStateOf<Color?>(null) }
     var useNewLibraryUI by remember { mutableStateOf(true) }
     var cardLayoutBelow by remember { mutableStateOf(false) }
+    var immersiveColorEnabled by remember { mutableStateOf(true) }
+    var immersiveColorAlpha by remember { mutableStateOf(0.12f) }
     LaunchedEffect(dependencies) {
         dependencies?.appRepositories?.settingsRepository?.getAppTheme()?.collect { theme = it.toTheme() }
     }
@@ -93,6 +95,14 @@ fun MainView(
     LaunchedEffect(dependencies) {
         dependencies?.appRepositories?.settingsRepository?.getCardLayoutBelow()
             ?.collect { cardLayoutBelow = it }
+    }
+    LaunchedEffect(dependencies) {
+        dependencies?.appRepositories?.settingsRepository?.getImmersiveColorEnabled()
+            ?.collect { immersiveColorEnabled = it }
+    }
+    LaunchedEffect(dependencies) {
+        dependencies?.appRepositories?.settingsRepository?.getImmersiveColorAlpha()
+            ?.collect { immersiveColorAlpha = it }
     }
 
     MaterialTheme(colorScheme = theme.colorScheme) {
@@ -142,6 +152,8 @@ fun MainView(
                 LocalAccentColor provides accentColor,
                 LocalUseNewLibraryUI provides useNewLibraryUI,
                 LocalCardLayoutBelow provides cardLayoutBelow,
+                LocalImmersiveColorEnabled provides immersiveColorEnabled,
+                LocalImmersiveColorAlpha provides immersiveColorAlpha,
             ) {
                 MainContent(platformType, dependencies.komgaSharedState)
 

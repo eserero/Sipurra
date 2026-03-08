@@ -29,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
@@ -36,6 +38,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import snd.komelia.komga.api.model.KomeliaBook
+import snd.komelia.ui.LocalAccentColor
 import snd.komelia.ui.platform.cursorForHand
 import snd.komga.client.book.MediaProfile.EPUB
 import snd.webview.webviewIsAvailable
@@ -50,8 +53,13 @@ fun BookReadButton(
     onIncognitoRead: () -> Unit,
     onDropdownOpenChange: (Boolean) -> Unit = {}
 ) {
-    val containerColor = MaterialTheme.colorScheme.tertiaryContainer
-    val contentColor = MaterialTheme.colorScheme.onTertiary
+    val accentColor = LocalAccentColor.current
+    val containerColor = accentColor ?: MaterialTheme.colorScheme.tertiaryContainer
+    val contentColor = if (accentColor != null) {
+        if (containerColor.luminance() > 0.5f) Color.Black else Color.White
+    } else {
+        MaterialTheme.colorScheme.onTertiary
+    }
     Surface(
         shape = CircleShape,
         modifier = modifier.semantics { role = Role.Button }.pointerHoverIcon(PointerIcon.Hand),

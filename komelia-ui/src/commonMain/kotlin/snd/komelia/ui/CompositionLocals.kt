@@ -45,6 +45,8 @@ val LocalNavBarColor = compositionLocalOf<Color?> { null }
 val LocalAccentColor = compositionLocalOf<Color?> { null }
 val LocalUseNewLibraryUI = compositionLocalOf { true }
 val LocalCardLayoutBelow = compositionLocalOf { false }
+val LocalImmersiveColorEnabled = compositionLocalOf { true }
+val LocalImmersiveColorAlpha = compositionLocalOf { 0.12f }
 val LocalRawStatusBarHeight = staticCompositionLocalOf { 0.dp }
 val LocalRawNavBarHeight = staticCompositionLocalOf { 0.dp }
 

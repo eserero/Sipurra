@@ -1,7 +1,6 @@
 package snd.komelia.ui.series.list
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
@@ -32,10 +31,8 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -57,8 +54,6 @@ import snd.komelia.ui.LocalStrings
 import snd.komelia.ui.LocalUseNewLibraryUI
 import snd.komelia.ui.LocalWindowWidth
 import snd.komelia.ui.common.cards.BookImageCard
-import snd.komelia.ui.common.components.AppSuggestionChipDefaults
-import snd.komelia.ui.common.components.PageSizeSelectionDropdown
 import snd.komelia.ui.common.itemlist.SeriesLazyCardGrid
 import snd.komelia.ui.common.menus.BookMenuActions
 import snd.komelia.ui.common.menus.SeriesMenuActions
@@ -87,7 +82,6 @@ fun SeriesListContent(
     selectedSeries: List<KomgaSeries>,
     onSeriesSelect: (KomgaSeries) -> Unit,
 
-    isLoading: Boolean,
     filterState: SeriesFilterState?,
 
     totalPages: Int,
@@ -102,6 +96,7 @@ fun SeriesListContent(
     bookMenuActions: BookMenuActions? = null,
     onBookClick: (KomeliaBook) -> Unit = {},
     onBookReadClick: (KomeliaBook, Boolean) -> Unit = { _, _ -> },
+    beforeContent: (@Composable () -> Unit)? = null,
 ) {
     val useNewLibraryUI = LocalUseNewLibraryUI.current
     val strings = LocalStrings.current.seriesFilter
@@ -136,44 +131,41 @@ fun SeriesListContent(
                 onPageChange = onPageChange,
 
                 beforeContent = {
-                    AnimatedVisibility(!editMode) {
-                        Column {
-                            if (useNewLibraryUI && keepReadingBooks.isNotEmpty() && bookMenuActions != null) {
-                                LibrarySectionHeader("Keep Reading")
-                                val gridPadding = 10.dp
-                                val density = LocalDensity.current
-                                LazyRow(
-                                    modifier = Modifier.layout { measurable, constraints ->
-                                        val insetPx = with(density) { gridPadding.roundToPx() }
-                                        val placeable = measurable.measure(
-                                            constraints.copy(maxWidth = constraints.maxWidth + insetPx * 2)
-                                        )
-                                        layout(constraints.maxWidth, placeable.height) {
-                                            placeable.place(-insetPx, 0)
+                    Column {
+                        beforeContent?.invoke()
+                        AnimatedVisibility(!editMode) {
+                            Column {
+                                if (useNewLibraryUI && keepReadingBooks.isNotEmpty() && bookMenuActions != null) {
+                                    LibrarySectionHeader("Keep Reading")
+                                    val gridPadding = 10.dp
+                                    val density = LocalDensity.current
+                                    LazyRow(
+                                        modifier = Modifier.layout { measurable, constraints ->
+                                            val insetPx = with(density) { gridPadding.roundToPx() }
+                                            val placeable = measurable.measure(
+                                                constraints.copy(maxWidth = constraints.maxWidth + insetPx * 2)
+                                            )
+                                            layout(constraints.maxWidth, placeable.height) {
+                                                placeable.place(-insetPx, 0)
+                                            }
+                                        },
+                                        contentPadding = PaddingValues(horizontal = gridPadding),
+                                        horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                    ) {
+                                        items(keepReadingBooks) { book ->
+                                            BookImageCard(
+                                                book = book,
+                                                onBookClick = { onBookClick(book) },
+                                                onBookReadClick = { onBookReadClick(book, it) },
+                                                bookMenuActions = bookMenuActions,
+                                                showSeriesTitle = true,
+                                                modifier = Modifier.width(minSize),
+                                            )
                                         }
-                                    },
-                                    contentPadding = PaddingValues(horizontal = gridPadding),
-                                    horizontalArrangement = Arrangement.spacedBy(7.dp),
-                                ) {
-                                    items(keepReadingBooks) { book ->
-                                        BookImageCard(
-                                            book = book,
-                                            onBookClick = { onBookClick(book) },
-                                            onBookReadClick = { onBookReadClick(book, it) },
-                                            bookMenuActions = bookMenuActions,
-                                            showSeriesTitle = true,
-                                            modifier = Modifier.width(minSize),
-                                        )
                                     }
                                 }
+                                if (useNewLibraryUI) LibrarySectionHeader("Browse")
                             }
-                            if (useNewLibraryUI) LibrarySectionHeader("Browse")
-                            ToolBar(
-                                seriesTotalCount = seriesTotalCount,
-                                pageSize = pageSize,
-                                onPageSizeChange = onPageSizeChange,
-                                isLoading = isLoading,
-                            )
                         }
                     }
                 },
@@ -286,41 +278,6 @@ private fun BulkActionsToolbar(
             }
 
             COMPACT, MEDIUM -> {}
-        }
-    }
-}
-
-@Composable
-private fun ToolBar(
-    seriesTotalCount: Int,
-    pageSize: Int,
-    onPageSizeChange: (Int) -> Unit,
-    isLoading: Boolean,
-) {
-    Box {
-        if (isLoading) {
-            LinearProgressIndicator(
-                color = MaterialTheme.colorScheme.tertiaryContainer,
-                trackColor = Color.Transparent,
-                modifier = Modifier.fillMaxWidth().animateContentSize(),
-            )
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            if (seriesTotalCount != 0) {
-                SuggestionChip(
-                    onClick = {},
-                    label = { Text("$seriesTotalCount series") },
-                    shape = AppSuggestionChipDefaults.shape(),
-                )
-
-                Spacer(Modifier.weight(1f))
-
-                PageSizeSelectionDropdown(pageSize, onPageSizeChange)
-            }
         }
     }
 }

@@ -29,6 +29,8 @@ class AppMigrations : MigrationResourcesProvider() {
         "V20__reader_tap_navigation_mode.sql",
         "V21__ncnn_upscaler_settings.sql",
         "V22__ncnn_upscale_on_load.sql",
+        "V23__last_selected_library.sql",
+        "V24__immersive_color_settings.sql",
     )
 
     override suspend fun getMigration(name: String): ByteArray? {

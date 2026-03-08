@@ -8,6 +8,7 @@ import snd.komelia.db.SettingsStateWrapper
 import snd.komelia.settings.CommonSettingsRepository
 import snd.komelia.settings.model.AppTheme
 import snd.komelia.settings.model.BooksLayout
+import snd.komga.client.library.KomgaLibraryId
 import snd.komelia.updates.AppVersion
 import kotlin.time.Instant
 
@@ -133,6 +134,26 @@ class SettingsRepositoryWrapper(
 
     override suspend fun putCardLayoutBelow(enabled: Boolean) {
         wrapper.transform { it.copy(cardLayoutBelow = enabled) }
+    }
+
+    override fun getImmersiveColorEnabled(): Flow<Boolean> =
+        wrapper.state.map { it.immersiveColorEnabled }.distinctUntilChanged()
+
+    override suspend fun putImmersiveColorEnabled(enabled: Boolean) =
+        wrapper.transform { it.copy(immersiveColorEnabled = enabled) }
+
+    override fun getImmersiveColorAlpha(): Flow<Float> =
+        wrapper.state.map { it.immersiveColorAlpha }.distinctUntilChanged()
+
+    override suspend fun putImmersiveColorAlpha(alpha: Float) =
+        wrapper.transform { it.copy(immersiveColorAlpha = alpha) }
+
+    override fun getLastSelectedLibraryId(): Flow<KomgaLibraryId?> {
+        return wrapper.state.map { it.lastSelectedLibraryId?.let { id -> KomgaLibraryId(id) } }.distinctUntilChanged()
+    }
+
+    override suspend fun putLastSelectedLibraryId(libraryId: KomgaLibraryId?) {
+        wrapper.transform { it.copy(lastSelectedLibraryId = libraryId?.value) }
     }
 
 }

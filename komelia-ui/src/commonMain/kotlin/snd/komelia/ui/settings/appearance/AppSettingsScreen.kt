@@ -35,6 +35,10 @@ class AppSettingsScreen : Screen {
                     onUseNewLibraryUIChange = vm::onUseNewLibraryUIChange,
                     cardLayoutBelow = vm.cardLayoutBelow,
                     onCardLayoutBelowChange = vm::onCardLayoutBelowChange,
+                    immersiveColorEnabled = vm.immersiveColorEnabled,
+                    onImmersiveColorEnabledChange = vm::onImmersiveColorEnabledChange,
+                    immersiveColorAlpha = vm.immersiveColorAlpha,
+                    onImmersiveColorAlphaChange = vm::onImmersiveColorAlphaChange,
                 )
                                 }
                             }

@@ -3,6 +3,7 @@ package snd.komelia.settings
 import kotlinx.coroutines.flow.Flow
 import snd.komelia.settings.model.AppTheme
 import snd.komelia.settings.model.BooksLayout
+import snd.komga.client.library.KomgaLibraryId
 import snd.komelia.updates.AppVersion
 import kotlin.time.Instant
 
@@ -51,4 +52,13 @@ interface CommonSettingsRepository {
 
     fun getCardLayoutBelow(): Flow<Boolean>
     suspend fun putCardLayoutBelow(enabled: Boolean)
+
+    fun getImmersiveColorEnabled(): Flow<Boolean>
+    suspend fun putImmersiveColorEnabled(enabled: Boolean)
+
+    fun getImmersiveColorAlpha(): Flow<Float>
+    suspend fun putImmersiveColorAlpha(alpha: Float)
+
+    fun getLastSelectedLibraryId(): Flow<KomgaLibraryId?>
+    suspend fun putLastSelectedLibraryId(libraryId: KomgaLibraryId?)
 }

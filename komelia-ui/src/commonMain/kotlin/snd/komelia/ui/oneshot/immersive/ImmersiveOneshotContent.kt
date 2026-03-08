@@ -64,9 +64,11 @@ import snd.komelia.ui.LocalKomgaEvents
 import snd.komelia.ui.LocalSharedTransitionScope
 import snd.komelia.ui.collection.SeriesCollectionsContent
 import snd.komelia.ui.common.components.AppFilterChipDefaults
+import coil3.compose.rememberAsyncImagePainter
 import snd.komelia.ui.common.images.ThumbnailImage
 import snd.komelia.ui.common.immersive.ImmersiveDetailFab
 import snd.komelia.ui.common.immersive.ImmersiveDetailScaffold
+import snd.komelia.ui.common.immersive.extractDominantColor
 import snd.komelia.ui.common.menus.BookMenuActions
 import snd.komelia.ui.common.menus.OneshotActionsMenu
 import snd.komelia.ui.dialogs.ConfirmationDialog
@@ -125,6 +127,12 @@ fun ImmersiveOneshotContent(
         }
     }
 
+    val coverPainter = rememberAsyncImagePainter(model = coverData)
+    val dominantColor = remember(series.id.value) { mutableStateOf<Color?>(null) }
+    LaunchedEffect(series.id.value, coverData) {
+        dominantColor.value = extractDominantColor(coverPainter)
+    }
+
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
 
@@ -162,7 +170,7 @@ fun ImmersiveOneshotContent(
         ImmersiveDetailScaffold(
             coverData = coverData,
             coverKey = series.id.value,
-            cardColor = null,
+            cardColor = dominantColor.value,
             immersive = true,
             initiallyExpanded = initiallyExpanded,
             onExpandChange = onExpandChange,

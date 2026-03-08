@@ -53,8 +53,10 @@ import snd.komelia.ui.collection.SeriesCollectionsContent
 import snd.komelia.ui.collection.SeriesCollectionsState
 import snd.komelia.ui.common.components.AppFilterChipDefaults
 import snd.komelia.ui.common.images.ThumbnailImage
+import coil3.compose.rememberAsyncImagePainter
 import snd.komelia.ui.common.immersive.ImmersiveDetailFab
 import snd.komelia.ui.common.immersive.ImmersiveDetailScaffold
+import snd.komelia.ui.common.immersive.extractDominantColor
 import snd.komelia.ui.common.menus.SeriesActionsMenu
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
@@ -161,10 +163,16 @@ fun ImmersiveSeriesContent(
         }
     }
 
+    val coverPainter = rememberAsyncImagePainter(model = coverData)
+    val dominantColor = remember(series.id.value) { mutableStateOf<Color?>(null) }
+    LaunchedEffect(series.id.value, coverData) {
+        dominantColor.value = extractDominantColor(coverPainter)
+    }
+
     ImmersiveDetailScaffold(
         coverData = coverData,
         coverKey = series.id.value,
-        cardColor = null,
+        cardColor = dominantColor.value,
         immersive = true,
         initiallyExpanded = initiallyExpanded,
         onExpandChange = onExpandChange,
