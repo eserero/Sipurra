@@ -1,28 +1,43 @@
 # Komelia - Komga media client
 
-## Fork Improvements
-This is a fork of [Komelia](https://github.com/Gaysuist/Komelia) with several enhancements and new features:
+## Fork Overview
+This is a specialized fork of [Komelia](https://github.com/Gaysuist/Komelia) focused on providing a premier **Android experience** through deep Material 3 integration, high-performance GPU upscaling, and a modernized UI tailored for mobile devices.
 
-### Library UI Changes
-*   **Immersive Detail Screens:** New immersive layout for Book, Series, and Oneshot screens where the cover artwork integrates with the status bar using adaptive color gradients.
-*   **Shared-Element Transitions:** Cover images now animate and expand directly from the library list into the detail view when opened.
-*   **Material 3 Components:** Implementation of a floating pill-shaped navigation bar, squarish Material 3 chips, and updated FABs and menus.
-*   **Transparent Styling:** Selection dropdowns and filters now use a transparent, shadowless background.
-*   **"Below" Card Layout:** New card style that displays metadata in a single-line-per-segment format below the thumbnail.
+### Summary of New Features
 
-### Reader Changes
-*   **Adaptive Backgrounds:** New background system that samples colors from all four image edges to create blooming or gradient effects that fill the screen.
-*   **Kinetic Swipe:** Implementation of a kinetic "sticky" swipe system for paged reading with full RTL (Right-to-Left) support.
-*   **Panel Navigation:** Unified smooth pan-and-zoom controls and full-page context sequences for panel-to-panel navigation.
-*   **Improved Panel Detection:** Upgraded AI model (rf-detr-med) for more accurate automatic panel identification.
-*   **Spring Physics:** Density-aware spring physics for consistent gesture response across different screen types.
-*   **"Tap to Zoom" Toggle:** Ability to enable or disable single-tap zooming independently for paged and panel modes.
+#### Library Screen
+*   **Material 3 Header**: Standardized M3 `TopAppBar` with integrated metadata chips (series/collection counts) and page size selectors for better information density.
+*   **Mobile-Friendly Author Filter**: A new dialog-based author filter with search capabilities, replacing the standard dropdown for a superior touch experience.
+*   **Library Persistence**: Automatically remembers and restores the last viewed library upon app restart.
+*   **Segmented Navigation**: Modern M3 `SingleChoiceSegmentedButtonRow` for seamless switching between Series, Collections, and Read Lists.
+*   **Advanced Filtering**: persistent Extended Floating Action Button (FAB) that opens an M3 Modal Bottom Sheet with integrated search and chip-based selection.
+*   **"Keep Reading" Strip**: A new horizontal quick-access strip in the series list for your recently read books.
 
-### Settings
-*   **Accent Presets:** Selection of predefined accent color presets and an adaptive color system.
-*   **Card Layout:** Option to toggle between the standard and the new "Below" info card layout.
-*   **Background Configuration:** Detailed settings for adaptive background bloom, gradient styles, and corner blending.
-*   **Gesture Controls:** Toggles for tap-to-zoom and mode-specific navigation behaviors.
+#### Home Screen
+*   **Modernized Navigation**: Section management and settings moved to a Floating Action Button at the bottom-right for easy one-handed use.
+*   **Horizontal Layout**: Organized content into horizontal rows (Keep Reading, On Deck, etc.) for a compact and discoverable dashboard.
+
+#### Search
+*   **Interactive Search Bar**: Full M3 `SearchBar` implementation with smooth animations, native back-navigation, and clear-text support.
+*   **Consistent Toggles**: Search filters now use `SecondaryTabRow` selectors for a unified UI language.
+
+#### Immersive Detail Screens (Book, Series, Oneshot)
+*   **Immersive Detail Scaffold**: Full-bleed cover images extending behind the status bar for a modern, cinematic feel.
+*   **Adaptive Tinting**: Detail card backgrounds dynamically sample and apply dominant colors from the cover artwork.
+*   **Elevated Card UI**: Material 3 elevated specifications with standard typography and smooth shared-element transitions from the library list.
+*   **Synchronized State**: Consistent tabbed layouts across all detail screens with synchronized expand/collapse behavior.
+
+#### Reader
+*   **Adaptive Backgrounds**: "Blooming" gradient backgrounds that sample edge colors in real-time for both Paged and Panel modes.
+*   **High-Performance GPU Upscaling**: Integrated NCNN-powered upscaling (Waifu2x, RealCUGAN, RealSR, Real-ESRGAN) specifically optimized for Android GPU hardware.
+*   **Kinetic Gesture System**: Completely rewritten engine with "sticky" paged swiping, RTL-aware directional barriers, and natural kinetic momentum.
+*   **Advanced Panel Navigation**: "Full Page Context" injection and unified smooth pan-and-zoom animations to eliminate transition jars.
+*   **Modern Controls**: Floating progress slider (May 2025 M3 spec), dedicated settings FAB, and long-press quick-save to Downloads.
+
+#### Settings Page
+*   **Modular Architecture**: Refactored menu structure for better maintainability and navigation.
+*   **New Visual Toggles**: Immersive color strength sliders, unified app-wide accent color presets, and a master toggle for the "New Library UI".
+*   **Deep Customization**: Per-mode toggles for tap-to-zoom, configurable tap navigation zones with visual diagrams, and granular adaptive background settings.
 
 ---
 
