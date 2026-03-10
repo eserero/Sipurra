@@ -213,6 +213,7 @@ class ViewModelFactory(
             bookId = bookId,
             bookSiblingsContext = bookSiblingsContext,
             bookApi = komgaApi.bookApi,
+            seriesApi = komgaApi.seriesApi,
             notifications = dependencies.appNotifications,
             komgaEvents = dependencies.komgaEvents.events,
             libraries = dependencies.komgaSharedState.libraries,

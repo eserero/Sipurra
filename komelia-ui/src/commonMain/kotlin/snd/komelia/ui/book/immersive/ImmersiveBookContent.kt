@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,11 +18,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -73,6 +76,7 @@ import snd.komelia.ui.common.images.ThumbnailImage
 import snd.komelia.ui.common.immersive.ImmersiveDetailFab
 import snd.komelia.ui.common.immersive.ImmersiveDetailScaffold
 import snd.komelia.ui.common.immersive.extractDominantColor
+import snd.komelia.ui.common.immersive.rememberPublisherLogo
 import snd.komelia.ui.common.menus.BookActionsMenu
 import snd.komelia.ui.common.menus.BookMenuActions
 import snd.komelia.ui.dialogs.ConfirmationDialog
@@ -101,6 +105,7 @@ fun ImmersiveBookContent(
     onReadListBookPress: (KomeliaBook, KomgaReadList) -> Unit,
     cardWidth: Dp,
     onSeriesClick: (KomgaSeriesId) -> Unit,
+    publisher: String? = null,
     onBookChange: (KomeliaBook) -> Unit = {},
     initiallyExpanded: Boolean,
     onExpandChange: (Boolean) -> Unit,
@@ -154,6 +159,8 @@ fun ImmersiveBookContent(
     }
 
     var showDownloadConfirmationDialog by remember { mutableStateOf(false) }
+
+    val publisherLogo = rememberPublisherLogo(publisher)
 
     val sharedTransitionScope = LocalSharedTransitionScope.current
 
@@ -211,6 +218,7 @@ fun ImmersiveBookContent(
                 immersive = true,
                 initiallyExpanded = initiallyExpanded,
                 onExpandChange = onExpandChange,
+                publisherLogo = publisherLogo,
                 topBarContent = {},  // Fixed overlay handles this
                 fabContent = {},     // Fixed overlay handles this
                 cardContent = { expandFraction ->
@@ -332,6 +340,28 @@ fun ImmersiveBookContent(
                                 BookStatsLine(pageBook, Modifier
                                     .padding(horizontal = 16.dp, vertical = 4.dp)
                                     .graphicsLayer { this.alpha = alpha })
+                        }
+
+                        // Publisher logo — fades in as card expands
+                        if (publisherLogo != null) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 2.dp)
+                                        .graphicsLayer { alpha = (expandFraction * 2f - 1f).coerceIn(0f, 1f) }
+                                ) {
+                                    Image(
+                                        bitmap = publisherLogo,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .height(28.dp)
+                                            .widthIn(max = 100.dp)
+                                            .align(Alignment.CenterEnd),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                                    )
+                                }
+                            }
                         }
 
                         // Summary

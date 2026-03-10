@@ -107,6 +107,7 @@ class BookScreen(
                 },
                 cardWidth = vm.cardWidth.collectAsState().value,
                 onSeriesClick = { seriesId -> navigator.push(SeriesScreen(seriesId)) },
+                publisher = vm.publisher.collectAsState().value,
                 onBookChange = vm::setCurrentBook,
                 initiallyExpanded = vm.isExpanded,
                 onExpandChange = { vm.isExpanded = it }

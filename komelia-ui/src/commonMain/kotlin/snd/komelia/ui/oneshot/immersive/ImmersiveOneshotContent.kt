@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,11 +17,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -69,6 +72,7 @@ import snd.komelia.ui.common.images.ThumbnailImage
 import snd.komelia.ui.common.immersive.ImmersiveDetailFab
 import snd.komelia.ui.common.immersive.ImmersiveDetailScaffold
 import snd.komelia.ui.common.immersive.extractDominantColor
+import snd.komelia.ui.common.immersive.rememberPublisherLogo
 import snd.komelia.ui.common.menus.BookMenuActions
 import snd.komelia.ui.common.menus.OneshotActionsMenu
 import snd.komelia.ui.dialogs.ConfirmationDialog
@@ -133,6 +137,8 @@ fun ImmersiveOneshotContent(
         dominantColor.value = extractDominantColor(coverPainter)
     }
 
+    val publisherLogo = rememberPublisherLogo(series.metadata.publisher)
+
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
 
@@ -174,6 +180,7 @@ fun ImmersiveOneshotContent(
             immersive = true,
             initiallyExpanded = initiallyExpanded,
             onExpandChange = onExpandChange,
+            publisherLogo = publisherLogo,
             topBarContent = {},   // Fixed overlay handles this
             fabContent = {},      // Fixed overlay handles this
             cardContent = { expandFraction ->
@@ -190,6 +197,7 @@ fun ImmersiveOneshotContent(
                         book = book,
                         library = library,
                         coverData = coverData,
+                        publisherLogo = publisherLogo,
                         expandFraction = expandFraction,
                         onLibraryClick = onLibraryClick,
                         onFilterClick = onFilterClick,
@@ -291,6 +299,7 @@ private fun OneshotCardContent(
     book: KomeliaBook,
     library: KomgaLibrary,
     coverData: Any,
+    publisherLogo: androidx.compose.ui.graphics.ImageBitmap?,
     expandFraction: Float,
     onLibraryClick: (KomgaLibrary) -> Unit,
     onFilterClick: (SeriesScreenFilter) -> Unit,
@@ -396,6 +405,28 @@ private fun OneshotCardContent(
                 BookStatsLine(book, Modifier
                     .padding(horizontal = 16.dp, vertical = 4.dp)
                     .graphicsLayer { this.alpha = alpha })
+        }
+
+        // Publisher logo — fades in as card expands
+        if (publisherLogo != null) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 2.dp)
+                        .graphicsLayer { alpha = (expandFraction * 2f - 1f).coerceIn(0f, 1f) }
+                ) {
+                    Image(
+                        bitmap = publisherLogo,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .height(28.dp)
+                            .widthIn(max = 100.dp)
+                            .align(Alignment.CenterEnd),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                    )
+                }
+            }
         }
 
         // SeriesDescriptionRow (library, status, age rating, etc.)

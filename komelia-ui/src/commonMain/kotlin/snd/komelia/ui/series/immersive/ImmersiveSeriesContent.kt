@@ -8,11 +8,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -57,6 +60,7 @@ import coil3.compose.rememberAsyncImagePainter
 import snd.komelia.ui.common.immersive.ImmersiveDetailFab
 import snd.komelia.ui.common.immersive.ImmersiveDetailScaffold
 import snd.komelia.ui.common.immersive.extractDominantColor
+import snd.komelia.ui.common.immersive.rememberPublisherLogo
 import snd.komelia.ui.common.menus.SeriesActionsMenu
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
@@ -169,6 +173,8 @@ fun ImmersiveSeriesContent(
         dominantColor.value = extractDominantColor(coverPainter)
     }
 
+    val publisherLogo = rememberPublisherLogo(series.metadata.publisher)
+
     ImmersiveDetailScaffold(
         coverData = coverData,
         coverKey = series.id.value,
@@ -176,6 +182,7 @@ fun ImmersiveSeriesContent(
         immersive = true,
         initiallyExpanded = initiallyExpanded,
         onExpandChange = onExpandChange,
+        publisherLogo = publisherLogo,
         topBarContent = {
             if (selectionMode) {
                 BulkActionsContainer(
@@ -315,6 +322,28 @@ fun ImmersiveSeriesContent(
                                     modifier = Modifier.padding(top = 2.dp),
                                 )
                             }
+                        }
+                    }
+                }
+
+                // Publisher logo — fades in as card expands
+                if (publisherLogo != null) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 2.dp)
+                                .graphicsLayer { alpha = (expandFraction * 2f - 1f).coerceIn(0f, 1f) }
+                        ) {
+                            Image(
+                                bitmap = publisherLogo,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .height(28.dp)
+                                    .widthIn(max = 100.dp)
+                                    .align(Alignment.CenterEnd),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                            )
                         }
                     }
                 }

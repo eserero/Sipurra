@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import snd.komelia.AppNotifications
 import snd.komelia.komga.api.KomgaBookApi
 import snd.komelia.komga.api.KomgaReadListApi
+import snd.komelia.komga.api.KomgaSeriesApi
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.offline.tasks.OfflineTaskEmitter
 import snd.komelia.settings.CommonSettingsRepository
@@ -49,6 +50,7 @@ class BookViewModel(
     bookId: KomgaBookId,
     private val bookSiblingsContext: BookSiblingsContext,
     private val bookApi: KomgaBookApi,
+    private val seriesApi: KomgaSeriesApi,
     private val notifications: AppNotifications,
     private val komgaEvents: SharedFlow<KomgaEvent>,
     private val libraries: StateFlow<List<KomgaLibrary>>,
@@ -62,6 +64,7 @@ class BookViewModel(
     val book = MutableStateFlow(book)
     private val currentBookId = MutableStateFlow(bookId)
     var isExpanded by mutableStateOf(false)
+    val publisher = MutableStateFlow<String?>(null)
 
     private val reloadEventsEnabled = MutableStateFlow(true)
     private val reloadJobsFlow = MutableSharedFlow<Unit>(1, 0, DROP_OLDEST)
@@ -89,6 +92,7 @@ class BookViewModel(
         loadLibrary()
         readListsState.initialize()
         loadSiblingBooks()
+        loadPublisher()
         startKomgaEventListener()
 
         reloadJobsFlow.onEach {
@@ -123,6 +127,15 @@ class BookViewModel(
                     )
                 )
                 siblingBooks.value = page.content
+            }
+        }
+    }
+
+    private fun loadPublisher() {
+        screenModelScope.launch {
+            val seriesId = book.value?.seriesId ?: return@launch
+            runCatching {
+                publisher.value = seriesApi.getOneSeries(seriesId).metadata.publisher
             }
         }
     }

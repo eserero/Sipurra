@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.snapTo
@@ -32,6 +33,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -109,6 +113,7 @@ fun ImmersiveDetailScaffold(
     immersive: Boolean = false,
     initiallyExpanded: Boolean = false,
     onExpandChange: (Boolean) -> Unit = {},
+    publisherLogo: ImageBitmap? = null,
     topBarContent: @Composable () -> Unit,
     fabContent: @Composable () -> Unit,
     cardContent: @Composable ColumnScope.(expandFraction: Float) -> Unit,
@@ -364,6 +369,30 @@ fun ImmersiveDetailScaffold(
                 }
                 Column(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     cardContent(expandFraction)
+                }
+            }
+
+            // Layer 2.5: Publisher hero badge — visible when collapsed, fades with cover
+            if (publisherLogo != null) {
+                val badgeHeight = 40.dp
+                val badgeHeightPx = with(density) { (badgeHeight + 12.dp).toPx() }
+                Box(
+                    modifier = Modifier
+                        .then(uiEnterExitModifier)
+                        .offset { IntOffset(
+                            x = with(density) { 12.dp.roundToPx() },
+                            y = (collapsedOffsetPx - badgeHeightPx).roundToInt()
+                        ) }
+                        .graphicsLayer { alpha = (1f - expandFraction * 2f).coerceIn(0f, 1f) }
+                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                ) {
+                    Image(
+                        bitmap = publisherLogo,
+                        contentDescription = null,
+                        modifier = Modifier.heightIn(min = 28.dp, max = 40.dp).widthIn(min = 60.dp, max = 120.dp),
+                        contentScale = ContentScale.Fit
+                    )
                 }
             }
 
