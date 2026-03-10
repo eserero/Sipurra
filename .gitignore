@@ -34,3 +34,4 @@ third_party/secret-service/
 
 # Prebuilt native libraries
 **/androidMain/jniLibs/**/*.so
+.worktrees
