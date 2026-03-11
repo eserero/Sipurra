@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import snd.komelia.komga.api.model.KomeliaBook
+import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalKomgaState
 import snd.komelia.ui.LocalWindowWidth
 import snd.komelia.ui.book.BookInfoColumn
@@ -59,6 +60,7 @@ import snd.komelia.ui.platform.WindowSizeClass.FULL
 import snd.komelia.ui.platform.WindowSizeClass.MEDIUM
 import snd.komelia.ui.readlist.BookReadListsContent
 import snd.komelia.ui.series.view.SeriesDescriptionRow
+import snd.komelia.utils.removeParentheses
 import snd.komga.client.collection.KomgaCollection
 import snd.komga.client.library.KomgaLibrary
 import snd.komga.client.readlist.KomgaReadList
@@ -162,12 +164,13 @@ fun OneshotToolBar(
     book: KomeliaBook,
     bookMenuActions: BookMenuActions,
 ) {
+    val hideParentheses = LocalHideParenthesesInNames.current
     Row(
         modifier = Modifier.padding(start = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            book.metadata.title,
+            if (hideParentheses) book.metadata.title.removeParentheses() else book.metadata.title,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, false)

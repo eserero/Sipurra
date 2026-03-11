@@ -58,6 +58,7 @@ import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.offline.sync.model.DownloadEvent
 import snd.komelia.ui.LocalBookDownloadEvents
 import snd.komelia.ui.LocalCardLayoutBelow
+import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalLibraries
 import snd.komelia.ui.LocalWindowWidth
 import snd.komelia.ui.common.BookReadButton
@@ -69,6 +70,7 @@ import snd.komelia.ui.common.readIsSupported
 import snd.komelia.ui.platform.WindowSizeClass.COMPACT
 import snd.komelia.ui.platform.WindowSizeClass.MEDIUM
 import snd.komelia.ui.platform.cursorForHand
+import snd.komelia.utils.removeParentheses
 
 @Composable
 fun BookImageCard(
@@ -86,6 +88,9 @@ fun BookImageCard(
         libraries.value.firstOrNull { it.id == book.libraryId }?.unavailable ?: false
     }
     val cardLayoutBelow = LocalCardLayoutBelow.current
+    val hideParentheses = LocalHideParenthesesInNames.current
+    val bookTitle = if (hideParentheses && book.oneshot) book.metadata.title.removeParentheses() else book.metadata.title
+    val seriesTitle = if (hideParentheses) book.seriesTitle.removeParentheses() else book.seriesTitle
 
     ItemCard(
         modifier = modifier,
@@ -101,6 +106,8 @@ fun BookImageCard(
                 isSelected = isSelected,
             ) {
                 BookImageOverlay(
+                    bookTitle = bookTitle,
+                    seriesTitle = seriesTitle,
                     book = book,
                     libraryIsDeleted = libraryIsDeleted,
                     showTitle = !cardLayoutBelow,
@@ -132,28 +139,28 @@ fun BookImageCard(
                             color = MaterialTheme.colorScheme.error,
                         )
                         Text(
-                            text = book.metadata.title,
+                            text = bookTitle,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     } else if (showSeries) {
                         Text(
-                            text = book.seriesTitle,
+                            text = seriesTitle,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            text = book.metadata.title,
+                            text = bookTitle,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     } else {
                         Text(
-                            text = book.metadata.title,
+                            text = bookTitle,
                             maxLines = 2,
                             minLines = 2,
                             overflow = TextOverflow.Ellipsis,
@@ -173,11 +180,17 @@ fun BookSimpleImageCard(
     modifier: Modifier = Modifier
 ) {
     val cardLayoutBelow = LocalCardLayoutBelow.current
+    val hideParentheses = LocalHideParenthesesInNames.current
+    val bookTitle = if (hideParentheses && book.oneshot) book.metadata.title.removeParentheses() else book.metadata.title
+    val seriesTitle = if (hideParentheses) book.seriesTitle.removeParentheses() else book.seriesTitle
+
     ItemCard(
         modifier = modifier,
         onClick = onBookClick,
         image = {
             BookImageOverlay(
+                bookTitle = bookTitle,
+                seriesTitle = seriesTitle,
                 book = book,
                 libraryIsDeleted = false,
                 showTitle = !cardLayoutBelow
@@ -193,7 +206,7 @@ fun BookSimpleImageCard(
             if (cardLayoutBelow) {
                 Column(Modifier.padding(8.dp)) {
                     Text(
-                        text = book.metadata.title,
+                        text = bookTitle,
                         maxLines = 2,
                         minLines = 2,
                         style = MaterialTheme.typography.bodyMedium,
@@ -208,6 +221,8 @@ fun BookSimpleImageCard(
 
 @Composable
 private fun BookImageOverlay(
+    bookTitle: String,
+    seriesTitle: String,
     book: KomeliaBook,
     libraryIsDeleted: Boolean,
     showTitle: Boolean = true,
@@ -244,14 +259,14 @@ private fun BookImageOverlay(
             Column(Modifier.padding(10.dp)) {
                 if (showSeriesTitle && !book.oneshot) {
                     CardOutlinedText(
-                        text = book.seriesTitle,
+                        text = seriesTitle,
                         maxLines = 1,
                         style = MaterialTheme.typography.labelMedium.copy(color = Color(195, 195, 195)),
                     )
                 }
                 if (showTitle) {
                     CardOutlinedText(
-                        text = book.metadata.title,
+                        text = bookTitle,
                         maxLines = DEFAULT_CARD_MAX_LINES
                     )
                     if (book.deleted || libraryIsDeleted) {
@@ -418,6 +433,9 @@ fun BookDetailedListCard(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered = interactionSource.collectIsHoveredAsState()
+    val hideParentheses = LocalHideParenthesesInNames.current
+    val bookTitle = if (hideParentheses && book.oneshot) book.metadata.title.removeParentheses() else book.metadata.title
+
     Card(
         modifier
             .cursorForHand()
@@ -450,6 +468,7 @@ fun BookDetailedListCard(
                 }
             }
             BookDetailedListDetails(
+                bookTitle = bookTitle,
                 book = book,
                 bookMenuActions = bookMenuActions,
                 onBookReadClick = onBookReadClick,
@@ -461,6 +480,7 @@ fun BookDetailedListCard(
 
 @Composable
 private fun BookDetailedListDetails(
+    bookTitle: String,
     book: KomeliaBook,
     bookMenuActions: BookMenuActions?,
     onBookReadClick: ((Boolean) -> Unit)? = null,
@@ -469,7 +489,7 @@ private fun BookDetailedListDetails(
     Column(Modifier.padding(start = 10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                book.metadata.title,
+                bookTitle,
                 fontWeight = FontWeight.Bold,
                 maxLines = when (width) {
                     COMPACT, MEDIUM -> 2

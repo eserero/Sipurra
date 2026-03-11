@@ -30,11 +30,13 @@ import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime
 import snd.komelia.DefaultDateTimeFormats.localDateTimeFormat
 import snd.komelia.komga.api.model.KomeliaBook
+import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.common.TagList
 import snd.komelia.ui.common.components.DescriptionChips
 import snd.komelia.ui.common.components.LabeledEntry
 import snd.komelia.ui.common.components.LabeledEntry.Companion.stringEntry
 import snd.komelia.ui.library.SeriesScreenFilter
+import snd.komelia.utils.removeParentheses
 import snd.komga.client.common.KomgaAuthor
 import snd.komga.client.common.KomgaWebLink
 import snd.komga.client.common.coloristRole
@@ -170,6 +172,8 @@ fun BookInfoRow(
     book: KomeliaBook,
     onSeriesButtonClick: (() -> Unit)? = null,
 ) {
+    val hideParentheses = LocalHideParenthesesInNames.current
+    val seriesTitle = if (hideParentheses) book.seriesTitle.removeParentheses() else book.seriesTitle
 
     Column(
         modifier = modifier,
@@ -182,7 +186,7 @@ fun BookInfoRow(
                 ) {
                     Icon(Icons.AutoMirrored.Outlined.LibraryBooks, null)
                     Spacer(Modifier.width(3.dp))
-                    Text(text = book.seriesTitle, textDecoration = TextDecoration.Underline)
+                    Text(text = seriesTitle, textDecoration = TextDecoration.Underline)
                 }
             }
             if (book.deleted) {

@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import snd.komelia.ui.LocalAnimatedVisibilityScope
+import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalSharedTransitionScope
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
@@ -83,6 +84,7 @@ import snd.komelia.ui.dialogs.ConfirmationDialog
 import snd.komelia.ui.dialogs.permissions.DownloadNotificationRequestDialog
 import snd.komelia.ui.library.SeriesScreenFilter
 import snd.komelia.ui.readlist.BookReadListsContent
+import snd.komelia.utils.removeParentheses
 import snd.komga.client.readlist.KomgaReadList
 import snd.komga.client.series.KomgaSeriesId
 import kotlin.math.roundToInt
@@ -273,6 +275,9 @@ fun ImmersiveBookContent(
                                     }
                                 }
 
+                                val hideParentheses = LocalHideParenthesesInNames.current
+                                val seriesTitle = if (hideParentheses) pageBook.seriesTitle.removeParentheses() else pageBook.seriesTitle
+
                                 Column(
                                     modifier = Modifier.padding(start = thumbnailOffset)
                                 ) {
@@ -286,7 +291,7 @@ fun ImmersiveBookContent(
                                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                                     ) {
                                         Text(
-                                            text = "${pageBook.seriesTitle} · #${pageBook.metadata.number}",
+                                            text = "$seriesTitle · #${pageBook.metadata.number}",
                                             style = MaterialTheme.typography.headlineSmall.copy(
                                                 fontWeight = FontWeight.Bold,
                                             ),
@@ -300,7 +305,7 @@ fun ImmersiveBookContent(
                                         )
                                     }
                                     // Line 2: Book title (titleMedium) — only if different from series title
-                                    if (pageBook.metadata.title != pageBook.seriesTitle) {
+                                    if (pageBook.metadata.title != seriesTitle) {
                                         Text(
                                             text = pageBook.metadata.title,
                                             style = MaterialTheme.typography.titleMedium,

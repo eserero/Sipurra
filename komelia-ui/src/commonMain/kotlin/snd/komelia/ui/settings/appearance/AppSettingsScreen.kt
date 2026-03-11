@@ -39,6 +39,8 @@ class AppSettingsScreen : Screen {
                     onImmersiveColorEnabledChange = vm::onImmersiveColorEnabledChange,
                     immersiveColorAlpha = vm.immersiveColorAlpha,
                     onImmersiveColorAlphaChange = vm::onImmersiveColorAlphaChange,
+                    hideParenthesesInNames = vm.hideParenthesesInNames,
+                    onHideParenthesesInNamesChange = vm::onHideParenthesesInNamesChange,
                 )
                                 }
                             }

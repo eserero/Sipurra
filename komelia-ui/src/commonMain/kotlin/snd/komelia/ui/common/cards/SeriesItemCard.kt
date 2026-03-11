@@ -41,12 +41,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import snd.komelia.ui.LocalCardLayoutBelow
+import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalLibraries
 import snd.komelia.ui.common.components.NoPaddingChip
 import snd.komelia.ui.common.images.SeriesThumbnail
 import snd.komelia.ui.common.menus.SeriesActionsMenu
 import snd.komelia.ui.common.menus.SeriesMenuActions
 import snd.komelia.ui.platform.cursorForHand
+import snd.komelia.utils.removeParentheses
 import snd.komga.client.series.KomgaSeries
 
 @Composable
@@ -63,6 +65,8 @@ fun SeriesImageCard(
         libraries.value.firstOrNull { it.id == series.libraryId }?.unavailable ?: false
     }
     val cardLayoutBelow = LocalCardLayoutBelow.current
+    val hideParentheses = LocalHideParenthesesInNames.current
+    val title = if (hideParentheses) series.metadata.title.removeParentheses() else series.metadata.title
 
     ItemCard(
         modifier = modifier,
@@ -76,6 +80,7 @@ fun SeriesImageCard(
                 seriesActions = seriesMenuActions,
             ) {
                 SeriesImageOverlay(
+                    title = title,
                     series = series,
                     libraryIsDeleted = libraryIsDeleted,
                     showTitle = !cardLayoutBelow
@@ -97,7 +102,7 @@ fun SeriesImageCard(
                     val isUnavailable = series.deleted || libraryIsDeleted
                     if (isUnavailable) {
                         Text(
-                            text = series.metadata.title,
+                            text = title,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.bodyMedium,
@@ -111,7 +116,7 @@ fun SeriesImageCard(
                         )
                     } else {
                         Text(
-                            text = series.metadata.title,
+                            text = title,
                             maxLines = 2,
                             minLines = 2,
                             overflow = TextOverflow.Ellipsis,
@@ -131,11 +136,15 @@ fun SeriesSimpleImageCard(
     modifier: Modifier = Modifier,
 ) {
     val cardLayoutBelow = LocalCardLayoutBelow.current
+    val hideParentheses = LocalHideParenthesesInNames.current
+    val title = if (hideParentheses) series.metadata.title.removeParentheses() else series.metadata.title
+
     ItemCard(
         modifier = modifier,
         onClick = onSeriesClick,
         image = {
             SeriesImageOverlay(
+                title = title,
                 series = series,
                 libraryIsDeleted = false,
                 showTitle = !cardLayoutBelow,
@@ -151,7 +160,7 @@ fun SeriesSimpleImageCard(
             if (cardLayoutBelow) {
                 Column(Modifier.padding(8.dp)) {
                     Text(
-                        text = series.metadata.title,
+                        text = title,
                         maxLines = 2,
                         minLines = 2,
                         style = MaterialTheme.typography.bodyMedium,
@@ -230,6 +239,7 @@ private fun SeriesCardHoverOverlay(
 
 @Composable
 private fun SeriesImageOverlay(
+    title: String,
     series: KomgaSeries,
     libraryIsDeleted: Boolean,
     showTitle: Boolean = true,
@@ -268,7 +278,7 @@ private fun SeriesImageOverlay(
         ) {
             if (showTitle) {
 
-                CardOutlinedText(text = series.metadata.title, maxLines = DEFAULT_CARD_MAX_LINES)
+                CardOutlinedText(text = title, maxLines = DEFAULT_CARD_MAX_LINES)
                 if (series.deleted || libraryIsDeleted) {
                     CardOutlinedText(text = "Unavailable", textColor = MaterialTheme.colorScheme.error)
                 }
@@ -283,6 +293,9 @@ fun SeriesDetailedListCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val hideParentheses = LocalHideParenthesesInNames.current
+    val title = if (hideParentheses) series.metadata.title.removeParentheses() else series.metadata.title
+
     Card(
         modifier
             .cursorForHand()
@@ -294,16 +307,16 @@ fun SeriesDetailedListCard(
                 .padding(10.dp)
         ) {
             SeriesSimpleImageCard(series, onClick)
-            SeriesDetails(series)
+            SeriesDetails(title, series)
         }
     }
 }
 
 @Composable
-private fun SeriesDetails(series: KomgaSeries) {
+private fun SeriesDetails(title: String, series: KomgaSeries) {
     Column(Modifier.padding(start = 10.dp)) {
         Row {
-            Text(series.metadata.title, fontWeight = FontWeight.Bold)
+            Text(title, fontWeight = FontWeight.Bold)
         }
         LazyRow(
             modifier = Modifier.padding(vertical = 10.dp),

@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.settings.model.BooksLayout
 import snd.komelia.ui.LoadState
+import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalKomgaState
 import snd.komelia.ui.LocalOfflineMode
 import snd.komelia.ui.LocalWindowWidth
@@ -76,6 +77,7 @@ import snd.komelia.ui.platform.cursorForHand
 import snd.komelia.ui.series.SeriesBooksState
 import snd.komelia.ui.series.SeriesBooksState.BooksData
 import snd.komelia.ui.series.SeriesViewModel.SeriesTab
+import snd.komelia.utils.removeParentheses
 import snd.komga.client.collection.KomgaCollection
 import snd.komga.client.library.KomgaLibrary
 import snd.komga.client.series.KomgaSeries
@@ -227,14 +229,16 @@ fun SeriesToolBar(
     seriesMenuActions: SeriesMenuActions,
     onDownload: () -> Unit,
 ) {
+    val hideParentheses = LocalHideParenthesesInNames.current
     Row(
         modifier = Modifier.padding(start = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
 
         if (series != null) {
+            val title = if (hideParentheses) series.metadata.title.removeParentheses() else series.metadata.title
             Text(
-                series.metadata.title,
+                title,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, false)
@@ -278,7 +282,7 @@ fun SeriesToolBar(
 
                 if (permissionRequested) {
                     ConfirmationDialog(
-                        "Download series \"${series.metadata.title}\"?",
+                        "Download series \"$title\"?",
                         onDialogConfirm = onDownload,
                         onDialogDismiss = { showDownloadConfirmationDialog = false }
                     )

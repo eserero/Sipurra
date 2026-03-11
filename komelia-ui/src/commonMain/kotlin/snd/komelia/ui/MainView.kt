@@ -77,6 +77,7 @@ fun MainView(
     var cardLayoutBelow by remember { mutableStateOf(false) }
     var immersiveColorEnabled by remember { mutableStateOf(true) }
     var immersiveColorAlpha by remember { mutableStateOf(0.12f) }
+    var hideParenthesesInNames by remember { mutableStateOf(false) }
     LaunchedEffect(dependencies) {
         dependencies?.appRepositories?.settingsRepository?.getAppTheme()?.collect { theme = it.toTheme() }
     }
@@ -103,6 +104,10 @@ fun MainView(
     LaunchedEffect(dependencies) {
         dependencies?.appRepositories?.settingsRepository?.getImmersiveColorAlpha()
             ?.collect { immersiveColorAlpha = it }
+    }
+    LaunchedEffect(dependencies) {
+        dependencies?.appRepositories?.settingsRepository?.getHideParenthesesInNames()
+            ?.collect { hideParenthesesInNames = it }
     }
 
     MaterialTheme(colorScheme = theme.colorScheme) {
@@ -154,6 +159,7 @@ fun MainView(
                 LocalCardLayoutBelow provides cardLayoutBelow,
                 LocalImmersiveColorEnabled provides immersiveColorEnabled,
                 LocalImmersiveColorAlpha provides immersiveColorAlpha,
+                LocalHideParenthesesInNames provides hideParenthesesInNames,
             ) {
                 MainContent(platformType, dependencies.komgaSharedState)
 

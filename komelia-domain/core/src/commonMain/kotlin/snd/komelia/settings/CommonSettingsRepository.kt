@@ -61,4 +61,7 @@ interface CommonSettingsRepository {
 
     fun getLastSelectedLibraryId(): Flow<KomgaLibraryId?>
     suspend fun putLastSelectedLibraryId(libraryId: KomgaLibraryId?)
+
+    fun getHideParenthesesInNames(): Flow<Boolean>
+    suspend fun putHideParenthesesInNames(hide: Boolean)
 }

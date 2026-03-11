@@ -29,6 +29,7 @@ object AppSettingsTable : Table("AppSettings") {
     val immersiveColorEnabled = bool("immersive_color_enabled").default(true)
     val immersiveColorAlpha = float("immersive_color_alpha").default(0.12f)
     val lastSelectedLibraryId = text("last_selected_library_id").nullable()
+    val hideParenthesesInNames = bool("hide_parentheses_in_names").default(false)
 
     override val primaryKey = PrimaryKey(version)
     }

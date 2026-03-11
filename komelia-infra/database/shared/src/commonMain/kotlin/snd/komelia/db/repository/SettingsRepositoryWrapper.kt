@@ -156,4 +156,10 @@ class SettingsRepositoryWrapper(
         wrapper.transform { it.copy(lastSelectedLibraryId = libraryId?.value) }
     }
 
+    override fun getHideParenthesesInNames(): Flow<Boolean> =
+        wrapper.state.map { it.hideParenthesesInNames }.distinctUntilChanged()
+
+    override suspend fun putHideParenthesesInNames(hide: Boolean) =
+        wrapper.transform { it.copy(hideParenthesesInNames = hide) }
+
 }

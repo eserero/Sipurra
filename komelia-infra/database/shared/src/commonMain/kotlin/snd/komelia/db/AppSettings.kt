@@ -29,4 +29,5 @@ data class AppSettings(
     val immersiveColorEnabled: Boolean = true,
     val immersiveColorAlpha: Float = 0.12f,
     val lastSelectedLibraryId: String? = null,
+    val hideParenthesesInNames: Boolean = false,
 )

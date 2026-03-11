@@ -63,6 +63,7 @@ import snd.komelia.DefaultDateTimeFormats.localDateTimeFormat
 import snd.komelia.image.coil.SeriesDefaultThumbnailRequest
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.ui.LocalAnimatedVisibilityScope
+import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalKomgaEvents
 import snd.komelia.ui.LocalSharedTransitionScope
 import snd.komelia.ui.collection.SeriesCollectionsContent
@@ -82,6 +83,7 @@ import snd.komelia.ui.readlist.BookReadListsContent
 import snd.komelia.ui.series.view.SeriesChipTags
 import snd.komelia.ui.series.view.SeriesDescriptionRow
 import snd.komelia.ui.series.view.SeriesSummary
+import snd.komelia.utils.removeParentheses
 import snd.komga.client.collection.KomgaCollection
 import snd.komga.client.library.KomgaLibrary
 import snd.komga.client.readlist.KomgaReadList
@@ -117,6 +119,12 @@ fun ImmersiveOneshotContent(
     initiallyExpanded: Boolean,
     onExpandChange: (Boolean) -> Unit,
 ) {
+    val hideParentheses = LocalHideParenthesesInNames.current
+    val title = remember(book, hideParentheses) {
+        if (hideParentheses) book?.metadata?.title?.removeParentheses() ?: ""
+        else book?.metadata?.title ?: ""
+    }
+
     var showDownloadConfirmationDialog by remember { mutableStateOf(false) }
     val komgaEvents = LocalKomgaEvents.current
     var coverData by remember(series.id) { mutableStateOf(SeriesDefaultThumbnailRequest(series.id)) }
@@ -193,6 +201,7 @@ fun ImmersiveOneshotContent(
                     }
                 } else {
                     OneshotCardContent(
+                        title = title,
                         series = series,
                         book = book,
                         library = library,
@@ -282,7 +291,7 @@ fun ImmersiveOneshotContent(
         DownloadNotificationRequestDialog { permissionRequested = true }
         if (permissionRequested) {
             ConfirmationDialog(
-                body = "Download \"${book.metadata.title}\"?",
+                body = "Download \"$title\"?",
                 onDialogConfirm = {
                     onBookDownload()
                     showDownloadConfirmationDialog = false
@@ -295,6 +304,7 @@ fun ImmersiveOneshotContent(
 
 @Composable
 private fun OneshotCardContent(
+    title: String,
     series: KomgaSeries,
     book: KomeliaBook,
     library: KomgaLibrary,
@@ -367,7 +377,7 @@ private fun OneshotCardContent(
                 Column(modifier = Modifier.padding(start = thumbnailOffset)) {
                     // Book title (headlineSmall, bold)
                     Text(
-                        text = book.metadata.title,
+                        text = title,
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold,
                         ),

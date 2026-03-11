@@ -49,6 +49,7 @@ import androidx.compose.ui.util.lerp
 import snd.komelia.image.coil.SeriesDefaultThumbnailRequest
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.ui.LoadState
+import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalKomgaEvents
 import snd.komga.client.sse.KomgaEvent.ThumbnailBookEvent
 import snd.komga.client.sse.KomgaEvent.ThumbnailSeriesEvent
@@ -78,6 +79,7 @@ import snd.komelia.ui.series.view.SeriesBooksContent
 import snd.komelia.ui.series.view.SeriesChipTags
 import snd.komelia.ui.series.view.SeriesDescriptionRow
 import snd.komelia.ui.series.view.SeriesSummary
+import snd.komelia.utils.removeParentheses
 import snd.komga.client.collection.KomgaCollection
 import snd.komga.client.library.KomgaLibrary
 import snd.komga.client.series.KomgaSeries
@@ -105,6 +107,9 @@ fun ImmersiveSeriesContent(
     initiallyExpanded: Boolean,
     onExpandChange: (Boolean) -> Unit,
 ) {
+    val hideParentheses = LocalHideParenthesesInNames.current
+    val title = if (hideParentheses) series.metadata.title.removeParentheses() else series.metadata.title
+
     val booksLoadState = booksState.state.collectAsState().value
     val booksData = remember(booksLoadState) {
         if (booksLoadState is LoadState.Success<BooksData>) booksLoadState.value else BooksData()
@@ -301,7 +306,7 @@ fun ImmersiveSeriesContent(
 
                         Column(modifier = Modifier.padding(start = thumbnailOffset)) {
                             Text(
-                                text = series.metadata.title,
+                                text = title,
                                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             )
                             val writers = remember(series.booksMetadata.authors) {
@@ -424,7 +429,7 @@ fun ImmersiveSeriesContent(
         DownloadNotificationRequestDialog { permissionRequested = true }
         if (permissionRequested) {
             ConfirmationDialog(
-                body = "Download series \"${series.metadata.title}\"?",
+                body = "Download series \"$title\"?",
                 onDialogConfirm = {
                     onDownload()
                     showDownloadConfirmationDialog = false

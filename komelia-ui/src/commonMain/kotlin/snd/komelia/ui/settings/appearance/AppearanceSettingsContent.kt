@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import snd.komelia.settings.model.AppTheme
 import snd.komelia.ui.LocalCardLayoutBelow
+import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalStrings
 import snd.komelia.ui.common.cards.ItemCard
 import snd.komelia.ui.common.components.AppSliderDefaults
@@ -74,11 +75,35 @@ fun AppearanceSettingsContent(
     onImmersiveColorEnabledChange: (Boolean) -> Unit,
     immersiveColorAlpha: Float,
     onImmersiveColorAlphaChange: (Float) -> Unit,
+    hideParenthesesInNames: Boolean,
+    onHideParenthesesInNamesChange: (Boolean) -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         val strings = LocalStrings.current.settings
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Hide parentheses in names", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Remove anything in parentheses when displaying series and oneshot names",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = hideParenthesesInNames,
+                onCheckedChange = onHideParenthesesInNamesChange,
+                modifier = Modifier.cursorForHand(),
+            )
+        }
+
+        HorizontalDivider()
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp),
@@ -203,7 +228,10 @@ fun AppearanceSettingsContent(
         ) {
             Text("${cardWidth.value}")
 
-            CompositionLocalProvider(LocalCardLayoutBelow provides cardLayoutBelow) {
+            CompositionLocalProvider(
+                LocalCardLayoutBelow provides cardLayoutBelow,
+                LocalHideParenthesesInNames provides hideParenthesesInNames,
+            ) {
                 ItemCard(
                     modifier = Modifier.width(cardWidth),
                     image = {
