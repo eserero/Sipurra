@@ -15,9 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
+import snd.komelia.ui.LocalAccentColor
 
 @Composable
 fun SwitchWithLabel(
@@ -32,9 +34,14 @@ fun SwitchWithLabel(
 ) {
     val contentColor = if (enabled) LocalContentColor.current else LocalContentColor.current.copy(alpha = .4f)
     val actualSupportingTextColor = if (enabled) supportingTextColor else LocalContentColor.current.copy(alpha = .4f)
+    val accentColor = LocalAccentColor.current
+    val checkedTrackColor = accentColor ?: MaterialTheme.colorScheme.secondary
+    val checkedThumbColor = if (accentColor != null) {
+        if (accentColor.luminance() > 0.5f) Color.Black else Color.White
+    } else MaterialTheme.colorScheme.onSecondary
     val colors = SwitchDefaults.colors(
-        checkedTrackColor = MaterialTheme.colorScheme.secondary,
-        checkedThumbColor = MaterialTheme.colorScheme.onSecondary
+        checkedTrackColor = checkedTrackColor,
+        checkedThumbColor = checkedThumbColor
     )
     CompositionLocalProvider(LocalContentColor provides contentColor) {
         Row(

@@ -33,6 +33,7 @@ import snd.komelia.ui.LocalPlatform
 import snd.komelia.ui.LocalStrings
 import snd.komelia.ui.common.components.AppSliderDefaults
 import snd.komelia.ui.common.components.SwitchWithLabel
+import snd.komelia.ui.common.components.accentInputChipColors
 import snd.komelia.ui.platform.PlatformType
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
@@ -160,16 +161,19 @@ fun CommonImageSettings(
                             InputChip(
                                 selected = flashWith == ReaderFlashColor.BLACK,
                                 onClick = { onFlashWithChange(ReaderFlashColor.BLACK) },
+                                colors = accentInputChipColors(),
                                 label = { Text("Black") }
                             )
                             InputChip(
                                 selected = flashWith == ReaderFlashColor.WHITE,
                                 onClick = { onFlashWithChange(ReaderFlashColor.WHITE) },
+                                colors = accentInputChipColors(),
                                 label = { Text("White") }
                             )
                             InputChip(
                                 selected = flashWith == ReaderFlashColor.WHITE_AND_BLACK,
                                 onClick = { onFlashWithChange(ReaderFlashColor.WHITE_AND_BLACK) },
+                                colors = accentInputChipColors(),
                                 label = { Text("White and Black") }
                             )
                         }

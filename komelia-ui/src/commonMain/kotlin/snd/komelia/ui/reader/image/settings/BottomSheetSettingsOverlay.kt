@@ -23,16 +23,22 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.ViewStream
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -44,8 +50,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -55,8 +63,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,12 +92,14 @@ import snd.komelia.ui.LocalStrings
 import snd.komelia.ui.LocalWindowWidth
 import snd.komelia.ui.common.components.AppSliderDefaults
 import snd.komelia.ui.common.components.SwitchWithLabel
+import snd.komelia.ui.common.components.accentInputChipColors
 import snd.komelia.ui.platform.WindowSizeClass.COMPACT
 import snd.komelia.ui.platform.cursorForHand
 import snd.komelia.ui.reader.image.continuous.ContinuousReaderState
 import snd.komelia.ui.reader.image.paged.PagedReaderState
 import snd.komelia.ui.reader.image.panels.PanelsReaderState
 import snd.komelia.ui.settings.imagereader.ncnn.NcnnSettingsState
+import snd.komelia.ui.settings.imagereader.ncnn.isNcnnSupported
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -202,6 +214,17 @@ fun BottomSheetSettingsOverlay(
         ) {
             Icon(Icons.Rounded.Tune, null)
         }
+
+        ReaderFloatingToolbar(
+            readerType = readerType,
+            onReaderTypeChange = onReaderTypeChange,
+            panelsReaderState = panelsReaderState,
+            ncnnSettingsState = ncnnSettingsState,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(bottom = 80.dp, end = 80.dp),
+        )
     }
 
     BoxWithConstraints {
@@ -324,17 +347,20 @@ private fun BottomSheetReadingModeSettings(
             InputChip(
                 selected = readerType == PAGED,
                 onClick = { onReaderTypeChange(PAGED) },
+                colors = accentInputChipColors(),
                 label = { Text("Paged") }
             )
             InputChip(
                 selected = readerType == CONTINUOUS,
                 onClick = { onReaderTypeChange(CONTINUOUS) },
+                colors = accentInputChipColors(),
                 label = { Text("Continuous") }
             )
             if (panelsReaderState != null)
                 InputChip(
                     selected = readerType == PANELS,
                     onClick = { onReaderTypeChange(PANELS) },
+                    colors = accentInputChipColors(),
                     label = { Text("Panels") }
                 )
         }
@@ -365,21 +391,25 @@ private fun PagedModeSettings(
             InputChip(
                 selected = scaleType == LayoutScaleType.SCREEN,
                 onClick = { pageState.onScaleTypeChange(LayoutScaleType.SCREEN) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forScaleType(LayoutScaleType.SCREEN)) }
             )
             InputChip(
                 selected = scaleType == LayoutScaleType.FIT_WIDTH,
                 onClick = { pageState.onScaleTypeChange(LayoutScaleType.FIT_WIDTH) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forScaleType(LayoutScaleType.FIT_WIDTH)) }
             )
             InputChip(
                 selected = scaleType == LayoutScaleType.FIT_HEIGHT,
                 onClick = { pageState.onScaleTypeChange(LayoutScaleType.FIT_HEIGHT) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forScaleType(LayoutScaleType.FIT_HEIGHT)) }
             )
             InputChip(
                 selected = scaleType == LayoutScaleType.ORIGINAL,
                 onClick = { pageState.onScaleTypeChange(LayoutScaleType.ORIGINAL) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forScaleType(LayoutScaleType.ORIGINAL)) }
             )
         }
@@ -392,11 +422,13 @@ private fun PagedModeSettings(
             InputChip(
                 selected = readingDirection == PagedReadingDirection.RIGHT_TO_LEFT,
                 onClick = { pageState.onReadingDirectionChange(PagedReadingDirection.RIGHT_TO_LEFT) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forReadingDirection(PagedReadingDirection.RIGHT_TO_LEFT)) }
             )
             InputChip(
                 selected = readingDirection == PagedReadingDirection.LEFT_TO_RIGHT,
                 onClick = { pageState.onReadingDirectionChange(PagedReadingDirection.LEFT_TO_RIGHT) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forReadingDirection(PagedReadingDirection.LEFT_TO_RIGHT)) }
             )
         }
@@ -409,16 +441,19 @@ private fun PagedModeSettings(
             InputChip(
                 selected = layout == PageDisplayLayout.SINGLE_PAGE,
                 onClick = { pageState.onLayoutChange(PageDisplayLayout.SINGLE_PAGE) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forLayout(PageDisplayLayout.SINGLE_PAGE)) }
             )
             InputChip(
                 selected = layout == PageDisplayLayout.DOUBLE_PAGES,
                 onClick = { pageState.onLayoutChange(PageDisplayLayout.DOUBLE_PAGES) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forLayout(PageDisplayLayout.DOUBLE_PAGES)) }
             )
             InputChip(
                 selected = layout == PageDisplayLayout.DOUBLE_PAGES_NO_COVER,
                 onClick = { pageState.onLayoutChange(PageDisplayLayout.DOUBLE_PAGES_NO_COVER) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forLayout(PageDisplayLayout.DOUBLE_PAGES_NO_COVER)) }
             )
         }
@@ -468,11 +503,13 @@ private fun PanelsModeSettings(
             InputChip(
                 selected = readingDirection == PagedReadingDirection.RIGHT_TO_LEFT,
                 onClick = { state.onReadingDirectionChange(PagedReadingDirection.RIGHT_TO_LEFT) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forReadingDirection(PagedReadingDirection.RIGHT_TO_LEFT)) }
             )
             InputChip(
                 selected = readingDirection == PagedReadingDirection.LEFT_TO_RIGHT,
                 onClick = { state.onReadingDirectionChange(PagedReadingDirection.LEFT_TO_RIGHT) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forReadingDirection(PagedReadingDirection.LEFT_TO_RIGHT)) }
             )
         }
@@ -484,6 +521,7 @@ private fun PanelsModeSettings(
                 InputChip(
                     selected = displayMode == mode,
                     onClick = { state.onFullPageDisplayModeChange(mode) },
+                    colors = accentInputChipColors(),
                     label = { Text(mode.name) }
                 )
             }
@@ -523,16 +561,19 @@ private fun ContinuousModeSettings(
             InputChip(
                 selected = readingDirection == ContinuousReadingDirection.TOP_TO_BOTTOM,
                 onClick = { state.onReadingDirectionChange(ContinuousReadingDirection.TOP_TO_BOTTOM) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forReadingDirection(ContinuousReadingDirection.TOP_TO_BOTTOM)) }
             )
             InputChip(
                 selected = readingDirection == ContinuousReadingDirection.LEFT_TO_RIGHT,
                 onClick = { state.onReadingDirectionChange(ContinuousReadingDirection.LEFT_TO_RIGHT) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forReadingDirection(ContinuousReadingDirection.LEFT_TO_RIGHT)) }
             )
             InputChip(
                 selected = readingDirection == ContinuousReadingDirection.RIGHT_TO_LEFT,
                 onClick = { state.onReadingDirectionChange(ContinuousReadingDirection.RIGHT_TO_LEFT) },
+                colors = accentInputChipColors(),
                 label = { Text(strings.forReadingDirection(ContinuousReadingDirection.RIGHT_TO_LEFT)) }
             )
         }
@@ -712,6 +753,96 @@ private fun UpscaleActivityIndicator(activities: Map<Int, UpscaleStatus>) {
     }
 }
 
+@Composable
+private fun ReaderFloatingToolbar(
+    readerType: ReaderType,
+    onReaderTypeChange: (ReaderType) -> Unit,
+    panelsReaderState: PanelsReaderState?,
+    ncnnSettingsState: NcnnSettingsState,
+    modifier: Modifier = Modifier,
+) {
+    val ncnnSettings by ncnnSettingsState.ncnnUpscalerSettings.collectAsState()
+    val showUpscale = isNcnnSupported()
+
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shadowElevation = 6.dp,
+        modifier = modifier,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            ReaderModeIconButton(
+                selected = readerType == PAGED,
+                onClick = { onReaderTypeChange(PAGED) },
+                icon = Icons.AutoMirrored.Rounded.MenuBook,
+                contentDescription = "Paged",
+            )
+            ReaderModeIconButton(
+                selected = readerType == CONTINUOUS,
+                onClick = { onReaderTypeChange(CONTINUOUS) },
+                icon = Icons.Rounded.ViewStream,
+                contentDescription = "Continuous",
+            )
+            if (panelsReaderState != null) {
+                ReaderModeIconButton(
+                    selected = readerType == PANELS,
+                    onClick = { onReaderTypeChange(PANELS) },
+                    icon = Icons.Rounded.GridView,
+                    contentDescription = "Panels",
+                )
+            }
+
+            if (showUpscale) {
+                VerticalDivider(
+                    modifier = Modifier
+                        .height(24.dp)
+                        .padding(horizontal = 4.dp)
+                )
+                ReaderModeIconButton(
+                    selected = ncnnSettings.enabled,
+                    onClick = { ncnnSettingsState.onSettingsChange(ncnnSettings.copy(enabled = !ncnnSettings.enabled)) },
+                    icon = Icons.Rounded.AutoAwesome,
+                    contentDescription = "Upscaling",
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReaderModeIconButton(
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: ImageVector,
+    contentDescription: String?,
+) {
+    val accentColor = LocalAccentColor.current
+    val indicatorColor = accentColor ?: MaterialTheme.colorScheme.secondaryContainer
+    val selectedIconTint = if (accentColor != null) {
+        if (accentColor.luminance() > 0.5f) Color.Black else Color.White
+    } else MaterialTheme.colorScheme.onSecondaryContainer
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(if (selected) indicatorColor else Color.Transparent)
+    ) {
+        IconButton(onClick = onClick) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = if (selected) selectedIconTint else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SamplingModeSettings(
@@ -736,6 +867,7 @@ private fun SamplingModeSettings(
                     InputChip(
                         selected = upsamplingMode == mode,
                         onClick = { onUpsamplingModeChange(mode) },
+                        colors = accentInputChipColors(),
                         label = { Text(strings.forUpsamplingMode(mode)) }
                     )
 
@@ -754,6 +886,7 @@ private fun SamplingModeSettings(
                     InputChip(
                         selected = downsamplingKernel == kernel,
                         onClick = { onDownsamplingKernelChange(kernel) },
+                        colors = accentInputChipColors(),
                         label = { Text(strings.forDownsamplingKernel(kernel)) }
                     )
 

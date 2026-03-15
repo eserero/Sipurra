@@ -23,6 +23,7 @@ This is a specialized fork of [Komelia](https://github.com/Gaysuist/Komelia) foc
 
 #### Immersive Detail Screens (Book, Series, Oneshot)
 *   **Immersive Detail Scaffold**: Full-bleed cover images extending behind the status bar for a modern, cinematic feel.
+*   **Publisher Icons**: Showing publisher icon in the immersive screen (if there is a match).
 *   **Adaptive Tinting**: Detail card backgrounds dynamically sample and apply dominant colors from the cover artwork.
 *   **Elevated Card UI**: Material 3 elevated specifications with standard typography and smooth shared-element transitions from the library list.
 *   **Synchronized State**: Consistent tabbed layouts across all detail screens with synchronized expand/collapse behavior.

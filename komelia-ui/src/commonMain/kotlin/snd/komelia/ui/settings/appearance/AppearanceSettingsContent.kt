@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +32,7 @@ import snd.komelia.ui.LocalCardLayoutBelow
 import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalStrings
 import snd.komelia.ui.common.cards.ItemCard
+import snd.komelia.ui.common.components.AppSlider
 import snd.komelia.ui.common.components.AppSliderDefaults
 import snd.komelia.ui.common.components.DropdownChoiceMenu
 import snd.komelia.ui.common.components.LabeledEntry
@@ -198,7 +198,7 @@ fun AppearanceSettingsContent(
                     "Tint strength: ${(immersiveColorAlpha * 100).roundToInt()}%",
                     modifier = Modifier.padding(horizontal = 10.dp),
                 )
-                Slider(
+                AppSlider(
                     value = immersiveColorAlpha,
                     onValueChange = onImmersiveColorAlphaChange,
                     valueRange = 0.05f..0.30f,
@@ -211,7 +211,7 @@ fun AppearanceSettingsContent(
         HorizontalDivider()
 
         Text(strings.imageCardSize, modifier = Modifier.padding(10.dp))
-        Slider(
+        AppSlider(
             value = cardWidth.value,
             onValueChange = { onCardWidthChange(it.roundToInt().dp) },
             steps = 24,

@@ -1,17 +1,21 @@
 package snd.komelia.ui.reader.image.common
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -46,6 +50,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.LayoutDirection.Ltr
 import androidx.compose.ui.unit.LayoutDirection.Rtl
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
@@ -192,6 +197,7 @@ private fun Slider(
         Slider(
             state = sliderState,
             colors = AppSliderDefaults.colors(accentColor = accentColor),
+            interactionSource = interactionSource,
             track = { state ->
                 SliderDefaults.Track(
                     sliderState = state,
@@ -200,9 +206,24 @@ private fun Slider(
                 )
             },
             thumb = { state ->
-                SliderDefaults.Thumb(
-                    interactionSource = interactionSource,
-                    colors = AppSliderDefaults.colors(accentColor = accentColor),
+                val isPressed by interactionSource.collectIsPressedAsState()
+                val isDragged by interactionSource.collectIsDraggedAsState()
+                val isInteracting = isPressed || isDragged
+
+                val thumbWidth by animateDpAsState(
+                    targetValue = if (isInteracting) 2.dp else 4.dp,
+                    label = "ThumbWidthAnimation"
+                )
+
+                val thumbColor = accentColor ?: MaterialTheme.colorScheme.tertiaryContainer
+
+                Box(
+                    modifier = Modifier
+                        .size(width = thumbWidth, height = 44.dp)
+                        .background(
+                            thumbColor,
+                            RoundedCornerShape(50)
+                        )
                 )
             }
         )
