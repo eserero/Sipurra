@@ -33,6 +33,7 @@ This is a specialized fork of [Komelia](https://github.com/Gaysuist/Komelia) foc
 *   **Kinetic Gesture System**: Completely rewritten engine with "sticky" paged swiping, RTL-aware directional barriers, and natural kinetic momentum.
 *   **Advanced Panel Navigation**: "Full Page Context" injection and unified smooth pan-and-zoom animations to eliminate transition jars.
 *   **Modern Controls**: Floating progress slider (May 2025 M3 spec), dedicated settings FAB, and long-press quick-save to Downloads.
+*   **Double Tap to Zoom**: ability to configure double-tap to zoom for panel and page modes (make tap navigation a bit slower)
 
 #### Settings Page
 *   **Modular Architecture**: Refactored menu structure for better maintainability and navigation.

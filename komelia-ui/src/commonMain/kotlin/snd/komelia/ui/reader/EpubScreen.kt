@@ -32,6 +32,7 @@ class EpubScreen(
     private val markReadProgress: Boolean = true,
     @Transient
     private val book: KomeliaBook? = null,
+    private val onExit: (KomeliaBook) -> Unit = {},
 ) : Screen {
 
     override val key: ScreenKey = bookId.value
@@ -45,7 +46,8 @@ class EpubScreen(
                 bookId = bookId,
                 bookSiblingsContext = bookSiblingsContext,
                 book = book,
-                markReadProgress = markReadProgress
+                markReadProgress = markReadProgress,
+                onExit = onExit
             )
         }
         LaunchedEffect(bookId) {
@@ -54,7 +56,13 @@ class EpubScreen(
             if (state is LoadState.Success) {
                 val book = state.value.book.value
                 if (book != null && book.media.mediaProfile != MediaProfile.EPUB) {
-                    navigator.replace(readerScreen(book, markReadProgress))
+                    navigator.replace(
+                        readerScreen(
+                            book = book,
+                            markReadProgress = markReadProgress,
+                            onExit = onExit
+                        )
+                    )
                 }
             }
         }

@@ -51,6 +51,7 @@ fun readerScreen(
     book: KomeliaBook,
     markReadProgress: Boolean,
     bookSiblingsContext: BookSiblingsContext? = null,
+    onExit: (KomeliaBook) -> Unit = {},
 ): Screen {
     val context = bookSiblingsContext ?: BookSiblingsContext.Series()
     val mediaProfile = book.media.mediaProfile
@@ -59,14 +60,16 @@ fun readerScreen(
             ImageReaderScreen(
                 bookId = book.id,
                 markReadProgress = markReadProgress,
-                bookSiblingsContext = context
+                bookSiblingsContext = context,
+                onExit = onExit,
             )
         }
         mediaProfile == EPUB -> EpubScreen(
             bookId = book.id,
             bookSiblingsContext = context,
             markReadProgress = markReadProgress,
-            book = book
+            book = book,
+            onExit = onExit,
         )
 
         else -> error("Unsupported book format")
@@ -77,6 +80,7 @@ class ImageReaderScreen(
     private val bookId: KomgaBookId,
     private val bookSiblingsContext: BookSiblingsContext,
     private val markReadProgress: Boolean = true,
+    private val onExit: (KomeliaBook) -> Unit = {},
 ) : Screen {
 
     @Composable
@@ -104,7 +108,8 @@ class ImageReaderScreen(
                     readerScreen(
                         book = book,
                         bookSiblingsContext = bookSiblingsContext,
-                        markReadProgress = markReadProgress
+                        markReadProgress = markReadProgress,
+                        onExit = onExit,
                     )
                 )
             }
@@ -189,9 +194,12 @@ class ImageReaderScreen(
 
     private fun onExit(navigator: Navigator, book: KomeliaBook?) {
         if (navigator.canPop) {
+            book?.let { onExit(it) }
             navigator.pop()
         } else if (book != null) {
+            onExit(book)
             navigator.replace(MainScreen(bookScreen(book)))
         }
     }
 }
+

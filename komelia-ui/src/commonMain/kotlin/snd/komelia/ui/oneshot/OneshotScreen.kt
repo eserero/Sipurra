@@ -96,6 +96,11 @@ class OneshotScreen(
                             book = currentBook,
                             markReadProgress = markReadProgress,
                             bookSiblingsContext = bookSiblingsContext,
+                            onExit = { lastReadBook ->
+                                if (lastReadBook.id != currentBook.id) {
+                                    navigator.replace(bookScreen(lastReadBook, bookSiblingsContext))
+                                }
+                            }
                         )
                     )
                 },
@@ -150,6 +155,11 @@ class OneshotScreen(
                                 book = book,
                                 markReadProgress = markReadProgress,
                                 bookSiblingsContext = bookSiblingsContext,
+                                onExit = { lastReadBook ->
+                                    if (lastReadBook.id != book.id) {
+                                        navigator.replace(bookScreen(lastReadBook, bookSiblingsContext))
+                                    }
+                                }
                             )
                         )
                     },

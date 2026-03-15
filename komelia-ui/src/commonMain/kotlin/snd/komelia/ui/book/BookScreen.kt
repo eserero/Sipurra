@@ -4,12 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.launch
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.ui.BookSiblingsContext
 import snd.komelia.ui.LocalReloadEvents
@@ -80,6 +82,7 @@ class BookScreen(
             val book = vm.book.collectAsState().value ?: return
             val siblings = vm.siblingBooks.collectAsState().value
 
+            val coroutineScope = rememberCoroutineScope()
             ImmersiveBookContent(
                 book = book,
                 siblingBooks = siblings,
@@ -88,7 +91,16 @@ class BookScreen(
                 onBackClick = { onBackPress(navigator, book.seriesId) },
                 onReadBook = { selectedBook, markReadProgress ->
                     navigator.parent?.push(
-                        readerScreen(selectedBook, markReadProgress, bookSiblingsContext)
+                        readerScreen(
+                            book = selectedBook,
+                            markReadProgress = markReadProgress,
+                            bookSiblingsContext = bookSiblingsContext,
+                            onExit = { lastReadBook ->
+                                if (lastReadBook.id != book.id) {
+                                    vm.setCurrentBook(lastReadBook)
+                                }
+                            }
+                        )
                     )
                 },
                 onDownload = vm::onBookDownload,
@@ -118,6 +130,7 @@ class BookScreen(
 
         val book = vm.book.collectAsState().value
 
+        val coroutineScope = rememberCoroutineScope()
         ScreenPullToRefreshBox(
             screenState = vm.state,
             onRefresh = vm::reload
@@ -131,12 +144,22 @@ class BookScreen(
                         if (book != null) readerScreen(
                             book = book,
                             bookSiblingsContext = bookSiblingsContext,
-                            markReadProgress = markReadProgress
+                            markReadProgress = markReadProgress,
+                            onExit = { lastReadBook ->
+                                if (lastReadBook.id != book.id) {
+                                    vm.setCurrentBook(lastReadBook)
+                                }
+                            }
                         )
                         else ImageReaderScreen(
                             bookId = bookId,
                             bookSiblingsContext = bookSiblingsContext,
-                            markReadProgress = markReadProgress
+                            markReadProgress = markReadProgress,
+                            onExit = { lastReadBook ->
+                                if (lastReadBook.id != bookId) {
+                                    coroutineScope.launch { vm.initialize() }
+                                }
+                            }
                         )
                     )
                 },

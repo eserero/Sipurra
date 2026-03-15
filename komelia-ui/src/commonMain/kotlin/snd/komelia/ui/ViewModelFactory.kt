@@ -606,7 +606,8 @@ class ViewModelFactory(
         bookId: KomgaBookId,
         bookSiblingsContext: BookSiblingsContext,
         book: KomeliaBook? = null,
-        markReadProgress: Boolean = true
+        markReadProgress: Boolean = true,
+        onExit: (KomeliaBook) -> Unit,
     ): EpubReaderViewModel {
         return EpubReaderViewModel(
             bookId = bookId,
@@ -622,6 +623,7 @@ class ViewModelFactory(
             windowState = dependencies.windowState,
             platformType = platformType,
             bookSiblingsContext = bookSiblingsContext,
+            onExit = onExit,
         )
     }
 

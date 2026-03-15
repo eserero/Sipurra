@@ -205,7 +205,19 @@ class LibraryScreen(
                     keepReadingBooks = seriesTabState.keepReadingBooks,
                     bookMenuActions = seriesTabState.bookMenuActions(),
                     onBookClick = { navigator.push(bookScreen(it)) },
-                    onBookReadClick = { book, mark -> navigator.push(readerScreen(book, mark)) },
+                    onBookReadClick = { book, mark ->
+                        navigator.push(
+                            readerScreen(
+                                book = book,
+                                markReadProgress = mark,
+                                onExit = { lastReadBook ->
+                                    if (lastReadBook.id != book.id) {
+                                        seriesTabState.reload()
+                                    }
+                                }
+                            )
+                        )
+                    },
                     beforeContent = beforeContent
                 )
             }

@@ -75,6 +75,7 @@ class TtsuReaderState(
     private val platformType: PlatformType,
     private val coroutineScope: CoroutineScope,
     private val bookSiblingsContext: BookSiblingsContext,
+    override val onExit: (KomeliaBook) -> Unit,
 ) : EpubReaderState {
     override val state = MutableStateFlow<LoadState<Unit>>(LoadState.Uninitialized)
     override val book = MutableStateFlow(book)
@@ -124,6 +125,7 @@ class TtsuReaderState(
     override fun closeWebview() {
         webview.value?.close()
         if (platformType == PlatformType.MOBILE) windowState.setFullscreen(false)
+        book.value?.let { onExit(it) }
 
         navigator.value?.let { nav ->
             if (nav.canPop) nav.pop()

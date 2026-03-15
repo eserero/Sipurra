@@ -95,7 +95,18 @@ class SeriesScreen(
                 booksState = vm.booksState,
                 onBookClick = { navigator push bookScreen(it, BookSiblingsContext.Series(vm.booksState.filterState.state.value)) },
                 onBookReadClick = { book, markProgress ->
-                    navigator.parent?.push(readerScreen(book, markProgress))
+                    navigator.parent?.push(
+                        readerScreen(
+                            book = book,
+                            markReadProgress = markProgress,
+                            bookSiblingsContext = BookSiblingsContext.Series(vm.booksState.filterState.state.value),
+                            onExit = { lastReadBook ->
+                                if (lastReadBook.id != book.id) {
+                                    vm.reload()
+                                }
+                            }
+                        )
+                    )
                 },
                 collectionsState = vm.collectionsState,
                 onCollectionClick = { navigator.push(CollectionScreen(it.id)) },
@@ -139,7 +150,18 @@ class SeriesScreen(
                         booksState = vm.booksState,
                         onBookClick = { navigator push bookScreen(it, BookSiblingsContext.Series(vm.booksState.filterState.state.value)) },
                         onBookReadClick = { book, markProgress ->
-                            navigator.parent?.push(readerScreen(book, markProgress))
+                            navigator.parent?.push(
+                                readerScreen(
+                                    book = book,
+                                    markReadProgress = markProgress,
+                                    bookSiblingsContext = BookSiblingsContext.Series(vm.booksState.filterState.state.value),
+                                    onExit = { lastReadBook ->
+                                        if (lastReadBook.id != book.id) {
+                                            vm.reload()
+                                        }
+                                    }
+                                )
+                            )
                         },
 
                         collectionsState = vm.collectionsState,

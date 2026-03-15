@@ -87,7 +87,17 @@ class HomeScreen(private val libraryId: KomgaLibraryId? = null) : ReloadableScre
                         bookMenuActions = vm.bookMenuActions(),
                         onBookClick = { navigator push bookScreen(it) },
                         onBookReadClick = { book, markProgress ->
-                            navigator.parent?.push(readerScreen(book, markProgress))
+                            navigator.parent?.push(
+                                readerScreen(
+                                    book = book,
+                                    markReadProgress = markProgress,
+                                    onExit = { lastReadBook ->
+                                        if (lastReadBook.id != book.id) {
+                                            vm.reload()
+                                        }
+                                    }
+                                )
+                            )
                         },
                     )
 

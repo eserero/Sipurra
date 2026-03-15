@@ -68,7 +68,12 @@ class ReadListScreen(val readListId: KomgaReadListId) : ReloadableScreen {
                                     readerScreen(
                                         book = book,
                                         markReadProgress = markProgress,
-                                        bookSiblingsContext = BookSiblingsContext.ReadList(readListId)
+                                        bookSiblingsContext = BookSiblingsContext.ReadList(readListId),
+                                        onExit = { lastReadBook ->
+                                            if (lastReadBook.id != book.id) {
+                                                navigator.replace(bookScreen(lastReadBook, BookSiblingsContext.ReadList(readListId)))
+                                            }
+                                        }
                                     )
                                 )
                             },
