@@ -317,6 +317,10 @@ tasks.register<Sync>("buildWebui") {
     from("$epubReaderKomga/dist/")
     from("$epubReaderTtsu/dist/")
     into(composeCommonResources)
+
+    preserve {
+        include("publishers/**")
+    }
 }
 
 tasks.register<Exec>("cmakeSystemDepsConfigure") {
