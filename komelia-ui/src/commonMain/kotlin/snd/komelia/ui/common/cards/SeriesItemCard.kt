@@ -41,6 +41,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import snd.komelia.ui.LocalCardLayoutBelow
 import snd.komelia.ui.LocalCardLayoutOverlayBackground
 import snd.komelia.ui.LocalHideParenthesesInNames
@@ -294,19 +295,34 @@ private fun SeriesImageOverlay(
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.Top
                 ) {
+                    val isBothPresent = series.deleted || libraryIsDeleted
                     if (series.deleted || libraryIsDeleted) {
                         Text(
                             text = "Unavailable",
                             maxLines = 1,
-                            style = MaterialTheme.typography.bodyMedium.copy(shadow = shadow),
+                            style = if (overlayBackground) {
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = (MaterialTheme.typography.bodyMedium.fontSize.value - 1).sp,
+                                    fontWeight = FontWeight.Normal
+                                )
+                            } else {
+                                MaterialTheme.typography.bodyMedium.copy(shadow = shadow)
+                            },
                             color = if (overlayBackground) MaterialTheme.colorScheme.error else Color.White,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
                     Text(
                         text = title,
-                        maxLines = if (series.deleted || libraryIsDeleted) 1 else 2,
-                        style = MaterialTheme.typography.bodyMedium.copy(shadow = shadow),
+                        maxLines = if (isBothPresent) 1 else 2,
+                        style = if (overlayBackground) {
+                            MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = (MaterialTheme.typography.bodyMedium.fontSize.value - 1).sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        } else {
+                            MaterialTheme.typography.bodyMedium.copy(shadow = shadow)
+                        },
                         color = textColor,
                         overflow = TextOverflow.Ellipsis,
                     )

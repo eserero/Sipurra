@@ -52,6 +52,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.filter
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.offline.sync.model.DownloadEvent
@@ -275,11 +276,19 @@ private fun BookImageOverlay(
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalArrangement = Arrangement.Top
                     ) {
+                        val isBothPresent = (showSeriesTitle && !book.oneshot) || book.deleted || libraryIsDeleted
                         if (showSeriesTitle && !book.oneshot) {
                             Text(
                                 text = seriesTitle,
                                 maxLines = 1,
-                                style = MaterialTheme.typography.labelMedium.copy(shadow = shadow),
+                                style = if (overlayBackground) {
+                                    MaterialTheme.typography.labelMedium.copy(
+                                        fontSize = (MaterialTheme.typography.labelMedium.fontSize.value - 1).sp,
+                                        fontWeight = FontWeight.Normal
+                                    )
+                                } else {
+                                    MaterialTheme.typography.labelMedium.copy(shadow = shadow)
+                                },
                                 color = secondaryTextColor,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -288,15 +297,29 @@ private fun BookImageOverlay(
                             Text(
                                 text = "Unavailable",
                                 maxLines = 1,
-                                style = MaterialTheme.typography.bodyMedium.copy(shadow = shadow),
+                                style = if (overlayBackground) {
+                                    MaterialTheme.typography.bodyMedium.copy(
+                                        fontSize = (MaterialTheme.typography.bodyMedium.fontSize.value - 1).sp,
+                                        fontWeight = FontWeight.Normal
+                                    )
+                                } else {
+                                    MaterialTheme.typography.bodyMedium.copy(shadow = shadow)
+                                },
                                 color = if (overlayBackground) MaterialTheme.colorScheme.error else Color.White,
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
                         Text(
                             text = bookTitle,
-                            maxLines = if (showSeriesTitle && !book.oneshot || book.deleted || libraryIsDeleted) 1 else 2,
-                            style = MaterialTheme.typography.bodyMedium.copy(shadow = shadow),
+                            maxLines = if (isBothPresent) 1 else 2,
+                            style = if (overlayBackground) {
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = (MaterialTheme.typography.bodyMedium.fontSize.value - 1).sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            } else {
+                                MaterialTheme.typography.bodyMedium.copy(shadow = shadow)
+                            },
                             color = textColor,
                             overflow = TextOverflow.Ellipsis,
                         )

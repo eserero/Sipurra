@@ -34,6 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import snd.komelia.ui.LocalCardLayoutBelow
 import snd.komelia.ui.LocalCardLayoutOverlayBackground
 import snd.komelia.ui.LocalKomgaState
@@ -178,14 +179,28 @@ private fun CollectionImageOverlay(
                     Text(
                         text = collection.name,
                         maxLines = 1,
-                        style = MaterialTheme.typography.bodyMedium.copy(shadow = shadow),
+                        style = if (overlayBackground) {
+                            MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = (MaterialTheme.typography.bodyMedium.fontSize.value - 1).sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        } else {
+                            MaterialTheme.typography.bodyMedium.copy(shadow = shadow)
+                        },
                         color = textColor,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = "${collection.seriesIds.size} series",
                         maxLines = 1,
-                        style = MaterialTheme.typography.labelMedium.copy(shadow = shadow),
+                        style = if (overlayBackground) {
+                            MaterialTheme.typography.labelMedium.copy(
+                                fontSize = (MaterialTheme.typography.labelMedium.fontSize.value - 1).sp,
+                                fontWeight = FontWeight.Normal
+                            )
+                        } else {
+                            MaterialTheme.typography.labelMedium.copy(shadow = shadow)
+                        },
                         color = secondaryTextColor,
                         overflow = TextOverflow.Ellipsis,
                     )

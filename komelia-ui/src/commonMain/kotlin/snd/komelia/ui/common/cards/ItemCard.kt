@@ -121,8 +121,8 @@ fun CardTopGradient() {
 @Composable
 fun CardBottomGradient(modifier: Modifier = Modifier) {
     Box(
-        modifier.fillMaxWidth().height(50.dp)
-            .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.4f))))
+        modifier.fillMaxWidth().height(80.dp)
+            .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))))
     )
 }
 
