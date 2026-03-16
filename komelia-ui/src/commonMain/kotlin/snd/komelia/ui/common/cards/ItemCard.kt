@@ -29,15 +29,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyGridState
 import snd.komelia.ui.LocalCardLayoutBelow
+import snd.komelia.ui.LocalCardLayoutOverlayBackground
 import snd.komelia.ui.LocalPlatform
-import snd.komelia.ui.common.components.OutlinedText
 import snd.komelia.ui.platform.PlatformType
 import snd.komelia.ui.platform.cursorForHand
 
@@ -59,7 +57,7 @@ fun ItemCard(
     else MaterialTheme.colorScheme.surfaceVariant
 
     val shape = if (cardLayoutBelow) RoundedCornerShape(12.dp)
-    else RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp)
+    else RoundedCornerShape(8.dp)
 
     Card(
         shape = shape,
@@ -67,9 +65,10 @@ fun ItemCard(
             .combinedClickable(onClick = onClick ?: {}, onLongClick = onLongClick)
             .then(if (onClick != null || onLongClick != null) Modifier.cursorForHand() else Modifier),
         colors = CardDefaults.cardColors(containerColor = color),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (cardLayoutBelow) 0.dp else 2.dp)
     ) {
         val imageShape = if (cardLayoutBelow) RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
-        else RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp)
+        else RoundedCornerShape(8.dp)
 
         Box(
             modifier = Modifier
@@ -87,8 +86,9 @@ fun ItemCardWithContent(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp),
-        modifier = modifier
+        shape = RoundedCornerShape(8.dp),
+        modifier = modifier,
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Box(modifier = Modifier.aspectRatio(0.703f)) { image() }
         content()
@@ -96,18 +96,33 @@ fun ItemCardWithContent(
 }
 
 @Composable
-fun CardGradientOverlay() {
-    val colorStops = arrayOf(
-        0.0f to Color.Black.copy(alpha = .5f),
-        0.10f to Color.Transparent,
-        0.6f to Color.Transparent,
-        0.90f to Color.Black.copy(alpha = .8f),
-    )
+fun CardTextBackground(modifier: Modifier = Modifier) {
+    val overlayBackground = LocalCardLayoutOverlayBackground.current
+    if (overlayBackground) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(48.dp) // Fixed height for ~2 lines + padding
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+        )
+    } else {
+        CardBottomGradient(modifier)
+    }
+}
 
+@Composable
+fun CardTopGradient() {
     Box(
-        Modifier
-            .fillMaxSize()
-            .background(brush = Brush.verticalGradient(colorStops = colorStops))
+        Modifier.fillMaxWidth().height(40.dp)
+            .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.4f), Color.Transparent)))
+    )
+}
+
+@Composable
+fun CardBottomGradient(modifier: Modifier = Modifier) {
+    Box(
+        modifier.fillMaxWidth().height(50.dp)
+            .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.4f))))
     )
 }
 
@@ -115,25 +130,6 @@ fun CardGradientOverlay() {
 fun overlayBorderModifier() =
     Modifier.border(BorderStroke(3.dp, MaterialTheme.colorScheme.tertiary), RoundedCornerShape(5.dp))
 
-
-@Composable
-fun CardOutlinedText(
-    text: String,
-    textColor: Color = Color.Unspecified,
-    maxLines: Int = DEFAULT_CARD_MAX_LINES,
-    style: TextStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
-    outlineDrawStyle: Stroke = Stroke(4f),
-) {
-    OutlinedText(
-        text = text,
-        maxLines = maxLines,
-        fillColor = textColor,
-        outlineColor = Color.Black,
-        style = style,
-        overflow = TextOverflow.Ellipsis,
-        outlineDrawStyle = outlineDrawStyle,
-    )
-}
 
 @Composable
 fun SelectionRadioButton(

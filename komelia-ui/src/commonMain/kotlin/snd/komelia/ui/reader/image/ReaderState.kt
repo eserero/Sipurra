@@ -29,6 +29,7 @@ import snd.komelia.komga.api.KomgaBookApi
 import snd.komelia.komga.api.KomgaReadListApi
 import snd.komelia.komga.api.KomgaSeriesApi
 import snd.komelia.komga.api.model.KomeliaBook
+import snd.komelia.settings.CommonSettingsRepository
 import snd.komelia.settings.ImageReaderSettingsRepository
 import snd.komelia.settings.model.ReaderFlashColor
 import snd.komelia.settings.model.ReaderTapNavigationMode
@@ -55,6 +56,7 @@ class ReaderState(
     private val navigator: Navigator,
     private val appNotifications: AppNotifications,
     private val readerSettingsRepository: ImageReaderSettingsRepository,
+    private val commonSettingsRepository: CommonSettingsRepository,
     private val currentBookId: MutableStateFlow<KomgaBookId?>,
     private val markReadProgress: Boolean,
     private val stateScope: CoroutineScope,
@@ -106,6 +108,7 @@ class ReaderState(
 
     val tapNavigationMode = MutableStateFlow(ReaderTapNavigationMode.LEFT_RIGHT)
     val volumeKeysNavigation = MutableStateFlow(false)
+    val keepReaderScreenOn = MutableStateFlow(false)
     val pixelDensity = MutableStateFlow<Density?>(null)
 
     suspend fun initialize(bookId: KomgaBookId) {
@@ -121,6 +124,7 @@ class ReaderState(
         flashWith.value = readerSettingsRepository.getFlashWith().first()
         tapNavigationMode.value = readerSettingsRepository.getReaderTapNavigationMode().first()
         volumeKeysNavigation.value = readerSettingsRepository.getVolumeKeysNavigation().first()
+        keepReaderScreenOn.value = commonSettingsRepository.getKeepReaderScreenOn().first()
 
         appNotifications.runCatchingToNotifications {
             state.value = LoadState.Loading

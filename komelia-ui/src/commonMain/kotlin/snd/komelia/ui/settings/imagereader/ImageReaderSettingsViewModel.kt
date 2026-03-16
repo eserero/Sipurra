@@ -16,6 +16,7 @@ import snd.komelia.image.UpsamplingMode
 import snd.komelia.image.availableReduceKernels
 import snd.komelia.image.availableUpsamplingModes
 import snd.komelia.onnxruntime.OnnxRuntime
+import snd.komelia.settings.CommonSettingsRepository
 import snd.komelia.settings.ImageReaderSettingsRepository
 import snd.komelia.ui.settings.imagereader.ncnn.NcnnSettingsState
 import snd.komelia.ui.settings.imagereader.onnxruntime.OnnxRuntimeSettingsState
@@ -24,6 +25,7 @@ import snd.komelia.updates.OnnxRuntimeInstaller
 
 class ImageReaderSettingsViewModel(
     private val settingsRepository: ImageReaderSettingsRepository,
+    private val commonSettingsRepository: CommonSettingsRepository,
     private val appNotifications: AppNotifications,
     private val onnxRuntimeInstaller: OnnxRuntimeInstaller?,
     private val onnxRuntime: OnnxRuntime?,
@@ -58,6 +60,7 @@ class ImageReaderSettingsViewModel(
     val linearLightDownsampling = MutableStateFlow(false)
     val loadThumbnailsPreview = MutableStateFlow(false)
     val volumeKeysNavigation = MutableStateFlow(false)
+    val keepReaderScreenOn = MutableStateFlow(false)
     val availableUpsamplingModes = availableUpsamplingModes()
     val availableDownsamplingKernels = availableReduceKernels()
 
@@ -69,6 +72,7 @@ class ImageReaderSettingsViewModel(
         linearLightDownsampling.value = settingsRepository.getLinearLightDownsampling().first()
         loadThumbnailsPreview.value = settingsRepository.getLoadThumbnailPreviews().first()
         volumeKeysNavigation.value = settingsRepository.getVolumeKeysNavigation().first()
+        keepReaderScreenOn.value = commonSettingsRepository.getKeepReaderScreenOn().first()
         onnxRuntimeSettingsState.initialize()
         ncnnSettingsState.initialize()
     }
@@ -96,6 +100,11 @@ class ImageReaderSettingsViewModel(
     fun onVolumeKeysNavigationChange(enable: Boolean) {
         volumeKeysNavigation.value = enable
         screenModelScope.launch { settingsRepository.putVolumeKeysNavigation(enable) }
+    }
+
+    fun onKeepReaderScreenOnChange(enabled: Boolean) {
+        keepReaderScreenOn.value = enabled
+        screenModelScope.launch { commonSettingsRepository.putKeepReaderScreenOn(enabled) }
     }
 
     fun onClearImageCache() {

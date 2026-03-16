@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -150,6 +151,12 @@ class ImageReaderScreen(
     @Composable
     fun ReaderScreenContent(vm: ReaderViewModel) {
         val navigator = LocalNavigator.currentOrThrow
+        val windowState = LocalWindowState.current
+        val keepScreenOn by vm.readerState.keepReaderScreenOn.collectAsState()
+        DisposableEffect(keepScreenOn) {
+            windowState.setKeepScreenOn(keepScreenOn)
+            onDispose { windowState.setKeepScreenOn(false) }
+        }
 
         ReaderContent(
             commonReaderState = vm.readerState,

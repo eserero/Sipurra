@@ -4,7 +4,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import snd.komelia.ui.LocalAccentColor
 import snd.komelia.ui.LocalPlatform
 import snd.komelia.ui.common.components.SwitchWithLabel
 import snd.komelia.ui.platform.PlatformType
@@ -21,12 +24,16 @@ fun ImageReaderSettingsContent(
     volumeKeysNavigation: Boolean,
     onVolumeKeysNavigationChange: (Boolean) -> Unit,
 
+    keepReaderScreenOn: Boolean,
+    onKeepReaderScreenOnChange: (Boolean) -> Unit,
+
     onCacheClear: () -> Unit,
     onnxRuntimeSettingsState: OnnxRuntimeSettingsState,
     ncnnSettingsState: NcnnSettingsState,
 ) {
     var showLogs by remember { mutableStateOf(false) }
     var showCrashLogs by remember { mutableStateOf(false) }
+    val accentColor = LocalAccentColor.current
 
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -45,10 +52,19 @@ fun ImageReaderSettingsContent(
                 onCheckedChange = onVolumeKeysNavigationChange,
                 label = { Text("Volume keys navigation") },
             )
+            SwitchWithLabel(
+                checked = keepReaderScreenOn,
+                onCheckedChange = onKeepReaderScreenOnChange,
+                label = { Text("Keep screen on while reading") },
+            )
         }
 
         FilledTonalButton(
             onClick = onCacheClear,
+            colors = accentColor?.let {
+                val contentColor = if (it.luminance() > 0.5f) Color.Black else Color.White
+                ButtonDefaults.filledTonalButtonColors(containerColor = it, contentColor = contentColor)
+            } ?: ButtonDefaults.filledTonalButtonColors()
         ) { Text("Clear image cache") }
 
         if (isOnnxRuntimeSupported()) {
@@ -88,10 +104,18 @@ fun ImageReaderSettingsContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = { showLogs = true }) {
+                TextButton(
+                    onClick = { showLogs = true },
+                    colors = accentColor?.let { ButtonDefaults.textButtonColors(contentColor = it) }
+                        ?: ButtonDefaults.textButtonColors()
+                ) {
                     Text("View Logs")
                 }
-                TextButton(onClick = { showCrashLogs = true }) {
+                TextButton(
+                    onClick = { showCrashLogs = true },
+                    colors = accentColor?.let { ButtonDefaults.textButtonColors(contentColor = it) }
+                        ?: ButtonDefaults.textButtonColors()
+                ) {
                     Text("Crash Logs")
                 }
             }

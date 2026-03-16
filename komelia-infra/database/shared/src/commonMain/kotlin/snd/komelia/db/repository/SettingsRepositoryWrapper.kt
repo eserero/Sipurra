@@ -162,4 +162,18 @@ class SettingsRepositoryWrapper(
     override suspend fun putHideParenthesesInNames(hide: Boolean) =
         wrapper.transform { it.copy(hideParenthesesInNames = hide) }
 
+    override fun getKeepReaderScreenOn(): Flow<Boolean> =
+        wrapper.state.map { it.keepReaderScreenOn }.distinctUntilChanged()
+
+    override suspend fun putKeepReaderScreenOn(enabled: Boolean) {
+        wrapper.transform { it.copy(keepReaderScreenOn = enabled) }
+    }
+
+    override fun getCardLayoutOverlayBackground(): Flow<Boolean> =
+        wrapper.state.map { it.cardLayoutOverlayBackground }.distinctUntilChanged()
+
+    override suspend fun putCardLayoutOverlayBackground(enabled: Boolean) {
+        wrapper.transform { it.copy(cardLayoutOverlayBackground = enabled) }
+    }
+
 }

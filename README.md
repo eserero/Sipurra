@@ -6,38 +6,41 @@ This is a specialized fork of [Komelia](https://github.com/Gaysuist/Komelia) foc
 ### Summary of New Features
 
 #### Library Screen
-*   **Material 3 Header**: Standardized M3 `TopAppBar` with integrated metadata chips (series/collection counts) and page size selectors for better information density.
-*   **Mobile-Friendly Author Filter**: A new dialog-based author filter with search capabilities, replacing the standard dropdown for a superior touch experience.
-*   **Library Persistence**: Automatically remembers and restores the last viewed library upon app restart.
+*   **Material 3**: Standardized M3 `TopAppBar` with cleaner menu location and a hamburger menu to choose the library. Floating FAB to open the filter dialog.
+*   **Smaller Thumbnails**: allowing smaller thumbnails in the setting screen (choose 110) which shows 3 thumbnail per row instead of only two. Thumbnails are also nicer with some options to choose from (text below thumbnail, transparent background for text)
+*   **Improved Filtering UI**: Improve and cleanup of some of the fields - specifically dialog-based author filter as it was not easy to work with it on mobile.
+*   **Library Navigation and Persistence**: clicking on the Library navigation button Automatically remembers the last library you were - so you dont need to choose the library every time.
 *   **Segmented Navigation**: Modern M3 `SingleChoiceSegmentedButtonRow` for seamless switching between Series, Collections, and Read Lists.
-*   **Advanced Filtering**: persistent Extended Floating Action Button (FAB) that opens an M3 Modal Bottom Sheet with integrated search and chip-based selection.
-*   **"Keep Reading" Strip**: A new horizontal quick-access strip in the series list for your recently read books.
+*   **"Keep Reading" Strip**: A new horizontal quick-access strip in the series list for your recently read books per library.
+
 
 #### Home Screen
 *   **Modernized Navigation**: Section management and settings moved to a Floating Action Button at the bottom-right for easy one-handed use.
-*   **Horizontal Layout**: Organized content into horizontal rows (Keep Reading, On Deck, etc.) for a compact and discoverable dashboard.
+*   **Horizontal Layout**: Organized content into horizontal rows (Keep Reading, On Deck, etc.) for a compact and discoverable dashboard. This is similar to how komga web show it.
 
 #### Search
 *   **Interactive Search Bar**: Full M3 `SearchBar` implementation with smooth animations, native back-navigation, and clear-text support.
 *   **Consistent Toggles**: Search filters now use `SecondaryTabRow` selectors for a unified UI language.
 
 #### Immersive Detail Screens (Book, Series, Oneshot)
-*   **Immersive Detail Scaffold**: Full-bleed cover images extending behind the status bar for a modern, cinematic feel.
+*   **Immersive Screen**: Full-bleed cover images extending behind information card for a modern, cinematic feel. ability to swipe left right to move between books, floating buttons to easily read and download.
 *   **Publisher Icons**: Showing publisher icon in the immersive screen (if there is a match).
-*   **Adaptive Tinting**: Detail card backgrounds dynamically sample and apply dominant colors from the cover artwork.
+*   **Adaptive Card Color**: Detail card backgrounds dynamically sample and apply dominant colors from the cover artwork. Controlled in the settings.
 *   **Elevated Card UI**: Material 3 elevated specifications with standard typography and smooth shared-element transitions from the library list.
-*   **Synchronized State**: Consistent tabbed layouts across all detail screens with synchronized expand/collapse behavior.
 
 #### Reader
 *   **Adaptive Backgrounds**: "Blooming" gradient backgrounds that sample edge colors in real-time for both Paged and Panel modes.
-*   **High-Performance GPU Upscaling**: Integrated NCNN-powered upscaling (Waifu2x, RealCUGAN, RealSR, Real-ESRGAN) specifically optimized for Android GPU hardware.
-*   **Kinetic Gesture System**: Completely rewritten engine with "sticky" paged swiping, RTL-aware directional barriers, and natural kinetic momentum.
-*   **Advanced Panel Navigation**: "Full Page Context" injection and unified smooth pan-and-zoom animations to eliminate transition jars.
-*   **Modern Controls**: Floating progress slider (May 2025 M3 spec), dedicated settings FAB, and long-press quick-save to Downloads.
+*   **High-Performance GPU Upscaling**: Integrated NCNN-powered upscaling (Waifu2x, RealCUGAN, RealSR, Real-ESRGAN) specifically optimized for Android GPU hardware. upscaling is really good but may require some time to complete depending on your mobile cpu/gpu. there are page upscaling indicators showing you what is goingn on.
+*   **Swiping Navigation in Page Mode**: swiping now work and allow you to move forward/backward pages smoothly.
+*   **Improved Panel Navigation**: Smooth pan-and-zoom animations to eliminate transition jars. Ability to show the full screen before and/or after the panels for context, fixed several issues when changing from portrait to landscape.
+*   **Modern Controls**: Floating progress slider (May 2025 M3 spec), dedicated settings FAB and shortcuts in floating menu
+*   **Save Current Image**: long-press quick-save to Downloads
 *   **Double Tap to Zoom**: ability to configure double-tap to zoom for panel and page modes (make tap navigation a bit slower)
+*   **Additional Tap to Navigate Options**: tap left to back and right to forward, tap right to forward and left to back, tap top side to back and lower side to forward, tap lower side to back and top to forward.
+*   **Always On**: setting to prevent the screen to turn off when in the reader.
 
 #### Settings Page
-*   **Modular Architecture**: Refactored menu structure for better maintainability and navigation.
+*   **Nicer Navigation page**: Refactored menu structure for a more moden m3 look.
 *   **New Visual Toggles**: Immersive color strength sliders, unified app-wide accent color presets, and a master toggle for the "New Library UI".
 *   **Deep Customization**: Per-mode toggles for tap-to-zoom, configurable tap navigation zones with visual diagrams, and granular adaptive background settings.
 

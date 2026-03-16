@@ -41,6 +41,9 @@ class EpubReaderViewModel(
 ) : StateScreenModel<LoadState<EpubReaderState>>(LoadState.Uninitialized) {
 
     suspend fun initialize(navigator: Navigator) {
+        if (settingsRepository.getKeepReaderScreenOn().first()) {
+            windowState.setKeepScreenOn(true)
+        }
         when (val state = state.value) {
             LoadState.Loading, is LoadState.Error -> {}
             is LoadState.Success<EpubReaderState> -> state.value.initialize(navigator)
@@ -100,6 +103,10 @@ class EpubReaderViewModel(
                 }
             }
         }
+    }
+
+    override fun onDispose() {
+        windowState.setKeepScreenOn(false)
     }
 }
 

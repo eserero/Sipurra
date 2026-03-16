@@ -26,6 +26,7 @@ import snd.komelia.komga.api.KomgaBookApi
 import snd.komelia.komga.api.KomgaReadListApi
 import snd.komelia.komga.api.KomgaSeriesApi
 import snd.komelia.onnxruntime.OnnxRuntime
+import snd.komelia.settings.CommonSettingsRepository
 import snd.komelia.settings.ImageReaderSettingsRepository
 import snd.komelia.settings.model.ReaderType.CONTINUOUS
 import snd.komelia.settings.model.ReaderType.PAGED
@@ -51,6 +52,7 @@ class ReaderViewModel(
     navigator: Navigator,
     appNotifications: AppNotifications,
     readerSettingsRepository: ImageReaderSettingsRepository,
+    private val commonSettingsRepository: CommonSettingsRepository,
     imageLoader: BookImageLoader,
     appStrings: Flow<AppStrings>,
     readerImageFactory: ReaderImageFactory,
@@ -96,6 +98,7 @@ class ReaderViewModel(
         navigator = navigator,
         appNotifications = appNotifications,
         readerSettingsRepository = readerSettingsRepository,
+        commonSettingsRepository = commonSettingsRepository,
         currentBookId = currentBookId,
         markReadProgress = markReadProgress,
         stateScope = screenModelScope,

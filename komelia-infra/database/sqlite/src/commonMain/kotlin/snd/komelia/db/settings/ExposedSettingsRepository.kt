@@ -47,6 +47,8 @@ class ExposedSettingsRepository(database: Database) : ExposedRepository(database
                 it[immersiveColorAlpha] = settings.immersiveColorAlpha
                 it[lastSelectedLibraryId] = settings.lastSelectedLibraryId
                 it[hideParenthesesInNames] = settings.hideParenthesesInNames
+                it[keepReaderScreenOn] = settings.keepReaderScreenOn
+                it[cardLayoutOverlayBackground] = settings.cardLayoutOverlayBackground
             }
         }
     }
@@ -76,6 +78,8 @@ class ExposedSettingsRepository(database: Database) : ExposedRepository(database
             immersiveColorAlpha = get(AppSettingsTable.immersiveColorAlpha),
             lastSelectedLibraryId = get(AppSettingsTable.lastSelectedLibraryId),
             hideParenthesesInNames = get(AppSettingsTable.hideParenthesesInNames),
+            keepReaderScreenOn = get(AppSettingsTable.keepReaderScreenOn),
+            cardLayoutOverlayBackground = get(AppSettingsTable.cardLayoutOverlayBackground),
         )
     }
 

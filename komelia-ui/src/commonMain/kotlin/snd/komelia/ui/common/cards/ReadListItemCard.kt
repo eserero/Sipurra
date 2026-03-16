@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -26,14 +27,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import snd.komelia.ui.LocalCardLayoutBelow
+import snd.komelia.ui.LocalCardLayoutOverlayBackground
 import snd.komelia.ui.LocalKomgaState
 import snd.komelia.ui.common.images.ReadListThumbnail
 import snd.komelia.ui.common.menus.ReadListActionsMenu
@@ -143,21 +145,50 @@ private fun ReadListImageOverlay(
     showTitle: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val overlayBackground = LocalCardLayoutOverlayBackground.current
+    val shadow = if (overlayBackground) null else Shadow(
+        color = Color.Black,
+        offset = Offset(1f, 1f),
+        blurRadius = 4f
+    )
+    val textColor = if (overlayBackground) MaterialTheme.colorScheme.onSurface else Color.White
+    val secondaryTextColor =
+        if (overlayBackground) MaterialTheme.colorScheme.onSurfaceVariant else Color.White.copy(alpha = 0.8f)
 
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.BottomStart
+        contentAlignment = Alignment.TopStart
     ) {
         content()
         if (showTitle) {
-            CardGradientOverlay()
-            Column(Modifier.padding(10.dp)) {
-                CardOutlinedText(readlist.name)
-                CardOutlinedText(
-                    if (readlist.bookIds.size == 1) "1 book" else "${readlist.bookIds.size} books",
-                )
+            CardTopGradient()
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.BottomStart
+            ) {
+                CardTextBackground()
+                Column(
+                    modifier = Modifier
+                        .height(48.dp)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    Text(
+                        text = readlist.name,
+                        maxLines = 1,
+                        style = MaterialTheme.typography.bodyMedium.copy(shadow = shadow),
+                        color = textColor,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = if (readlist.bookIds.size == 1) "1 book" else "${readlist.bookIds.size} books",
+                        maxLines = 1,
+                        style = MaterialTheme.typography.labelMedium.copy(shadow = shadow),
+                        color = secondaryTextColor,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
-
 }

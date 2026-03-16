@@ -30,6 +30,8 @@ object AppSettingsTable : Table("AppSettings") {
     val immersiveColorAlpha = float("immersive_color_alpha").default(0.12f)
     val lastSelectedLibraryId = text("last_selected_library_id").nullable()
     val hideParenthesesInNames = bool("hide_parentheses_in_names").default(false)
+    val keepReaderScreenOn = bool("keep_reader_screen_on").default(false)
+    val cardLayoutOverlayBackground = bool("card_layout_overlay_background").default(true)
 
     override val primaryKey = PrimaryKey(version)
     }

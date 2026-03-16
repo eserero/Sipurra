@@ -1,6 +1,7 @@
 package snd.komelia
 
 import android.app.Activity
+import android.view.WindowManager
 import androidx.core.view.WindowInsetsCompat.Type.navigationBars
 import androidx.core.view.WindowInsetsCompat.Type.statusBars
 import androidx.core.view.WindowInsetsControllerCompat
@@ -13,6 +14,12 @@ class AndroidWindowState(
     private val activity: StateFlow<Activity?>,
 ) : AppWindowState {
     override val isFullscreen = MutableStateFlow(false)
+
+    override fun setKeepScreenOn(enabled: Boolean) {
+        val window = activity.value?.window ?: return
+        if (enabled) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
 
     override fun setFullscreen(enabled: Boolean) {
         val activity = this.activity.value ?: return

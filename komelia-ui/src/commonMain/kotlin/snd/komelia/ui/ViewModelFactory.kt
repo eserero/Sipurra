@@ -254,6 +254,7 @@ class ViewModelFactory(
             navigator = navigator,
             appNotifications = dependencies.appNotifications,
             readerSettingsRepository = appRepositories.imageReaderSettingsRepository,
+            commonSettingsRepository = appRepositories.settingsRepository,
             imageLoader = dependencies.bookImageLoader,
             appStrings = dependencies.appStrings,
             readerImageFactory = dependencies.readerImageFactory,
@@ -672,6 +673,7 @@ class ViewModelFactory(
     fun getImageReaderSettingsViewModel(): ImageReaderSettingsViewModel {
         return ImageReaderSettingsViewModel(
             settingsRepository = appRepositories.imageReaderSettingsRepository,
+            commonSettingsRepository = appRepositories.settingsRepository,
             appNotifications = dependencies.appNotifications,
 
             onnxRuntime = dependencies.onnxRuntime,

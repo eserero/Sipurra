@@ -44,20 +44,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.filter
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.offline.sync.model.DownloadEvent
 import snd.komelia.ui.LocalBookDownloadEvents
 import snd.komelia.ui.LocalCardLayoutBelow
+import snd.komelia.ui.LocalCardLayoutOverlayBackground
 import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalLibraries
 import snd.komelia.ui.LocalWindowWidth
@@ -229,10 +229,20 @@ private fun BookImageOverlay(
     showSeriesTitle: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    val overlayBackground = LocalCardLayoutOverlayBackground.current
+    val shadow = if (overlayBackground) null else Shadow(
+        color = Color.Black,
+        offset = Offset(1f, 1f),
+        blurRadius = 4f
+    )
+    val textColor = if (overlayBackground) MaterialTheme.colorScheme.onSurface else Color.White
+    val secondaryTextColor =
+        if (overlayBackground) MaterialTheme.colorScheme.onSurfaceVariant else Color.White.copy(alpha = 0.8f)
+
     Box(contentAlignment = Alignment.TopStart) {
         content()
         if (showTitle)
-            CardGradientOverlay()
+            CardTopGradient()
         Column {
             Row {
                 if (book.downloaded) {
@@ -256,37 +266,53 @@ private fun BookImageOverlay(
             }
 
             Spacer(modifier = Modifier.weight(1f))
-            Column(Modifier.padding(10.dp)) {
-                if (showSeriesTitle && !book.oneshot) {
-                    CardOutlinedText(
-                        text = seriesTitle,
-                        maxLines = 1,
-                        style = MaterialTheme.typography.labelMedium.copy(color = Color(195, 195, 195)),
-                    )
-                }
-                if (showTitle) {
-                    CardOutlinedText(
-                        text = bookTitle,
-                        maxLines = DEFAULT_CARD_MAX_LINES
-                    )
-                    if (book.deleted || libraryIsDeleted) {
-                        CardOutlinedText(
-                            text = "Unavailable",
-                            textColor = MaterialTheme.colorScheme.error
+            if (showTitle) {
+                Box(contentAlignment = Alignment.BottomStart) {
+                    CardTextBackground()
+                    Column(
+                        modifier = Modifier
+                            .height(48.dp)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalArrangement = Arrangement.Top
+                    ) {
+                        if (showSeriesTitle && !book.oneshot) {
+                            Text(
+                                text = seriesTitle,
+                                maxLines = 1,
+                                style = MaterialTheme.typography.labelMedium.copy(shadow = shadow),
+                                color = secondaryTextColor,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        if (book.deleted || libraryIsDeleted) {
+                            Text(
+                                text = "Unavailable",
+                                maxLines = 1,
+                                style = MaterialTheme.typography.bodyMedium.copy(shadow = shadow),
+                                color = if (overlayBackground) MaterialTheme.colorScheme.error else Color.White,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Text(
+                            text = bookTitle,
+                            maxLines = if (showSeriesTitle && !book.oneshot || book.deleted || libraryIsDeleted) 1 else 2,
+                            style = MaterialTheme.typography.bodyMedium.copy(shadow = shadow),
+                            color = textColor,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+
+                    val readProgress = book.readProgress
+                    if (readProgress != null && !readProgress.completed) {
+                        LinearProgressIndicator(
+                            progress = { getReadProgressPercentage(book) },
+                            color = MaterialTheme.colorScheme.tertiary,
+                            trackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f),
+                            modifier = Modifier.height(4.dp).fillMaxWidth(),
+                            drawStopIndicator = {}
                         )
                     }
                 }
-            }
-
-            val readProgress = book.readProgress
-            if (readProgress != null && !readProgress.completed) {
-                LinearProgressIndicator(
-                    progress = { getReadProgressPercentage(book) },
-                    color = MaterialTheme.colorScheme.tertiary,
-                    trackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f),
-                    modifier = Modifier.height(6.dp).fillMaxWidth().background(Color.Black),
-                    drawStopIndicator = {}
-                )
             }
         }
         BookDownloadCardOverlay(book)

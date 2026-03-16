@@ -33,6 +33,8 @@ class AppMigrations : MigrationResourcesProvider() {
         "V24__immersive_color_settings.sql",
         "V25__model_management_settings.sql",
         "V26__hide_parentheses_in_names.sql",
+        "V27__keep_reader_screen_on.sql",
+        "V28__card_layout_overlay_background.sql",
     )
 
     override suspend fun getMigration(name: String): ByteArray? {

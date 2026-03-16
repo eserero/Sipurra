@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import snd.komelia.settings.model.AppTheme
 import snd.komelia.ui.LocalCardLayoutBelow
+import snd.komelia.ui.LocalCardLayoutOverlayBackground
 import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalStrings
 import snd.komelia.ui.common.cards.ItemCard
@@ -36,6 +37,7 @@ import snd.komelia.ui.common.components.AppSlider
 import snd.komelia.ui.common.components.AppSliderDefaults
 import snd.komelia.ui.common.components.DropdownChoiceMenu
 import snd.komelia.ui.common.components.LabeledEntry
+import snd.komelia.ui.common.components.SwitchWithLabel
 import snd.komelia.ui.platform.cursorForHand
 import kotlin.math.roundToInt
 
@@ -77,78 +79,15 @@ fun AppearanceSettingsContent(
     onImmersiveColorAlphaChange: (Float) -> Unit,
     hideParenthesesInNames: Boolean,
     onHideParenthesesInNamesChange: (Boolean) -> Unit,
+    cardLayoutOverlayBackground: Boolean,
+    onCardLayoutOverlayBackgroundChange: (Boolean) -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         val strings = LocalStrings.current.settings
 
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Hide parentheses in names", style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    "Remove anything in parentheses when displaying series and oneshot names",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(
-                checked = hideParenthesesInNames,
-                onCheckedChange = onHideParenthesesInNamesChange,
-                modifier = Modifier.cursorForHand(),
-            )
-        }
-
-        HorizontalDivider()
-
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("New library UI", style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    "Floating nav bar, Keep Reading panel, and pill-shaped tabs",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(
-                checked = useNewLibraryUI,
-                onCheckedChange = onUseNewLibraryUIChange,
-                modifier = Modifier.cursorForHand(),
-            )
-        }
-
-        HorizontalDivider()
-
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Card layout", style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    "Show title and metadata below the thumbnail instead of on top",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(
-                checked = cardLayoutBelow,
-                onCheckedChange = onCardLayoutBelowChange,
-                modifier = Modifier.cursorForHand(),
-            )
-        }
-
-        HorizontalDivider()
-
+        // a. App theme
         DropdownChoiceMenu(
             label = { Text(strings.appTheme) },
             selectedOption = LabeledEntry(currentTheme, strings.forAppTheme(currentTheme)),
@@ -157,41 +96,44 @@ fun AppearanceSettingsContent(
             inputFieldModifier = Modifier.widthIn(min = 250.dp)
         )
 
+        HorizontalDivider()
+
+        // b. Accent color (always shown)
+        DropdownChoiceMenu(
+            label = { Text("Accent Color (chips & tabs)") },
+            selectedOption = accentPresets.find { it.first == accentColor }
+                ?.let { LabeledEntry(it.first, it.second) },
+            options = accentPresets.map { LabeledEntry(it.first, it.second) },
+            onOptionChange = { onAccentColorChange(it.value) },
+            inputFieldModifier = Modifier.widthIn(min = 250.dp),
+            selectedOptionContent = { ColorLabel(it) },
+            optionContent = { ColorLabel(it) }
+        )
+
+        HorizontalDivider()
+
+        // c. New Library UI
+        SwitchWithLabel(
+            checked = useNewLibraryUI,
+            onCheckedChange = onUseNewLibraryUIChange,
+            label = { Text("New library UI") },
+            supportingText = { Text("Floating nav bar, Keep Reading panel, and pill-shaped tabs") },
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+        )
+
         if (useNewLibraryUI) {
             HorizontalDivider()
 
-            DropdownChoiceMenu(
-                label = { Text("Accent Color (chips & tabs)") },
-                selectedOption = accentPresets.find { it.first == accentColor }
-                    ?.let { LabeledEntry(it.first, it.second) },
-                options = accentPresets.map { LabeledEntry(it.first, it.second) },
-                onOptionChange = { onAccentColorChange(it.value) },
-                inputFieldModifier = Modifier.widthIn(min = 250.dp),
-                selectedOptionContent = { ColorLabel(it) },
-                optionContent = { ColorLabel(it) }
+            // d. Immersive card color
+            SwitchWithLabel(
+                checked = immersiveColorEnabled,
+                onCheckedChange = onImmersiveColorEnabledChange,
+                label = { Text("Immersive card color") },
+                supportingText = { Text("Tint the detail card background with the cover's dominant color") },
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
             )
-
-            HorizontalDivider()
-
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("Immersive card color", style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        "Tint the detail card background with the cover's dominant color",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Switch(
-                    checked = immersiveColorEnabled,
-                    onCheckedChange = onImmersiveColorEnabledChange,
-                    modifier = Modifier.cursorForHand(),
-                )
-            }
 
             if (immersiveColorEnabled) {
                 Text(
@@ -210,6 +152,17 @@ fun AppearanceSettingsContent(
 
         HorizontalDivider()
 
+        // e. "Cards" header
+        Text(
+            "Cards",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 4.dp)
+        )
+
+        HorizontalDivider()
+
+        // f. Image card size
         Text(strings.imageCardSize, modifier = Modifier.padding(10.dp))
         AppSlider(
             value = cardWidth.value,
@@ -231,6 +184,7 @@ fun AppearanceSettingsContent(
             CompositionLocalProvider(
                 LocalCardLayoutBelow provides cardLayoutBelow,
                 LocalHideParenthesesInNames provides hideParenthesesInNames,
+                LocalCardLayoutOverlayBackground provides cardLayoutOverlayBackground,
             ) {
                 ItemCard(
                     modifier = Modifier.width(cardWidth),
@@ -267,6 +221,42 @@ fun AppearanceSettingsContent(
                 )
             }
         }
+
+        HorizontalDivider()
+
+        // g. Text below card (renamed from "Card layout")
+        SwitchWithLabel(
+            checked = cardLayoutBelow,
+            onCheckedChange = onCardLayoutBelowChange,
+            label = { Text("Text below card") },
+            supportingText = { Text("Show title and metadata below the thumbnail instead of on top") },
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+        )
+
+        HorizontalDivider()
+
+        // h. Card layout overlay background
+        SwitchWithLabel(
+            checked = cardLayoutOverlayBackground,
+            onCheckedChange = onCardLayoutOverlayBackgroundChange,
+            label = { Text("Card layout overlay background") },
+            supportingText = { Text("Show a semi-transparent background overlay behind the text on cards") },
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+        )
+
+        HorizontalDivider()
+
+        // i. Hide parentheses in names
+        SwitchWithLabel(
+            checked = hideParenthesesInNames,
+            onCheckedChange = onHideParenthesesInNamesChange,
+            label = { Text("Hide parentheses in names") },
+            supportingText = { Text("Remove anything in parentheses when displaying series and oneshot names") },
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+        )
     }
 }
 

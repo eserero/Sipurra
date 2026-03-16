@@ -1,0 +1,1 @@
+ALTER TABLE AppSettings ADD COLUMN keep_reader_screen_on BOOLEAN NOT NULL DEFAULT 0;

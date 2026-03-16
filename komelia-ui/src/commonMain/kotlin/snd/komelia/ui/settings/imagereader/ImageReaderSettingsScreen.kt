@@ -22,6 +22,8 @@ class ImageReaderSettingsScreen : Screen {
                 onLoadThumbnailPreviewsChange = vm::onLoadThumbnailsPreviewChange,
                 volumeKeysNavigation = vm.volumeKeysNavigation.collectAsState().value,
                 onVolumeKeysNavigationChange = vm::onVolumeKeysNavigationChange,
+                keepReaderScreenOn = vm.keepReaderScreenOn.collectAsState().value,
+                onKeepReaderScreenOnChange = vm::onKeepReaderScreenOnChange,
 
                 onCacheClear = vm::onClearImageCache,
                 onnxRuntimeSettingsState = vm.onnxRuntimeSettingsState,

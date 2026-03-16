@@ -64,4 +64,10 @@ interface CommonSettingsRepository {
 
     fun getHideParenthesesInNames(): Flow<Boolean>
     suspend fun putHideParenthesesInNames(hide: Boolean)
+
+    fun getKeepReaderScreenOn(): Flow<Boolean>
+    suspend fun putKeepReaderScreenOn(enabled: Boolean)
+
+    fun getCardLayoutOverlayBackground(): Flow<Boolean>
+    suspend fun putCardLayoutOverlayBackground(enabled: Boolean)
 }

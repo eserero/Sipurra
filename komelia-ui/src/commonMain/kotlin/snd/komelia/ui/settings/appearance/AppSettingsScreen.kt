@@ -41,6 +41,8 @@ class AppSettingsScreen : Screen {
                     onImmersiveColorAlphaChange = vm::onImmersiveColorAlphaChange,
                     hideParenthesesInNames = vm.hideParenthesesInNames,
                     onHideParenthesesInNamesChange = vm::onHideParenthesesInNamesChange,
+                    cardLayoutOverlayBackground = vm.cardLayoutOverlayBackground,
+                    onCardLayoutOverlayBackgroundChange = vm::onCardLayoutOverlayBackgroundChange,
                 )
                                 }
                             }
