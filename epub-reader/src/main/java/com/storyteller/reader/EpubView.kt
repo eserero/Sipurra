@@ -376,6 +376,37 @@ class EpubView(
         }
     }
 
+    /** Checks if a fragment element is entirely visible on the current page. */
+    fun checkIsEntirelyOnScreen(fragmentId: String, callback: (Boolean) -> Unit) {
+        activity.lifecycleScope.launch {
+            val result = navigator?.evaluateJavascript("""
+                (function() {
+                    const el = document.getElementById("$fragmentId");
+                    return el ? storyteller.isEntirelyOnScreen(el) : true;
+                })();
+            """.trimIndent())
+            val onScreen = result?.let { runCatching { Json.decodeFromString<Boolean?>(it) }.getOrNull() } ?: true
+            callback(onScreen)
+        }
+    }
+
+    /**
+     * Returns the fraction (0.0–1.0) of the fragment element that is visible on the current page.
+     * 1.0 = fully visible. <1.0 = overflows to next page.
+     */
+    fun getFragmentVisibilityRatio(fragmentId: String, callback: (Double) -> Unit) {
+        activity.lifecycleScope.launch {
+            val result = navigator?.evaluateJavascript("""
+                (function() {
+                    const el = document.getElementById("$fragmentId");
+                    return el ? storyteller.getFragmentVisibilityRatio(el) : 1.0;
+                })();
+            """.trimIndent())
+            val ratio = result?.let { runCatching { Json.decodeFromString<Double?>(it) }.getOrNull() } ?: 1.0
+            callback(ratio)
+        }
+    }
+
     suspend fun findOnPage(locator: Locator) {
         val epubNav = navigator ?: return
         val currentProgression = locator.locations.progression ?: return
@@ -502,6 +533,15 @@ class EpubView(
                         return isVerticallyWithin && isHorizontallyWithin;
                     });
                 }
+
+                storyteller.getFragmentVisibilityRatio = function(element) {
+                    if (!element) return 1.0;
+                    const rect = element.getBoundingClientRect();
+                    const w = window.innerWidth;
+                    if (rect.right <= w) return 1.0;
+                    if (rect.left >= w) return 0.0;
+                    return (w - rect.left) / rect.width;
+                };
 
                 readium.findFirstVisibleLocator = function findFirstVisibleLocator() {
                     let firstVisibleFragmentId = null;

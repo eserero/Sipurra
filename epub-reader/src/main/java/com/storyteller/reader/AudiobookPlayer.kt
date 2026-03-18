@@ -790,8 +790,7 @@ class AudiobookPlayer(
         args: Bundle
     ): ListenableFuture<SessionResult> {
         val result = Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
-        // TODO: Is this isPlaying check correct?
-        if (command.customAction == "CLIP_CHANGED" && controller.isPlaying) {
+        if (command.customAction == "CLIP_CHANGED") {
             val clipData = args.getString("clip") ?: return result
             val clipMap = JSONObject(clipData).toMap()
             val clip = OverlayPar(

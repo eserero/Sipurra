@@ -142,6 +142,8 @@ class Epub3ReaderState(
         view.listener = object : EpubViewListener {
             override fun onLocatorChange(locator: Locator) {
                 savedLocator = locator
+                // F1: page navigation → audio seek
+                mediaOverlayController.value?.handleUserLocatorChange(locator)
                 if (!markReadProgress) return
                 coroutineScope.launch {
                     val r2Prog = R2Progression(
@@ -166,6 +168,11 @@ class Epub3ReaderState(
 
             override fun onMiddleTouch() {
                 toggleControls()
+            }
+
+            override fun onDoubleTouch(locator: Locator) {
+                // F2: double-tap → seek audio to that paragraph and play
+                mediaOverlayController.value?.handleDoubleTap(locator)
             }
         }
         view.pendingProps.bookUuid = bookUuid
