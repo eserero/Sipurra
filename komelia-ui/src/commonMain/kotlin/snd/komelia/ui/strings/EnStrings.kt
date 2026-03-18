@@ -228,7 +228,8 @@ val EnStrings = AppStrings(
         imageCardSize = "Image card size in grid view (minimum display size)",
         decoder = "Image Decoder/Sampler",
         epubReaderTypeKomga = "Komga Epub Reader",
-        epubReaderTypeTtsu = "ッツ Ebook Reader"
+        epubReaderTypeTtsu = "ッツ Ebook Reader",
+        epubReaderTypeEpub3 = "EPUB3 Reader (Android)",
     ),
     errorCodes = ErrorCodes(
         err1000 = "File could not be accessed during analysis",

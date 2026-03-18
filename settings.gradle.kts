@@ -18,6 +18,7 @@ dependencyResolutionManagement {
     }
 }
 
+include(":epub-reader")
 include(":komelia-app")
 include(":komelia-domain:core")
 include(":komelia-domain:offline")

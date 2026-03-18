@@ -394,6 +394,7 @@ data class SettingsStrings(
 
     val epubReaderTypeKomga: String,
     val epubReaderTypeTtsu: String,
+    val epubReaderTypeEpub3: String,
 ) {
     fun forThumbnailSize(size: KomgaThumbnailSize): String {
         return when (size) {
@@ -416,6 +417,7 @@ data class SettingsStrings(
         return when (readerType) {
             EpubReaderType.KOMGA_EPUB -> epubReaderTypeKomga
             EpubReaderType.TTSU_EPUB -> epubReaderTypeTtsu
+            EpubReaderType.EPUB3_READER -> epubReaderTypeEpub3
         }
     }
 }

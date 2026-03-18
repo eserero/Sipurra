@@ -3,6 +3,7 @@ package snd.komelia.ui.reader.epub
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.navigator.Navigator
+import coil3.PlatformContext
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import snd.komelia.AppNotifications
@@ -14,6 +15,9 @@ import snd.komelia.komga.api.KomgaSeriesApi
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.settings.CommonSettingsRepository
 import snd.komelia.settings.EpubReaderSettingsRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import snd.komelia.settings.model.EpubReaderType
+import snd.komelia.settings.model.EpubReaderType.EPUB3_READER
 import snd.komelia.settings.model.EpubReaderType.KOMGA_EPUB
 import snd.komelia.settings.model.EpubReaderType.TTSU_EPUB
 import snd.komelia.ui.BookSiblingsContext
@@ -29,16 +33,18 @@ class EpubReaderViewModel(
     private val bookApi: KomgaBookApi,
     private val seriesApi: KomgaSeriesApi,
     private val readListApi: KomgaReadListApi,
-//    private val ktor: HttpClient,
     private val settingsRepository: CommonSettingsRepository,
     private val epubSettingsRepository: EpubReaderSettingsRepository,
     private val fontsRepository: UserFontsRepository,
     private val notifications: AppNotifications,
     private val windowState: AppWindowState,
     private val platformType: PlatformType,
+    private val platformContext: PlatformContext,
     private val bookSiblingsContext: BookSiblingsContext,
     private val onExit: (KomeliaBook) -> Unit,
 ) : StateScreenModel<LoadState<EpubReaderState>>(LoadState.Uninitialized) {
+
+    val readerType = MutableStateFlow<EpubReaderType?>(null)
 
     suspend fun initialize(navigator: Navigator) {
         if (settingsRepository.getKeepReaderScreenOn().first()) {
@@ -49,7 +55,9 @@ class EpubReaderViewModel(
             is LoadState.Success<EpubReaderState> -> state.value.initialize(navigator)
             LoadState.Uninitialized -> {
 
-                when (epubSettingsRepository.getReaderType().first()) {
+                val selectedType = epubSettingsRepository.getReaderType().first()
+                readerType.value = selectedType
+                when (selectedType) {
                     KOMGA_EPUB -> {
                         val komgaState = KomgaEpubReaderState(
                             bookId = bookId,
@@ -59,7 +67,6 @@ class EpubReaderViewModel(
                             readListApi = readListApi,
                             settingsRepository = settingsRepository,
                             notifications = notifications,
-//                            ktor = ktor,
                             markReadProgress = markReadProgress,
                             epubSettingsRepository = epubSettingsRepository,
                             windowState = windowState,
@@ -82,7 +89,6 @@ class EpubReaderViewModel(
                             book = book,
                             bookApi = bookApi,
                             notifications = notifications,
-//                            ktor = ktor,
                             markReadProgress = markReadProgress,
                             settingsRepository = settingsRepository,
                             epubSettingsRepository = epubSettingsRepository,
@@ -97,6 +103,33 @@ class EpubReaderViewModel(
                         when (val res = ttsuState.state.value) {
                             is LoadState.Error -> mutableState.value = LoadState.Error(res.exception)
                             is LoadState.Success<Unit> -> mutableState.value = LoadState.Success(ttsuState)
+                            LoadState.Loading, LoadState.Uninitialized -> LoadState.Loading
+                        }
+                    }
+
+                    EPUB3_READER -> {
+                        val epub3State = createEpub3ReaderState(
+                            bookId = bookId,
+                            book = book,
+                            platformContext = platformContext,
+                            markReadProgress = markReadProgress,
+                            bookApi = bookApi,
+                            seriesApi = seriesApi,
+                            readListApi = readListApi,
+                            settingsRepository = settingsRepository,
+                            epubSettingsRepository = epubSettingsRepository,
+                            fontsRepository = fontsRepository,
+                            notifications = notifications,
+                            windowState = windowState,
+                            platformType = platformType,
+                            coroutineScope = screenModelScope,
+                            bookSiblingsContext = bookSiblingsContext,
+                            onExit = onExit,
+                        )
+                        epub3State.initialize(navigator)
+                        when (val res = epub3State.state.value) {
+                            is LoadState.Error -> mutableState.value = LoadState.Error(res.exception)
+                            is LoadState.Success<Unit> -> mutableState.value = LoadState.Success(epub3State)
                             LoadState.Loading, LoadState.Uninitialized -> LoadState.Loading
                         }
                     }

@@ -21,7 +21,9 @@ import snd.komelia.ui.common.components.ErrorContent
 import snd.komelia.ui.common.components.LoadingMaxSizeIndicator
 import snd.komelia.ui.platform.PlatformTitleBar
 import snd.komelia.ui.platform.canIntegrateWithSystemBar
+import snd.komelia.ui.reader.epub.Epub3ReaderContent
 import snd.komelia.ui.reader.epub.EpubContent
+import snd.komelia.settings.model.EpubReaderType
 import snd.komga.client.book.KomgaBookId
 import snd.komga.client.book.MediaProfile
 import kotlin.jvm.Transient
@@ -69,6 +71,7 @@ class EpubScreen(
         }
 
         val state = vm.state.collectAsState().value
+        val readerType = vm.readerType.collectAsState().value
         Column {
             PlatformTitleBar(applyInsets = false) {
                 if (canIntegrateWithSystemBar()) {
@@ -94,10 +97,14 @@ class EpubScreen(
                     }
                 )
 
-                is LoadState.Success -> EpubContent(
-                    onWebviewCreated = { state.value.onWebviewCreated(it) },
-                    onBackButtonPress = state.value::onBackButtonPress
-                )
+                is LoadState.Success -> if (readerType == EpubReaderType.EPUB3_READER) {
+                    Epub3ReaderContent(state.value)
+                } else {
+                    EpubContent(
+                        onWebviewCreated = { state.value.onWebviewCreated(it) },
+                        onBackButtonPress = state.value::onBackButtonPress
+                    )
+                }
             }
         }
     }

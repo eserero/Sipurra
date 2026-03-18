@@ -623,6 +623,7 @@ class ViewModelFactory(
             notifications = dependencies.appNotifications,
             windowState = dependencies.windowState,
             platformType = platformType,
+            platformContext = dependencies.coilContext,
             bookSiblingsContext = bookSiblingsContext,
             onExit = onExit,
         )

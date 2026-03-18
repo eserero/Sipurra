@@ -61,6 +61,7 @@ androidx-window = { module = "androidx.window:window", version.ref = "androidx-w
 androidx-palette = { module = "androidx.palette:palette-ktx", version.ref = "androidx-palette" }
 androidx-workManager = { module = "androidx.work:work-runtime", version.ref = "androidx-workManager" }
 androidx-workManager-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-workManager" }
+android-desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version = "2.1.5" }
 
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose-multiplatform" }
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-multiplatform" }

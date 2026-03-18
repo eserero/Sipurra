@@ -71,4 +71,6 @@ interface KomgaBookApi {
     suspend fun getWebPubManifest(bookId: KomgaBookId): WPPublication
 
     suspend fun getBookEpubResource(bookId: KomgaBookId, resourceName: String): ByteArray
+
+    suspend fun getBookRawFile(bookId: KomgaBookId): ByteArray
 }

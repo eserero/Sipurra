@@ -1,5 +1,6 @@
 package snd.komelia.api
 
+import io.ktor.client.statement.readBytes
 import snd.komelia.komga.api.KomgaBookApi
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.offline.book.repository.OfflineBookRepository
@@ -192,6 +193,14 @@ class RemoteBookApi(
         resourceName: String
     ): ByteArray {
         return bookClient.getBookEpubResource(bookId, resourceName)
+    }
+
+    override suspend fun getBookRawFile(bookId: KomgaBookId): ByteArray {
+        var bytes: ByteArray = byteArrayOf()
+        bookClient.getBookFile(bookId) { response ->
+            bytes = response.readBytes()
+        }
+        return bytes
     }
 
     private suspend fun getKomeliaBook(book: KomgaBook): KomeliaBook {

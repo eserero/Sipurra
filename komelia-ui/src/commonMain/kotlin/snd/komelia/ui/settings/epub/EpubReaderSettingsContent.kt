@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import snd.komelia.settings.model.EpubReaderType
+import snd.komelia.settings.model.EpubReaderType.EPUB3_READER
 import snd.komelia.settings.model.EpubReaderType.KOMGA_EPUB
 import snd.komelia.settings.model.EpubReaderType.TTSU_EPUB
 import snd.komelia.ui.LocalStrings
@@ -40,7 +41,11 @@ fun EpubReaderSettingsContent(
                         strings.forEpubReaderType(readerType)
                     )
                 },
-                options = remember { EpubReaderType.entries.map { LabeledEntry(it, strings.forEpubReaderType(it)) } },
+                options = remember(epub3ReaderAvailable) {
+                    EpubReaderType.entries
+                        .filter { it != EPUB3_READER || epub3ReaderAvailable }
+                        .map { LabeledEntry(it, strings.forEpubReaderType(it)) }
+                },
                 onOptionChange = { onReaderChange(it.value) },
                 label = { Text("Reader Type") },
                 inputFieldModifier = Modifier.fillMaxWidth().animateContentSize(),
@@ -68,6 +73,10 @@ fun EpubReaderSettingsContent(
             )
 
             KOMGA_EPUB -> Text("Komga webui epub reader adapted for use in Komelia")
+
+            EPUB3_READER -> Text(
+                "Native EPUB 3 reader with synchronized audio overlay (SMIL) support. Android only."
+            )
 
         }
     }
