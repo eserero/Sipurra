@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -20,10 +22,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import com.storyteller.reader.EpubView
 import snd.komelia.ui.platform.BackPressHandler
+import snd.komelia.ui.reader.epub.audio.AudioMiniPlayer
 
 @Composable
 actual fun Epub3ReaderContent(state: EpubReaderState) {
@@ -41,6 +45,17 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
         )
 
         if (epub3State != null) {
+            val controller by epub3State.mediaOverlayController.collectAsState()
+            controller?.let {
+                AudioMiniPlayer(
+                    controller = it,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 24.dp)
+                        .navigationBarsPadding()
+                )
+            }
+
             val showControls by epub3State.showControls.collectAsState()
             if (showControls) {
                 Box(

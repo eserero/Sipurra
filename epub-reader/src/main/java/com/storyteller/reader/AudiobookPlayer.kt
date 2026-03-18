@@ -20,6 +20,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.PlayerMessage
 import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.LibraryResult
@@ -134,6 +135,7 @@ class PlaybackService : MediaLibraryService() {
     private var mediaSession: MediaLibrarySession? = null
     private var player: ExoPlayer? = null
     private var mediaIdToClips = mapOf<String, List<OverlayPar>>()
+    private var scheduledMessages = mutableMapOf<String, MutableList<PlayerMessage>>()
     private var root = MediaItem.Builder()
         .setMediaId("root")
         .setMediaMetadata(
@@ -238,6 +240,29 @@ class PlaybackService : MediaLibraryService() {
                 build()
             }
 
+        player.addListener(object : Player.Listener {
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                val currentIndex = player.currentMediaItemIndex
+                val currentItem = mediaItem ?: return
+
+                // Schedule current track (guard inside prevents double-work)
+                scheduleMessages(currentItem, currentIndex)
+
+                // Pre-fetch next track
+                val nextIndex = currentIndex + 1
+                if (nextIndex < player.mediaItemCount) {
+                    scheduleMessages(player.getMediaItemAt(nextIndex), nextIndex)
+                }
+
+                // Cancel messages for tracks more than 1 behind current
+                // Keep current-1 so an immediate backward seek doesn't need to reschedule
+                val cancelBefore = currentIndex - 2
+                for (i in 0..cancelBefore) {
+                    cancelMessages(player.getMediaItemAt(i).mediaId)
+                }
+            }
+        })
+
         this.player = player
     }
 
@@ -268,6 +293,7 @@ class PlaybackService : MediaLibraryService() {
             release()
             mediaSession = null
         }
+        scheduledMessages.clear()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? =
@@ -287,20 +313,28 @@ class PlaybackService : MediaLibraryService() {
 
     @androidx.annotation.OptIn(UnstableApi::class)
     private fun scheduleMessages(mediaItem: MediaItem, index: Int) {
-        val trackClips = mediaIdToClips[mediaItem.mediaId] ?: return
+        val mediaId = mediaItem.mediaId
+        if (scheduledMessages.containsKey(mediaId)) return   // already scheduled
+
+        val trackClips = mediaIdToClips[mediaId] ?: return
+        val messages = mutableListOf<PlayerMessage>()
 
         trackClips.forEach { clip ->
-            player?.createMessage { messageType, payload ->
-                // Send custom command to notify clients about clip change
-                val clip = payload as OverlayPar
-                notifyClipChanged(clip)
+            player?.createMessage { _, payload ->
+                notifyClipChanged(payload as OverlayPar)
             }?.apply {
                 setPosition(index, (clip.start * 1000).roundToLong())
                 setPayload(clip)
                 setDeleteAfterDelivery(false)
                 send()
-            }
+            }?.also { messages.add(it) }
         }
+
+        scheduledMessages[mediaId] = messages
+    }
+
+    private fun cancelMessages(mediaId: String) {
+        scheduledMessages.remove(mediaId)?.forEach { it.cancel() }
     }
 
     private fun notifyClipChanged(clip: OverlayPar) {
@@ -360,13 +394,18 @@ class PlaybackService : MediaLibraryService() {
                         val trackCount = args.getInt("trackCount")
                         val bookUuid = args.getString("bookUuid") ?: return result
 
-                        if (session.player.mediaItemCount == trackCount && trackCount > 0) {
+                        fun scheduleInitialAndGrantPermissions(player: Player) {
                             sortClips(bookUuid)
-                            for (i in 0..session.player.mediaItemCount - 1) {
-                                val mediaItem = session.player.getMediaItemAt(i)
-
-                                scheduleMessages(mediaItem, i)
+                            for (i in 0..minOf(1, player.mediaItemCount - 1)) {
+                                scheduleMessages(player.getMediaItemAt(i), i)
                             }
+                            for (i in 0 until player.mediaItemCount) {
+                                grantArtworkUriPermissions(player.getMediaItemAt(i).mediaMetadata.artworkUri ?: continue)
+                            }
+                        }
+
+                        if (session.player.mediaItemCount == trackCount && trackCount > 0) {
+                            scheduleInitialAndGrantPermissions(session.player)
                         } else {
                             session.player.addListener(object : Player.Listener {
                                 override fun onTimelineChanged(
@@ -376,15 +415,7 @@ class PlaybackService : MediaLibraryService() {
                                     if (session.player.mediaItemCount != trackCount || trackCount == 0) return
 
                                     session.player.removeListener(this)
-                                    sortClips(bookUuid)
-                                    for (i in 0..session.player.mediaItemCount - 1) {
-                                        val mediaItem = session.player.getMediaItemAt(i)
-
-                                        scheduleMessages(mediaItem, i)
-                                        grantArtworkUriPermissions(
-                                            mediaItem.mediaMetadata.artworkUri ?: continue
-                                        )
-                                    }
+                                    scheduleInitialAndGrantPermissions(session.player)
                                 }
                             })
                         }

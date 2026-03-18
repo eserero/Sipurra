@@ -28,6 +28,7 @@ SMIL), built on the **Readium Kotlin Toolkit v3.1.2** and **ExoPlayer (Media3)**
 10. [Full Example Activity](#10-full-example-activity)
 11. [Verification Checklist](#11-verification-checklist)
 12. [Known Limitations / TODOs](#12-known-limitations--todos)
+13. [Configuration & Actions Reference](#13-configuration--actions-reference)
 
 ---
 
@@ -1075,6 +1076,17 @@ After integration, verify in order:
   WebView can fetch. Fonts bundled in `assets/` should be served via `servedAssets` (already
   done for OpenDyslexic and Literata). For dynamically downloaded fonts use `file://`.
 
+- **Large books (memory)** — Two things to be aware of for books with many chapters:
+  1. `openPublication(bookUuid, url, null)` parses all SMIL files on-device, loading the
+     full HTML of every chapter into memory during parsing. For books with 100+ chapters this
+     can briefly consume 50–100 MB. After parsing, the HTML is freed; only the `OverlayPar`
+     clip list (~0.5 KB per clip) is retained. To avoid the parsing spike on subsequent opens,
+     persist the clips between sessions: call `BookService.getOverlayClips(bookUuid)` after
+     the first open, serialize via `OverlayPar.toJson()`, and pass them back via
+     `openPublication(bookUuid, url, clips)` on future launches.
+  2. ExoPlayer messages are scheduled lazily (current track + one lookahead). For a 5000-clip
+     book this keeps the live message count at ~100 instead of ~5000.
+
 - **Pagination vs scroll** — The current configuration uses the Readium default (paginated).
   To switch to scrollable view, configure `EpubPreferences(scroll = true)` in
   `EpubFragment.onCreate` and pass it to `initialPreferences`.
@@ -1084,3 +1096,161 @@ After integration, verify in order:
 
 - **Session intent deep-link** — `PlaybackService` sets the notification tap intent to
   `"storyteller://notification.click"`. Replace this URI with your own deep-link scheme.
+
+---
+
+## 13. Configuration & Actions Reference
+
+A complete inventory of every setting and action available through the library's public API,
+derived from the Storyteller mobile UI.
+
+---
+
+### 13.1 EpubView display settings (`pendingProps`)
+
+All display settings are applied by setting fields on `view.pendingProps` and calling
+`view.finalizeProps()`. Changes take effect immediately in the live reader.
+
+| Property | Type | Range / Values | Default | Notes |
+|----------|------|----------------|---------|-------|
+| `fontFamily` | `FontFamily` | `FontFamily("Literata")`, `FontFamily("OpenDyslexic")`, any custom name | `FontFamily("Literata")` | Built-in fonts require assets — see Section 5 |
+| `fontSize` | `Double` | 0.7 – 2.0, step 0.05 | 1.0 | Multiplier relative to the EPUB's base size |
+| `lineHeight` | `Double` | 1.0 – 2.0, step 0.05 | 1.4 | |
+| `textAlign` | `TextAlign` | `TextAlign.JUSTIFY`, `TextAlign.LEFT` | `TextAlign.JUSTIFY` | |
+| `foreground` | `@ColorInt Int` | Any ARGB | `0xFF111111` | Text color; set together with `background` |
+| `background` | `@ColorInt Int` | Any ARGB | `0xFFFFFFFF` | Page background color |
+| `readaloudColor` | `@ColorInt Int` | Any ARGB | `0xFFFFFF00` | Sentence highlight color during read-aloud |
+| `isPlaying` | `Boolean` | `true` / `false` | `false` | When `true`, enables the moving sentence highlight |
+| `highlights` | `List<Highlight>` | Each: `id: String`, `color: @ColorInt Int`, `locator: Locator` | `emptyList()` | Persistent user highlights |
+| `bookmarks` | `List<Locator>` | — | `emptyList()` | Bookmark positions; displayed as decorations |
+| `customFonts` | `List<CustomFont>` | Each: `uri: String`, `name: String`, `type: String` | `emptyList()` | Fonts loaded at runtime; `uri` must be `file://` or `content://` |
+| `paragraphSpacing` | `Double` | Any positive `Double` | `0.5` | Spacing between paragraphs — available in the Readium engine but not exposed in the Storyteller UI |
+
+#### Built-in theme presets
+
+Set `foreground` and `background` together to match one of the Storyteller themes:
+
+| Theme | `foreground` | `background` |
+|-------|-------------|-------------|
+| Day | `0xFF111111` | `0xFFFFFFFF` |
+| Sepia | `0xFF78350F` | `0xFFFEF9C3` |
+| Crisp White | `0xFF000000` | `0xFFFFFFFF` |
+| Night | `0xFFD1D5DB` | `0xFF111827` |
+
+```kotlin
+// Example: Night mode
+view.pendingProps.foreground  = 0xFFD1D5DB.toInt()
+view.pendingProps.background  = 0xFF111827.toInt()
+view.finalizeProps()
+```
+
+#### Standard highlight colors
+
+The Storyteller UI offers five tints for user highlights:
+
+| Name | `@ColorInt` value | Hex |
+|------|------------------|-----|
+| Yellow | `0x4DFFFF00` | semi-transparent yellow |
+| Red | `0x4DFF0000` | semi-transparent red |
+| Green | `0x4D00FF00` | semi-transparent green |
+| Blue | `0x4D0000FF` | semi-transparent blue |
+| Magenta | `0x4DFF00FF` | semi-transparent magenta |
+
+---
+
+### 13.2 AudiobookPlayer actions
+
+Constructor: `AudiobookPlayer(context: Context, coroutineScope: CoroutineScope, listener: Listener)`
+
+#### Playback control
+
+| Method | Signature | Notes |
+|--------|-----------|-------|
+| `play` | `play(automaticRewind: Boolean = true)` | Starts or resumes playback; optionally rewinds a few seconds on resume |
+| `pause` | `pause()` | Pauses playback |
+| `unload` | `unload()` | Stops playback and releases ExoPlayer + media session |
+
+#### Navigation
+
+| Method | Signature | Notes |
+|--------|-----------|-------|
+| `seekBy` | `seekBy(amount: Double, bounded: Boolean = false)` | Seek forward (positive) or backward (negative) by `amount` seconds. Pass `bounded = true` to clamp within the current track |
+| `seekTo` | `seekTo(relativeUri: String, position: Double, skipEmit: Boolean? = null)` | Seek to an absolute position within a specific track identified by its relative URI |
+| `next` | `next()` | Skip to the next track/chapter |
+| `prev` | `prev()` | Skip to the previous track/chapter |
+| `skip` | `skip(position: Double)` | Jump to an absolute position (seconds) within the current track |
+
+#### Speed & rewind settings
+
+| Method | Signature | Storyteller UI values |
+|--------|-----------|----------------------|
+| `setRate` | `setRate(rate: Double)` | Range 0.5 – 4.0, step 0.1. Quick presets: 0.75, 1, 1.25, 1.5, 1.75, 2 |
+| `setAutomaticRewind` | `setAutomaticRewind(enabled: Boolean, afterInterruption: Double, afterBreak: Double)` | Defaults: `true`, 3.0 s, 10.0 s |
+
+`afterInterruption` applies when audio focus is lost briefly (e.g. notification).
+`afterBreak` applies when playback is paused for a longer period.
+
+#### State queries
+
+| Method | Returns | Notes |
+|--------|---------|-------|
+| `getIsPlaying` | `Boolean` | Whether the player is currently playing |
+| `getPosition` | `Double` | Current position in seconds within the active clip |
+| `getCurrentTrack` | `Track?` | Active `Track` object (audio file + metadata) |
+| `getCurrentClip` | `OverlayPar?` | Active `OverlayPar` — text↔audio mapping for the current sentence |
+| `getTracks` | `List<Track>` | All tracks in the loaded audiobook |
+
+#### Listener callbacks
+
+Implement `AudiobookPlayer.Listener` to react to player events:
+
+```kotlin
+interface Listener {
+    fun onClipChanged(clip: OverlayPar)        // fired at each sentence boundary → update EpubView
+    fun onPositionChanged(position: Double)    // fired ~every second → update seek bar
+    fun onPlaybackStateChanged(isPlaying: Boolean)
+    fun onTracksChanged(tracks: List<Track>)
+}
+```
+
+---
+
+### 13.3 Sleep timer
+
+The library has no built-in sleep timer. Implement one client-side using a coroutine:
+
+```kotlin
+var sleepTimerJob: Job? = null
+
+fun setSleepTimer(minutes: Long) {
+    sleepTimerJob?.cancel()
+    sleepTimerJob = lifecycleScope.launch {
+        delay(minutes * 60_000L)
+        player.pause()
+    }
+}
+
+fun cancelSleepTimer() {
+    sleepTimerJob?.cancel()
+    sleepTimerJob = null
+}
+```
+
+Storyteller's UI offers these presets (minutes): **5, 10, 15, 30, 45, 60, 90, 120**.
+
+---
+
+### 13.4 Settings available in the Readium engine but not yet wired
+
+The following `EpubPreferences` fields exist in Readium v3.1.2 but are not currently exposed
+through `EpubView.pendingProps` in this library:
+
+| Preference | Type | Notes |
+|-----------|------|-------|
+| `scroll` | `Boolean` | `false` = paginated (default); `true` = continuous scroll |
+| `columnCount` | `ColumnCount` | `ColumnCount.AUTO`, `ColumnCount.ONE`, `ColumnCount.TWO` |
+| `pageMargins` | `Double` | Margin multiplier |
+| `publisherStyles` | `Boolean` | `true` = respect publisher CSS; `false` = apply reader defaults |
+
+To expose any of these, add a field to `FinalizedProps` in `EpubView.kt`, then pass it to
+`EpubPreferences(...)` inside `EpubFragment.onCreate`.

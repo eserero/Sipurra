@@ -73,4 +73,12 @@ interface KomgaBookApi {
     suspend fun getBookEpubResource(bookId: KomgaBookId, resourceName: String): ByteArray
 
     suspend fun getBookRawFile(bookId: KomgaBookId): ByteArray
+
+    // Streaming download; default buffers everything (backward-compat for wasmJs)
+    suspend fun downloadBookRawFile(bookId: KomgaBookId, onChunk: suspend (ByteArray) -> Unit) {
+        onChunk(getBookRawFile(bookId))
+    }
+
+    // Returns local filesystem path if already on-device; null means must download
+    suspend fun getBookLocalFilePath(bookId: KomgaBookId): String? = null
 }

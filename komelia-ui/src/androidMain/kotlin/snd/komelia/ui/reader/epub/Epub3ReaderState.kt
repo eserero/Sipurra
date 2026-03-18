@@ -27,12 +27,24 @@ import snd.komga.client.book.R2Device
 import snd.komga.client.book.R2Location
 import snd.komga.client.book.R2Locator
 import snd.komga.client.book.R2Progression
+import com.storyteller.reader.OverlayPar
+import org.json.JSONArray
+import org.json.JSONObject
+import snd.komelia.ui.reader.epub.audio.MediaOverlayController
 import snd.webview.KomeliaWebview
 import java.io.File
 import java.net.URL
 import kotlin.time.Clock
 
 private val logger = KotlinLogging.logger {}
+
+private fun JSONObject.toMap(): Map<String, Any> =
+    keys().asSequence().associateWith { key ->
+        when (val v = get(key)) {
+            is JSONObject -> v.toMap()
+            else -> v
+        }
+    }
 
 class Epub3ReaderState(
     bookId: KomgaBookId,
@@ -53,6 +65,7 @@ class Epub3ReaderState(
 
     val bookId = MutableStateFlow(bookId)
     val showControls = MutableStateFlow(false)
+    val mediaOverlayController = MutableStateFlow<MediaOverlayController?>(null)
     private val navigator = MutableStateFlow<Navigator?>(null)
     private val bookUuid: String get() = this.bookId.value.value
 
@@ -73,7 +86,33 @@ class Epub3ReaderState(
             if (book.value == null) book.value = bookApi.getOne(bookId.value)
 
             val extractedDir = prepareEpubDirectory()
-            BookService.openPublication(bookUuid, extractedDir.toURI().toURL(), clips = null)
+            val clipsFile = File(extractedDir, "overlay_clips.json")
+
+            val persistedClips: List<OverlayPar>? = if (clipsFile.exists()) {
+                try {
+                    val json = JSONArray(clipsFile.readText())
+                    List(json.length()) { i -> OverlayPar.fromJson(json.getJSONObject(i).toMap()) }
+                } catch (e: Exception) {
+                    null  // corrupt/old cache → re-parse
+                }
+            } else null
+
+            BookService.openPublication(bookUuid, extractedDir.toURI().toURL(), clips = persistedClips)
+
+            val clips: List<OverlayPar> = persistedClips ?: run {
+                val freshClips = BookService.getOverlayClips(bookUuid)
+                if (freshClips.isNotEmpty()) {
+                    val json = JSONArray(freshClips.map { JSONObject(it.toJson()) })
+                    clipsFile.writeText(json.toString())
+                }
+                freshClips
+            }
+
+            if (clips.isNotEmpty()) {
+                val controller = MediaOverlayController(context, coroutineScope, bookUuid, extractedDir)
+                controller.initialize(clips)
+                mediaOverlayController.value = controller
+            }
 
             val r2Prog = bookApi.getReadiumProgression(bookId.value)
             if (r2Prog != null) {
@@ -132,6 +171,7 @@ class Epub3ReaderState(
         view.pendingProps.bookUuid = bookUuid
         view.pendingProps.locator = savedLocator
         view.finalizeProps()
+        mediaOverlayController.value?.attachView(view)
     }
 
     /** No-op: this reader does not use a WebView. */
@@ -140,6 +180,8 @@ class Epub3ReaderState(
     override fun onBackButtonPress() = closeWebview()
 
     override fun closeWebview() {
+        mediaOverlayController.value?.release()
+        mediaOverlayController.value = null
         if (platformType == PlatformType.MOBILE) windowState.setFullscreen(false)
         book.value?.let { onExit(it) }
         navigator.value?.let { nav ->
@@ -160,14 +202,25 @@ class Epub3ReaderState(
     private suspend fun prepareEpubDirectory(): File {
         val extractedDir = File(context.cacheDir, "epub3/$bookUuid").also { it.mkdirs() }
         if (extractedDir.list().isNullOrEmpty()) {
-            val epubBytes = bookApi.getBookRawFile(bookId.value)
-            val zipFile = File(context.cacheDir, "epub3/$bookUuid.epub")
-            zipFile.writeBytes(epubBytes)
-            BookService.extractArchive(
-                URL("file://${zipFile.absolutePath}"),
-                extractedDir.toURI().toURL()
-            )
-            zipFile.delete()
+            val localPath = bookApi.getBookLocalFilePath(bookId.value)
+            if (localPath != null) {
+                // Offline: extract directly from already-local file — zero heap allocation
+                BookService.extractArchive(
+                    URL("file://$localPath"),
+                    extractedDir.toURI().toURL()
+                )
+            } else {
+                // Remote: stream to temp file in 64 KB chunks
+                val zipFile = File(context.cacheDir, "epub3/$bookUuid.epub")
+                zipFile.outputStream().buffered().use { out ->
+                    bookApi.downloadBookRawFile(bookId.value) { chunk -> out.write(chunk) }
+                }
+                BookService.extractArchive(
+                    URL("file://${zipFile.absolutePath}"),
+                    extractedDir.toURI().toURL()
+                )
+                zipFile.delete()
+            }
         }
         return extractedDir
     }

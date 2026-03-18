@@ -44,7 +44,36 @@ This is a specialized fork of [Komelia](https://github.com/Gaysuist/Komelia) foc
 *   **New Visual Toggles**: Immersive color strength sliders, unified app-wide accent color presets, and a master toggle for the "New Library UI".
 *   **Deep Customization**: Per-mode toggles for tap-to-zoom, configurable tap navigation zones with visual diagrams, and granular adaptive background settings.
 
+<details>
+  <summary>Immersive Screenshots</summary>
+   <img src="/screenshots/Immersive%2001.jpeg" alt="Komelia" width="270">  
+   <img src="/screenshots/Immersive%2002.jpeg" alt="Komelia" width="270">  
+   <img src="/screenshots/Immersive%2003.jpeg" alt="Komelia" width="270">  
+   <img src="/screenshots/Immersive%2004.jpeg" alt="Komelia" width="270">  
+   <img src="/screenshots/Immersive%2005.jpeg" alt="Komelia" width="270">  
+   <img src="/screenshots/Immersive%2006.jpeg" alt="Komelia" width="270">  
+   <img src="/screenshots/Immersive%2007.jpeg" alt="Komelia" width="270">  
+   <img src="/screenshots/Immersive%2008.jpeg" alt="Komelia" width="270">  
+   <img src="/screenshots/Immersive%2009.jpeg" alt="Komelia" width="270">  
+   <img src="/screenshots/Immersive%2010.jpeg" alt="Komelia" width="270">  
+   <img src="/screenshots/Immersive%2011.jpeg" alt="Komelia" width="270">  
+   <img src="/screenshots/Immersive%2012.jpeg" alt="Komelia" width="270">  
+   <img src="/screenshots/Immersive%2013.jpeg" alt="Komelia" width="270">  
+</details>
+
+
 ---
+
+## Many thanks to these projects, I used them as inspiration and shameleslly use code from them
+
+*   **Storyteller**: An Amazing application to merge audiobooks and epubs to a simless "kindle whisper" like experiense. I used the epub3 engine and added my controls on top.  https://gitlab.com/storyteller-platform/storyteller
+*   **waifu2x ncnn Vulkan**: A cool little project that provided ncnn implementation on android, I integrated it into the reader to provide the upscaler functionality and to understand how to manage the ncnn models with gpu acceleration on android- it was very easy to integrate it into Komelia. https://github.com/nihui/waifu2x-ncnn-vulkan
+*   **RealSR-NCNN-Android**: This one provided many NCNN models on android and I used it in combination with the waifu2x code to add RealSR, RealCUGAN etc modelsn. https://github.com/tumuyan/RealSR-NCNN-Android
+
+
+---
+
+
 
 ### Downloads:
 
