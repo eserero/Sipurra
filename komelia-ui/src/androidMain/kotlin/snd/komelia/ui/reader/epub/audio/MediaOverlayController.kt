@@ -114,6 +114,22 @@ class MediaOverlayController(
         epubView = view
     }
 
+    fun seekToNextClip() {
+        val allClips = BookService.getOverlayClips(bookUuid)
+        val current = player.getCurrentClip() ?: return
+        val idx = allClips.indexOf(current)
+        val next = allClips.getOrNull(idx + 1) ?: return
+        player.seekTo(next.audioResource, next.start, skipEmit = false)
+    }
+
+    fun seekToPrevClip() {
+        val allClips = BookService.getOverlayClips(bookUuid)
+        val current = player.getCurrentClip() ?: return
+        val idx = allClips.indexOf(current)
+        val prev = allClips.getOrNull(idx - 1) ?: return
+        player.seekTo(prev.audioResource, prev.start, skipEmit = false)
+    }
+
     fun togglePlayPause() {
         if (_isPlaying.value) {
             player.pause()

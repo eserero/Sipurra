@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
@@ -41,7 +40,9 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                     epub3State?.onEpubViewCreated(view)
                 }
             },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 56.dp, bottom = 66.dp)
         )
 
         if (epub3State != null) {
@@ -51,8 +52,7 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                     controller = it,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 24.dp)
-                        .navigationBarsPadding()
+                        .padding(bottom = 10.dp)
                 )
             }
 
