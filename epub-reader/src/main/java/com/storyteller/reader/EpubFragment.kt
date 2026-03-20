@@ -126,6 +126,10 @@ class EpubFragment(
                 paragraphSpacing = listener.props!!.paragraphSpacing,
                 textAlign = listener.props!!.textAlign,
                 textColor = org.readium.r2.navigator.preferences.Color(listener.props!!.foreground),
+                scroll = listener.props!!.scroll,
+                columnCount = listener.props!!.columnCount,
+                pageMargins = listener.props!!.pageMargins,
+                publisherStyles = listener.props!!.publisherStyles,
             ),
         )
 

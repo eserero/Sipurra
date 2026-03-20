@@ -5,10 +5,19 @@ import cafe.adriel.voyager.navigator.Navigator
 import com.storyteller.reader.BookService
 import com.storyteller.reader.EpubView
 import com.storyteller.reader.EpubViewListener
+import com.storyteller.reader.OverlayPar
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
+import org.readium.r2.navigator.preferences.ColumnCount
+import org.readium.r2.navigator.preferences.FontFamily
+import org.readium.r2.navigator.preferences.TextAlign
+import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.util.Url
 import org.readium.r2.shared.util.mediatype.MediaType
@@ -16,21 +25,22 @@ import snd.komelia.AppNotifications
 import snd.komelia.AppWindowState
 import snd.komelia.komga.api.KomgaBookApi
 import snd.komelia.komga.api.model.KomeliaBook
+import snd.komelia.settings.EpubReaderSettingsRepository
+import snd.komelia.settings.model.Epub3ColumnCount
+import snd.komelia.settings.model.Epub3NativeSettings
+import snd.komelia.settings.model.Epub3TextAlign
 import snd.komelia.ui.BookSiblingsContext
 import snd.komelia.ui.LoadState
 import snd.komelia.ui.MainScreen
 import snd.komelia.ui.book.BookScreen
 import snd.komelia.ui.book.bookScreen
 import snd.komelia.ui.platform.PlatformType
+import snd.komelia.ui.reader.epub.audio.MediaOverlayController
 import snd.komga.client.book.KomgaBookId
 import snd.komga.client.book.R2Device
 import snd.komga.client.book.R2Location
 import snd.komga.client.book.R2Locator
 import snd.komga.client.book.R2Progression
-import com.storyteller.reader.OverlayPar
-import org.json.JSONArray
-import org.json.JSONObject
-import snd.komelia.ui.reader.epub.audio.MediaOverlayController
 import snd.webview.KomeliaWebview
 import java.io.File
 import java.net.URL
@@ -51,6 +61,7 @@ class Epub3ReaderState(
     book: KomeliaBook?,
     private val context: Context,
     private val bookApi: KomgaBookApi,
+    private val epubSettingsRepository: EpubReaderSettingsRepository,
     private val notifications: AppNotifications,
     private val markReadProgress: Boolean,
     private val windowState: AppWindowState,
@@ -65,7 +76,15 @@ class Epub3ReaderState(
 
     val bookId = MutableStateFlow(bookId)
     val showControls = MutableStateFlow(false)
+    val showSettings = MutableStateFlow(false)
+    val showToc = MutableStateFlow(false)
+    val tableOfContents = MutableStateFlow<List<Link>>(emptyList())
+    val settings = MutableStateFlow(Epub3NativeSettings())
     val mediaOverlayController = MutableStateFlow<MediaOverlayController?>(null)
+    val positions = MutableStateFlow<List<Locator>>(emptyList())
+    val currentLocator = MutableStateFlow<Locator?>(null)
+    private var epubView: EpubView? = null
+    private var pendingControlsToggleJob: Job? = null
     private val navigator = MutableStateFlow<Navigator?>(null)
     private val bookUuid: String get() = this.bookId.value.value
 
@@ -74,6 +93,53 @@ class Epub3ReaderState(
 
     fun toggleControls() {
         showControls.value = !showControls.value
+    }
+
+    fun toggleSettings() {
+        showSettings.value = !showSettings.value
+    }
+
+    fun toggleToc() {
+        showToc.value = !showToc.value
+    }
+
+    fun navigateToLink(link: Link) {
+        val locator = BookService.locateLink(bookUuid, link) ?: return
+        epubView?.go(locator)
+        mediaOverlayController.value?.handleUserLocatorChange(locator)
+    }
+
+    fun updateSettings(new: Epub3NativeSettings) {
+        settings.value = new
+        applySettingsToView(new)
+        coroutineScope.launch { epubSettingsRepository.putEpub3NativeSettings(new) }
+    }
+
+    private fun applySettingsToView(s: Epub3NativeSettings) {
+        val view = epubView ?: return
+        val ta = when (s.textAlign) {
+            Epub3TextAlign.JUSTIFY -> TextAlign.JUSTIFY
+            Epub3TextAlign.LEFT    -> TextAlign.LEFT
+            Epub3TextAlign.CENTER  -> TextAlign.CENTER
+            Epub3TextAlign.RIGHT   -> TextAlign.RIGHT
+        }
+        view.pendingProps.foreground       = s.theme.foreground
+        view.pendingProps.background       = s.theme.background
+        view.pendingProps.fontFamily       = FontFamily(s.fontFamily)
+        view.pendingProps.fontSize         = s.fontSize
+        view.pendingProps.lineHeight       = s.lineHeight
+        view.pendingProps.paragraphSpacing = s.paragraphSpacing
+        view.pendingProps.textAlign        = ta
+        view.pendingProps.readaloudColor   = s.readAloudColor.colorInt
+        view.pendingProps.scroll           = s.scroll
+        view.pendingProps.columnCount      = when (s.columnCount) {
+            Epub3ColumnCount.AUTO -> ColumnCount.AUTO
+            Epub3ColumnCount.ONE  -> ColumnCount.ONE
+            Epub3ColumnCount.TWO  -> ColumnCount.TWO
+        }
+        view.pendingProps.pageMargins      = s.pageMargins
+        view.pendingProps.publisherStyles  = s.publisherStyles
+        view.finalizeProps()
     }
 
     override suspend fun initialize(navigator: Navigator) {
@@ -98,6 +164,7 @@ class Epub3ReaderState(
             } else null
 
             BookService.openPublication(bookUuid, extractedDir.toURI().toURL(), clips = persistedClips)
+            tableOfContents.value = BookService.getPublication(bookUuid)?.tableOfContents ?: emptyList()
 
             val clips: List<OverlayPar> = persistedClips ?: run {
                 val freshClips = BookService.getOverlayClips(bookUuid)
@@ -132,6 +199,11 @@ class Epub3ReaderState(
             }
 
             state.value = LoadState.Success(Unit)
+            settings.value = epubSettingsRepository.getEpub3NativeSettings()
+            coroutineScope.launch {
+                runCatching { positions.value = BookService.getPositions(bookUuid) }
+                    .onFailure { logger.catching(it) }
+            }
         }.onFailure { e ->
             logger.catching(e)
             state.value = LoadState.Error(e)
@@ -142,6 +214,7 @@ class Epub3ReaderState(
         view.listener = object : EpubViewListener {
             override fun onLocatorChange(locator: Locator) {
                 savedLocator = locator
+                currentLocator.value = locator
                 // F1: page navigation → audio seek
                 mediaOverlayController.value?.handleUserLocatorChange(locator)
                 if (!markReadProgress) return
@@ -167,10 +240,15 @@ class Epub3ReaderState(
             }
 
             override fun onMiddleTouch() {
-                toggleControls()
+                pendingControlsToggleJob?.cancel()
+                pendingControlsToggleJob = coroutineScope.launch {
+                    delay(400L)   // JS double-tap window is 350ms; 400ms gives headroom
+                    toggleControls()
+                }
             }
 
             override fun onDoubleTouch(locator: Locator) {
+                pendingControlsToggleJob?.cancel()
                 // F2: double-tap → seek audio to that paragraph and play
                 mediaOverlayController.value?.handleDoubleTap(locator)
             }
@@ -178,7 +256,13 @@ class Epub3ReaderState(
         view.pendingProps.bookUuid = bookUuid
         view.pendingProps.locator = savedLocator
         view.finalizeProps()
+        this.epubView = view
+        currentLocator.value = savedLocator
+        applySettingsToView(settings.value)
         mediaOverlayController.value?.attachView(view)
+        // Pre-seed pendingUserLocator so first play starts from reading position,
+        // not from audio track position 0, even if Readium hasn't fired onLocatorChange yet.
+        savedLocator?.let { mediaOverlayController.value?.handleUserLocatorChange(it) }
     }
 
     /** No-op: this reader does not use a WebView. */
@@ -186,7 +270,14 @@ class Epub3ReaderState(
 
     override fun onBackButtonPress() = closeWebview()
 
+    fun navigateToPosition(positionIndex: Int) {
+        val locator = positions.value.getOrNull(positionIndex) ?: return
+        epubView?.go(locator)
+        mediaOverlayController.value?.handleUserLocatorChange(locator)
+    }
+
     override fun closeWebview() {
+        this.epubView = null
         mediaOverlayController.value?.release()
         mediaOverlayController.value = null
         if (platformType == PlatformType.MOBILE) windowState.setFullscreen(false)

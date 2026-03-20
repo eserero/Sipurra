@@ -2,6 +2,7 @@ package snd.komelia.settings
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.JsonObject
+import snd.komelia.settings.model.Epub3NativeSettings
 import snd.komelia.settings.model.EpubReaderType
 import snd.komelia.settings.model.TtsuReaderSettings
 
@@ -14,4 +15,7 @@ interface EpubReaderSettingsRepository {
 
     suspend fun getTtsuReaderSettings(): TtsuReaderSettings
     suspend fun putTtsuReaderSettings(settings: TtsuReaderSettings)
+
+    suspend fun getEpub3NativeSettings(): Epub3NativeSettings
+    suspend fun putEpub3NativeSettings(settings: Epub3NativeSettings)
 }

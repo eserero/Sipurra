@@ -37,6 +37,7 @@ actual fun createEpub3ReaderState(
     book = book,
     context = platformContext,
     bookApi = bookApi,
+    epubSettingsRepository = epubSettingsRepository,
     notifications = notifications,
     markReadProgress = markReadProgress,
     windowState = windowState,

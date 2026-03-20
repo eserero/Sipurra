@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonObject
 import snd.komelia.db.EpubReaderSettings
 import snd.komelia.db.SettingsStateWrapper
 import snd.komelia.settings.EpubReaderSettingsRepository
+import snd.komelia.settings.model.Epub3NativeSettings
 import snd.komelia.settings.model.EpubReaderType
 import snd.komelia.settings.model.TtsuReaderSettings
 
@@ -34,5 +35,13 @@ class EpubReaderSettingsRepositoryWrapper(
 
     override suspend fun putTtsuReaderSettings(settings: TtsuReaderSettings) {
         return wrapper.transform { it.copy(ttsuReaderSettings = settings) }
+    }
+
+    override suspend fun getEpub3NativeSettings(): Epub3NativeSettings {
+        return wrapper.state.value.epub3NativeSettings
+    }
+
+    override suspend fun putEpub3NativeSettings(settings: Epub3NativeSettings) {
+        return wrapper.transform { it.copy(epub3NativeSettings = settings) }
     }
 }

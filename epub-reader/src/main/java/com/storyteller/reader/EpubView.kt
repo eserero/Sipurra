@@ -20,6 +20,7 @@ import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.navigator.input.InputListener
 import org.readium.r2.navigator.input.TapEvent
+import org.readium.r2.navigator.preferences.ColumnCount
 import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.navigator.preferences.TextAlign
 import org.readium.r2.navigator.util.DirectionalNavigationAdapter
@@ -47,7 +48,11 @@ data class Props(
     var lineHeight: Double?,
     var paragraphSpacing: Double?,
     var fontSize: Double?,
-    var textAlign: TextAlign?
+    var textAlign: TextAlign?,
+    var scroll: Boolean?,
+    var columnCount: ColumnCount?,
+    var pageMargins: Double?,
+    var publisherStyles: Boolean?,
 )
 
 
@@ -65,7 +70,11 @@ data class FinalizedProps(
     var lineHeight: Double,
     var paragraphSpacing: Double,
     var fontSize: Double,
-    var textAlign: TextAlign
+    var textAlign: TextAlign,
+    var scroll: Boolean,
+    var columnCount: ColumnCount,
+    var pageMargins: Double,
+    var publisherStyles: Boolean,
 )
 
 /**
@@ -141,6 +150,10 @@ class EpubView(
         paragraphSpacing = null,
         fontSize = null,
         textAlign = null,
+        scroll = null,
+        columnCount = null,
+        pageMargins = null,
+        publisherStyles = null,
     )
     var props: FinalizedProps? = null
 
@@ -168,6 +181,10 @@ class EpubView(
                     ?: oldProps?.paragraphSpacing ?: 0.5,
                 fontSize = pendingProps.fontSize ?: oldProps?.fontSize ?: 1.0,
                 textAlign = pendingProps.textAlign ?: oldProps?.textAlign ?: TextAlign.JUSTIFY,
+                scroll = pendingProps.scroll ?: oldProps?.scroll ?: false,
+                columnCount = pendingProps.columnCount ?: oldProps?.columnCount ?: ColumnCount.AUTO,
+                pageMargins = pendingProps.pageMargins ?: oldProps?.pageMargins ?: 1.0,
+                publisherStyles = pendingProps.publisherStyles ?: oldProps?.publisherStyles ?: false,
             )
 
         props = finalProps
@@ -209,6 +226,10 @@ class EpubView(
                 paragraphSpacing = props!!.paragraphSpacing,
                 textAlign = props!!.textAlign,
                 textColor = org.readium.r2.navigator.preferences.Color(props!!.foreground),
+                scroll = props!!.scroll,
+                columnCount = props!!.columnCount,
+                pageMargins = props!!.pageMargins,
+                publisherStyles = props!!.publisherStyles,
             )
         )
     }

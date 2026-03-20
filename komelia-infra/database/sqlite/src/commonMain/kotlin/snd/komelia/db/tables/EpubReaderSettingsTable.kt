@@ -4,6 +4,7 @@ import kotlinx.serialization.json.JsonObject
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.json.json
 import snd.komelia.db.JsonDbDefault
+import snd.komelia.settings.model.Epub3NativeSettings
 import snd.komelia.settings.model.TtsuReaderSettings
 
 object EpubReaderSettingsTable : Table("EpubReaderSettings") {
@@ -11,6 +12,7 @@ object EpubReaderSettingsTable : Table("EpubReaderSettings") {
     val readerType = text("reader_type")
     val komgaSettingsJson = json<JsonObject>("komga_settings_json", JsonDbDefault)
     val ttsuSettingsJson = json<TtsuReaderSettings>("ttsu_settings_json", JsonDbDefault)
+    val epub3NativeSettingsJson = json<Epub3NativeSettings>("epub3_native_settings_json", JsonDbDefault).default(Epub3NativeSettings())
 
     override val primaryKey = PrimaryKey(bookId)
 }
