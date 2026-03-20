@@ -9,13 +9,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,7 +29,9 @@ import androidx.compose.ui.unit.dp
 import snd.komelia.ui.LocalNavBarColor
 import snd.komelia.ui.LocalTheme
 import snd.komelia.ui.Theme
+import snd.komelia.ui.common.SplitFabMenu
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ImmersiveDetailFab(
     onReadClick: () -> Unit,
@@ -52,6 +59,8 @@ fun ImmersiveDetailFab(
         contentColorFor(readNowContainerColor)
     }
 
+    var expanded by remember { mutableStateOf(false) }
+
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -62,41 +71,62 @@ fun ImmersiveDetailFab(
         Spacer(modifier = Modifier.weight(1f))
 
         if (showReadActions) {
-            ExtendedFloatingActionButton(
-                onClick = onReadClick,
+            SplitFabMenu(
+                expanded = expanded,
+                onExpandedChange = { expanded = it },
+                primaryActionText = "Read Now",
+                primaryActionIcon = Icons.AutoMirrored.Rounded.MenuBook,
+                onPrimaryActionClick = {
+                    expanded = false
+                    onReadClick()
+                },
                 containerColor = readNowContainerColor,
                 contentColor = readNowContentColor,
-                icon = {
-                    Icon(
-                        Icons.AutoMirrored.Rounded.MenuBook,
-                        contentDescription = null
+                menuItems = {
+                    FloatingActionButtonMenuItem(
+                        onClick = {
+                            expanded = false
+                            onReadClick()
+                        },
+                        icon = { Icon(Icons.AutoMirrored.Rounded.MenuBook, contentDescription = null) },
+                        text = { Text("Read Now") },
+                        containerColor = readNowContainerColor,
+                        contentColor = readNowContentColor
                     )
-                },
-                text = { Text("Read Now") }
+                    FloatingActionButtonMenuItem(
+                        onClick = {
+                            expanded = false
+                            onReadIncognitoClick()
+                        },
+                        icon = { Icon(Icons.Rounded.VisibilityOff, contentDescription = null) },
+                        text = { Text("Read Incognito") },
+                        containerColor = readNowContainerColor,
+                        contentColor = readNowContentColor
+                    )
+                    FloatingActionButtonMenuItem(
+                        onClick = {
+                            expanded = false
+                            onDownloadClick()
+                        },
+                        icon = { Icon(Icons.Rounded.Download, contentDescription = null) },
+                        text = { Text("Download") },
+                        containerColor = readNowContainerColor,
+                        contentColor = readNowContentColor
+                    )
+                }
             )
-
+        } else {
+            // Download FAB
             FloatingActionButton(
-                onClick = onReadIncognitoClick,
+                onClick = onDownloadClick,
                 containerColor = fabContainerColor,
                 contentColor = fabContentColor,
             ) {
                 Icon(
-                    Icons.Rounded.VisibilityOff,
-                    contentDescription = "Read Incognito"
+                    Icons.Rounded.Download,
+                    contentDescription = "Download"
                 )
             }
-        }
-
-        // Download FAB
-        FloatingActionButton(
-            onClick = onDownloadClick,
-            containerColor = fabContainerColor,
-            contentColor = fabContentColor,
-        ) {
-            Icon(
-                Icons.Rounded.Download,
-                contentDescription = "Download"
-            )
         }
     }
 }

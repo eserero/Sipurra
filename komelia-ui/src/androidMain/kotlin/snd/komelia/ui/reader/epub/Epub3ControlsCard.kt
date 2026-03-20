@@ -40,7 +40,7 @@ import snd.komelia.ui.common.components.AppSlider
 import snd.komelia.ui.common.components.AppSliderDefaults
 import kotlin.math.roundToInt
 
-private fun findTocLink(links: List<Link>, hrefStr: String): Link? {
+fun findTocLink(links: List<Link>, hrefStr: String): Link? {
     for (link in links) {
         if (link.href.toString() == hrefStr) return link
         findTocLink(link.children, hrefStr)?.let { return it }

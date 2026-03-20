@@ -129,9 +129,25 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
             }
 
             // AudioMiniPlayer renders above controls card/scrim but below settings card
-            controller?.let {
+            controller?.let { ctrl ->
+                val book by epub3State.book.collectAsState()
+                val currentLocator by epub3State.currentLocator.collectAsState()
+
+                val chapterTitle = remember(currentLocator, toc) {
+                    currentLocator?.let { loc ->
+                        loc.title
+                            ?: findTocLink(toc, loc.href.toString())?.title
+                            ?: loc.href.toString()
+                                .substringAfterLast('/').substringBeforeLast('.')
+                                .replace('-', ' ').replace('_', ' ')
+                    } ?: ""
+                }
+
                 AudioMiniPlayer(
-                    controller = it,
+                    controller = ctrl,
+                    bookId = epub3State.bookId.value,
+                    bookTitle = book?.metadata?.title ?: "",
+                    chapterTitle = chapterTitle,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = audioPlayerBottomPadding)
