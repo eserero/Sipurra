@@ -76,7 +76,7 @@ fun SplitFabMenu(
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
                                 .clickable { onPrimaryActionClick() }
-                                .padding(horizontal = 16.dp),
+                                .padding(horizontal = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(primaryActionIcon, contentDescription = null, tint = contentColor)
@@ -90,7 +90,7 @@ fun SplitFabMenu(
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp))
                                 .clickable { onExpandedChange(true) }
-                                .padding(horizontal = 12.dp),
+                                .padding(horizontal = 6.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(

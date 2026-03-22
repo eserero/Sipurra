@@ -72,7 +72,7 @@ fun ImmersiveDetailFab(
                 modifier = Modifier.offset(x = 20.dp, y = 20.dp),
                 expanded = expanded,
                 onExpandedChange = { expanded = it },
-                primaryActionText = "Read Now",
+                primaryActionText = "Read",
                 primaryActionIcon = Icons.AutoMirrored.Rounded.MenuBook,
                 onPrimaryActionClick = {
                     expanded = false
@@ -87,7 +87,7 @@ fun ImmersiveDetailFab(
                             onReadClick()
                         },
                         icon = { Icon(Icons.AutoMirrored.Rounded.MenuBook, contentDescription = null) },
-                        text = { Text("Read Now") },
+                        text = { Text("Read") },
                         containerColor = readNowContainerColor,
                         contentColor = readNowContentColor
                     )

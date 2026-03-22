@@ -104,9 +104,18 @@ class Epub3ReaderState(
     }
 
     fun navigateToLink(link: Link) {
-        val locator = BookService.locateLink(bookUuid, link) ?: return
+        val locator = BookService.locateLink(bookUuid, link) ?: run {
+            logger.info { "[komelia-epub] NAV-LINK: locateLink returned null for ${link.href}" }
+            return
+        }
+        logger.info {
+            "[komelia-epub] NAV-LINK: link=${link.href} → locator=${locator.href} " +
+            "currentLocator_before=${currentLocator.value?.href}"
+        }
         epubView?.go(locator)
-        mediaOverlayController.value?.handleUserLocatorChange(locator)
+        // onLocatorChange will fire after go() and call handleUserLocatorChange,
+        // exactly like swipe navigation — the locator from EpubView has proper
+        // position data, not a TOC anchor fragment.
     }
 
     fun updateSettings(new: Epub3NativeSettings) {
@@ -212,11 +221,15 @@ class Epub3ReaderState(
     }
 
     fun onEpubViewCreated(view: EpubView) {
+        logger.info { "[komelia-epub] INIT: savedLocator=${savedLocator?.href} currentLocator=${currentLocator.value?.href}" }
         view.listener = object : EpubViewListener {
             override fun onLocatorChange(locator: Locator) {
+                logger.info {
+                    "[komelia-epub] LOCATOR-CB: incoming=${locator.href} title=${locator.title} " +
+                    "currentLocator=${currentLocator.value?.href}"
+                }
                 savedLocator = locator
                 currentLocator.value = locator
-                // F1: page navigation → audio seek
                 mediaOverlayController.value?.handleUserLocatorChange(locator)
                 if (!markReadProgress) return
                 coroutineScope.launch {
@@ -273,6 +286,10 @@ class Epub3ReaderState(
 
     fun navigateToPosition(positionIndex: Int) {
         val locator = positions.value.getOrNull(positionIndex) ?: return
+        logger.info {
+            "[komelia-epub] NAV-POS: index=$positionIndex → locator=${locator.href} " +
+            "currentLocator_before=${currentLocator.value?.href}"
+        }
         epubView?.go(locator)
         mediaOverlayController.value?.handleUserLocatorChange(locator)
     }
