@@ -81,6 +81,7 @@ fun AudioMiniPlayer(
                     shape = RoundedCornerShape(8.dp),
                     shadowElevation = 4.dp,
                     modifier = Modifier
+                        .padding(start = 20.dp, top = 8.dp, end = 8.dp, bottom = 8.dp)
                         .sharedBounds(
                             rememberSharedContentState(key = "audio-cover-${bookId.value}"),
                             animatedVisibilityScope = animatedVisibilityScope,
@@ -88,7 +89,6 @@ fun AudioMiniPlayer(
                             exit = fadeOut(tween(300, easing = emphasizedAccelerateEasing)),
                             boundsTransform = { _, _ -> tween(500, easing = emphasizedEasing) },
                         )
-                        .padding(start = 20.dp, top = 8.dp, end = 8.dp, bottom = 8.dp)
                         .size(48.dp)
                         .clickable { onCoverClick() },
                 ) {

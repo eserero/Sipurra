@@ -3,7 +3,10 @@ package snd.komelia.ui.reader.epub.audio
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -16,7 +19,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -42,6 +44,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,9 +52,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import org.readium.r2.shared.publication.Locator
@@ -65,6 +68,7 @@ import snd.komelia.ui.common.images.ThumbnailImage
 import snd.komelia.ui.common.immersive.extractDominantColor
 import snd.komga.client.book.KomgaBookId
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 private val emphasizedEasing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
 private val emphasizedAccelerateEasing = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
@@ -102,7 +106,8 @@ fun AudioFullScreenPlayer(
         else surface
     }
 
-    var dragOffsetY by remember { mutableStateOf(0f) }
+    val dragAnimatable = remember { Animatable(0f) }
+    val coroutineScope = rememberCoroutineScope()
 
     val currentIndex = remember(currentLocator, positions) {
         positions.indexOfFirst { it.href == currentLocator?.href }.coerceAtLeast(0)
@@ -123,8 +128,18 @@ fun AudioFullScreenPlayer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight(Alignment.Bottom)
-                    // sharedBounds must come BEFORE size/offset modifiers so it captures
-                    // the correct bounds for the container transform.
+                    // layout {} shifts the Surface's actual layout position when dragging.
+                    // Placed BEFORE sharedBounds so it captures the current drag position —
+                    // the container-transform transition starts from where the finger is.
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        layout(placeable.width, placeable.height) {
+                            placeable.placeRelative(
+                                0,
+                                dragAnimatable.value.roundToInt().coerceAtLeast(0),
+                            )
+                        }
+                    }
                     .sharedBounds(
                         rememberSharedContentState(key = "audio-player-surface-${bookId.value}"),
                         animatedVisibilityScope = animatedVisibilityScope,
@@ -134,16 +149,44 @@ fun AudioFullScreenPlayer(
                         resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
                         clipInOverlayDuringTransition = OverlayClip(containerShape),
                     )
-                    .offset { IntOffset(0, dragOffsetY.roundToInt().coerceAtLeast(0)) }
                     .pointerInput(Unit) {
                         detectVerticalDragGestures(
                             onDragEnd = {
-                                if (dragOffsetY > 120f) onDismiss() else dragOffsetY = 0f
+                                coroutineScope.launch {
+                                    if (dragAnimatable.value > 120f) {
+                                        // sharedBounds already captured the offset position
+                                        // (via the layout {} above). Trigger onDismiss directly
+                                        // so the transition starts from the drag position.
+                                        onDismiss()
+                                    } else {
+                                        dragAnimatable.animateTo(
+                                            targetValue = 0f,
+                                            animationSpec = spring(
+                                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                stiffness = Spring.StiffnessMedium,
+                                            ),
+                                        )
+                                    }
+                                }
                             },
-                            onDragCancel = { dragOffsetY = 0f },
+                            onDragCancel = {
+                                coroutineScope.launch {
+                                    dragAnimatable.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                            stiffness = Spring.StiffnessMedium,
+                                        ),
+                                    )
+                                }
+                            },
                             onVerticalDrag = { _, delta ->
-                                dragOffsetY = (dragOffsetY + delta).coerceAtLeast(0f)
-                            }
+                                coroutineScope.launch {
+                                    dragAnimatable.snapTo(
+                                        (dragAnimatable.value + delta).coerceAtLeast(0f)
+                                    )
+                                }
+                            },
                         )
                     },
                 shape = containerShape,
@@ -168,16 +211,16 @@ fun AudioFullScreenPlayer(
                         shape = RoundedCornerShape(12.dp),
                         shadowElevation = 8.dp,
                         modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 48.dp)
+                            .aspectRatio(1f)
                             .sharedBounds(
                                 rememberSharedContentState(key = "audio-cover-${bookId.value}"),
                                 animatedVisibilityScope = animatedVisibilityScope,
                                 enter = fadeIn(tween(400, easing = emphasizedEasing)),
                                 exit = fadeOut(tween(300, easing = emphasizedAccelerateEasing)),
                                 boundsTransform = { _, _ -> tween(500, easing = emphasizedEasing) },
-                            )
-                            .fillMaxWidth()
-                            .padding(horizontal = 48.dp)
-                            .aspectRatio(1f),
+                            ),
                     ) {
                         ThumbnailImage(
                             data = coverRequest,
@@ -195,16 +238,16 @@ fun AudioFullScreenPlayer(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 48.dp)
+                            .padding(top = 16.dp, bottom = 4.dp)
                             .sharedBounds(
                                 rememberSharedContentState(key = "audio-book-title-${bookId.value}"),
                                 animatedVisibilityScope = animatedVisibilityScope,
                                 enter = fadeIn(tween(400, easing = emphasizedEasing)),
                                 exit = fadeOut(tween(300, easing = emphasizedAccelerateEasing)),
                                 boundsTransform = { _, _ -> tween(500, easing = emphasizedEasing) },
-                            )
-                            .fillMaxWidth()
-                            .padding(horizontal = 48.dp)
-                            .padding(top = 16.dp, bottom = 4.dp),
+                            ),
                     )
 
                     // Chapter title
@@ -214,15 +257,15 @@ fun AudioFullScreenPlayer(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 48.dp)
                             .sharedBounds(
                                 rememberSharedContentState(key = "audio-chapter-title-${bookId.value}"),
                                 animatedVisibilityScope = animatedVisibilityScope,
                                 enter = fadeIn(tween(400, easing = emphasizedEasing)),
                                 exit = fadeOut(tween(300, easing = emphasizedAccelerateEasing)),
                                 boundsTransform = { _, _ -> tween(500, easing = emphasizedEasing) },
-                            )
-                            .fillMaxWidth()
-                            .padding(horizontal = 48.dp),
+                            ),
                     )
 
                     // Page slider
