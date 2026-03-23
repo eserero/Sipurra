@@ -7,6 +7,7 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +47,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -56,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import org.readium.r2.shared.publication.Locator
 import snd.komelia.image.coil.BookDefaultThumbnailRequest
 import snd.komelia.ui.LocalAccentColor
+import snd.komelia.ui.LocalImmersiveColorEnabled
 import snd.komelia.ui.common.components.AppSlider
 import snd.komelia.ui.common.components.AppSliderDefaults
 import snd.komelia.ui.common.components.accentFilterChipColors
@@ -102,6 +106,7 @@ fun AudioFullScreenPlayer(
     val elapsedSeconds by controller.elapsedSeconds.collectAsState()
     val totalDurationSeconds by controller.totalDurationSeconds.collectAsState()
     val accentColor = LocalAccentColor.current
+    val immersiveColorEnabled = LocalImmersiveColorEnabled.current
 
     val coverRequest = remember(bookId) { BookDefaultThumbnailRequest(bookId) }
 
@@ -150,8 +155,25 @@ fun AudioFullScreenPlayer(
                         )
                     },
                 shape = containerShape,
-                color = backgroundColor,
+                color = Color.Transparent,
             ) {
+                Box {
+                    if (immersiveColorEnabled) {
+                        ThumbnailImage(
+                            data = coverRequest,
+                            cacheKey = bookId.value,
+                            contentScale = ContentScale.Crop,
+                            placeholder = null,
+                            modifier = Modifier
+                                .matchParentSize()
+                                .blur(radius = 40.dp, edgeTreatment = BlurredEdgeTreatment.Rectangle),
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(backgroundColor.copy(alpha = 0.72f)),
+                    )
                 Column(
                     modifier = Modifier
                         .navigationBarsPadding()
@@ -355,6 +377,7 @@ fun AudioFullScreenPlayer(
                         }
                     }
                 }
+                } // Box
             }
         }
     }
