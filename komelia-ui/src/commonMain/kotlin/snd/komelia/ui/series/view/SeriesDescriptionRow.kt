@@ -78,26 +78,25 @@ fun SeriesDescriptionRow(
                 SuggestionChip(
                     onClick = { onFilterClick(SeriesScreenFilter(publicationStatus = listOf(status))) },
                     label = { Text(strings.forSeriesStatus(status)) },
-                    border = null,
                     colors =
                         when (status) {
                             ENDED -> SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = MaterialTheme.colorScheme.secondary,
-                                labelColor = MaterialTheme.colorScheme.onSecondary
+                                containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f),
+                                labelColor = MaterialTheme.colorScheme.secondary
                             )
 
                             ONGOING -> SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
                                 labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
                             ABANDONED -> SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f),
                                 labelColor = MaterialTheme.colorScheme.onErrorContainer
                             )
 
                             HIATUS -> SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.25f),
                                 labelColor = MaterialTheme.colorScheme.onTertiaryContainer
                             )
                         },

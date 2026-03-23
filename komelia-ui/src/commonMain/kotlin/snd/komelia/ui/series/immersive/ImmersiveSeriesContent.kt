@@ -25,10 +25,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -375,17 +380,13 @@ fun ImmersiveSeriesContent(
                     }
                 }
 
-                // Divider
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                }
-
                 // Tab row
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     SeriesImmersiveTabRow(
                         currentTab = immersiveTab,
                         onTabChange = onImmersiveTabChange,
                         showCollectionsTab = collectionsState.collections.isNotEmpty(),
+                        accentColor = accentColor,
                     )
                 }
 
@@ -450,39 +451,47 @@ fun ImmersiveSeriesContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SeriesImmersiveTabRow(
     currentTab: ImmersiveTab,
     onTabChange: (ImmersiveTab) -> Unit,
     showCollectionsTab: Boolean,
+    accentColor: Color?,
 ) {
-    val chipColors = AppFilterChipDefaults.filterChipColors()
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            FilterChip(
-                onClick = { onTabChange(ImmersiveTab.BOOKS) },
-                selected = currentTab == ImmersiveTab.BOOKS,
-                label = { Text("Books") },
-                colors = chipColors,
-                border = null,
+    val selectedTabIndex = when (currentTab) {
+        ImmersiveTab.BOOKS -> 0
+        ImmersiveTab.COLLECTIONS -> 1
+        ImmersiveTab.TAGS -> if (showCollectionsTab) 2 else 1
+    }
+    PrimaryTabRow(
+        selectedTabIndex = selectedTabIndex,
+        containerColor = Color.Transparent,
+        indicator = {
+            TabRowDefaults.PrimaryIndicator(
+                modifier = Modifier.tabIndicatorOffset(selectedTabIndex),
+                width = 48.dp,
+                color = accentColor ?: MaterialTheme.colorScheme.primary
             )
-            if (showCollectionsTab) {
-                FilterChip(
-                    onClick = { onTabChange(ImmersiveTab.COLLECTIONS) },
-                    selected = currentTab == ImmersiveTab.COLLECTIONS,
-                    label = { Text("Collections") },
-                    colors = chipColors,
-                    border = null,
-                )
-            }
-            FilterChip(
-                onClick = { onTabChange(ImmersiveTab.TAGS) },
-                selected = currentTab == ImmersiveTab.TAGS,
-                label = { Text("Tags") },
-                colors = chipColors,
-                border = null,
+        },
+        divider = {}
+    ) {
+        Tab(
+            selected = currentTab == ImmersiveTab.BOOKS,
+            onClick = { onTabChange(ImmersiveTab.BOOKS) },
+            text = { Text("Books") },
+        )
+        if (showCollectionsTab) {
+            Tab(
+                selected = currentTab == ImmersiveTab.COLLECTIONS,
+                onClick = { onTabChange(ImmersiveTab.COLLECTIONS) },
+                text = { Text("Collections") },
             )
         }
-        HorizontalDivider()
+        Tab(
+            selected = currentTab == ImmersiveTab.TAGS,
+            onClick = { onTabChange(ImmersiveTab.TAGS) },
+            text = { Text("Tags") },
+        )
     }
 }

@@ -34,10 +34,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -218,7 +223,8 @@ fun ImmersiveOneshotContent(
                         onSeriesClick = onSeriesClick,
                         cardWidth = cardWidth,
                         currentTab = currentTab,
-                        onTabChange = { currentTab = it }
+                        onTabChange = { currentTab = it },
+                        accentColor = accentColor,
                     )
                 }
             }
@@ -322,6 +328,7 @@ private fun OneshotCardContent(
     cardWidth: Dp,
     currentTab: OneshotImmersiveTab,
     onTabChange: (OneshotImmersiveTab) -> Unit,
+    accentColor: Color?,
 ) {
     val thumbnailOffset = (126.dp * expandFraction).coerceAtLeast(0.dp)
     val thumbnailTopGap = 20.dp
@@ -459,9 +466,6 @@ private fun OneshotCardContent(
             }
         }
 
-        // Divider
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
-
         // Tab row
         item {
             OneshotImmersiveTabRow(
@@ -469,6 +473,7 @@ private fun OneshotCardContent(
                 onTabChange = onTabChange,
                 showCollectionsTab = collections.isNotEmpty(),
                 showReadListsTab = readLists.isNotEmpty(),
+                accentColor = accentColor,
             )
         }
 
@@ -519,43 +524,51 @@ private fun OneshotCardContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun OneshotImmersiveTabRow(
     currentTab: OneshotImmersiveTab,
     onTabChange: (OneshotImmersiveTab) -> Unit,
     showCollectionsTab: Boolean,
     showReadListsTab: Boolean,
+    accentColor: Color?,
 ) {
-    val chipColors = AppFilterChipDefaults.filterChipColors()
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            FilterChip(
-                onClick = { onTabChange(OneshotImmersiveTab.TAGS) },
-                selected = currentTab == OneshotImmersiveTab.TAGS,
-                label = { Text("Tags") },
-                colors = chipColors,
-                border = null,
+    val selectedTabIndex = when (currentTab) {
+        OneshotImmersiveTab.TAGS -> 0
+        OneshotImmersiveTab.COLLECTIONS -> 1
+        OneshotImmersiveTab.READ_LISTS -> if (showCollectionsTab) 2 else 1
+    }
+    PrimaryTabRow(
+        selectedTabIndex = selectedTabIndex,
+        containerColor = Color.Transparent,
+        indicator = {
+            TabRowDefaults.PrimaryIndicator(
+                modifier = Modifier.tabIndicatorOffset(selectedTabIndex),
+                width = 48.dp,
+                color = accentColor ?: MaterialTheme.colorScheme.primary
             )
-            if (showCollectionsTab) {
-                FilterChip(
-                    onClick = { onTabChange(OneshotImmersiveTab.COLLECTIONS) },
-                    selected = currentTab == OneshotImmersiveTab.COLLECTIONS,
-                    label = { Text("Collections") },
-                    colors = chipColors,
-                    border = null,
-                )
-            }
-            if (showReadListsTab) {
-                FilterChip(
-                    onClick = { onTabChange(OneshotImmersiveTab.READ_LISTS) },
-                    selected = currentTab == OneshotImmersiveTab.READ_LISTS,
-                    label = { Text("Read Lists") },
-                    colors = chipColors,
-                    border = null,
-                )
-            }
+        },
+        divider = {}
+    ) {
+        Tab(
+            selected = currentTab == OneshotImmersiveTab.TAGS,
+            onClick = { onTabChange(OneshotImmersiveTab.TAGS) },
+            text = { Text("Tags") },
+        )
+        if (showCollectionsTab) {
+            Tab(
+                selected = currentTab == OneshotImmersiveTab.COLLECTIONS,
+                onClick = { onTabChange(OneshotImmersiveTab.COLLECTIONS) },
+                text = { Text("Collections") },
+            )
         }
-        HorizontalDivider()
+        if (showReadListsTab) {
+            Tab(
+                selected = currentTab == OneshotImmersiveTab.READ_LISTS,
+                onClick = { onTabChange(OneshotImmersiveTab.READ_LISTS) },
+                text = { Text("Read Lists") },
+            )
+        }
     }
 }
 

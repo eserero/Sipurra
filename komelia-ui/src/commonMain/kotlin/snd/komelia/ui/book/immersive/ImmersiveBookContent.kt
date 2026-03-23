@@ -37,19 +37,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.NavigateNext
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.flow.first
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,19 +63,19 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
-import snd.komelia.ui.LocalAnimatedVisibilityScope
-import snd.komelia.ui.LocalHideParenthesesInNames
-import snd.komelia.ui.LocalSharedTransitionScope
+import coil3.compose.rememberAsyncImagePainter
+import kotlinx.coroutines.flow.first
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime
 import snd.komelia.DefaultDateTimeFormats.localDateTimeFormat
 import snd.komelia.image.coil.BookDefaultThumbnailRequest
 import snd.komelia.komga.api.model.KomeliaBook
+import snd.komelia.ui.LocalAnimatedVisibilityScope
+import snd.komelia.ui.LocalHideParenthesesInNames
+import snd.komelia.ui.LocalSharedTransitionScope
 import snd.komelia.ui.book.BookInfoColumn
-import coil3.compose.rememberAsyncImagePainter
 import snd.komelia.ui.common.images.ThumbnailImage
 import snd.komelia.ui.common.immersive.ImmersiveDetailFab
 import snd.komelia.ui.common.immersive.ImmersiveDetailScaffold
@@ -90,6 +93,8 @@ import snd.komga.client.series.KomgaSeriesId
 import kotlin.math.roundToInt
 
 private val emphasizedAccelerateEasing = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
+
+private enum class BookImmersiveTab { TAGS, READ_LISTS }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -163,6 +168,8 @@ fun ImmersiveBookContent(
     var showDownloadConfirmationDialog by remember { mutableStateOf(false) }
 
     val publisherLogo = rememberPublisherLogo(publisher)
+
+    var currentTab by remember { mutableStateOf(BookImmersiveTab.TAGS) }
 
     val sharedTransitionScope = LocalSharedTransitionScope.current
 
@@ -372,35 +379,46 @@ fun ImmersiveBookContent(
                             }
                         }
 
-                        // Divider
-                        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
-
-                        // Book metadata (authors, tags, links, file info, ISBN)
-                        item {
-                            Box(Modifier.padding(horizontal = 16.dp)) {
-                                BookInfoColumn(
-                                    publisher = null,
-                                    genres = null,
-                                    authors = pageBook.metadata.authors,
-                                    tags = pageBook.metadata.tags,
-                                    links = pageBook.metadata.links,
-                                    sizeInMiB = pageBook.size,
-                                    mediaType = pageBook.media.mediaType,
-                                    isbn = pageBook.metadata.isbn,
-                                    fileUrl = pageBook.url,
-                                    onFilterClick = onFilterClick,
-                                )
-                            }
+                        // Tab row
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            BookImmersiveTabRow(
+                                currentTab = currentTab,
+                                onTabChange = { currentTab = it },
+                                showReadListsTab = readLists.isNotEmpty(),
+                                accentColor = accentColor,
+                            )
                         }
 
-                        // Reading lists
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            BookReadListsContent(
-                                readLists = readLists,
-                                onReadListClick = onReadListClick,
-                                onBookClick = onReadListBookPress,
-                                cardWidth = cardWidth,
-                            )
+                        when (currentTab) {
+                            BookImmersiveTab.TAGS -> {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    Box(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                        BookInfoColumn(
+                                            publisher = null,
+                                            genres = null,
+                                            authors = pageBook.metadata.authors,
+                                            tags = pageBook.metadata.tags,
+                                            links = pageBook.metadata.links,
+                                            sizeInMiB = pageBook.size,
+                                            mediaType = pageBook.media.mediaType,
+                                            isbn = pageBook.metadata.isbn,
+                                            fileUrl = pageBook.url,
+                                            onFilterClick = onFilterClick,
+                                        )
+                                    }
+                                }
+                            }
+
+                            BookImmersiveTab.READ_LISTS -> {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    BookReadListsContent(
+                                        readLists = readLists,
+                                        onReadListClick = onReadListClick,
+                                        onBookClick = onReadListBookPress,
+                                        cardWidth = cardWidth,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -480,6 +498,45 @@ fun ImmersiveBookContent(
                     showDownloadConfirmationDialog = false
                 },
                 onDialogDismiss = { showDownloadConfirmationDialog = false },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BookImmersiveTabRow(
+    currentTab: BookImmersiveTab,
+    onTabChange: (BookImmersiveTab) -> Unit,
+    showReadListsTab: Boolean,
+    accentColor: Color?,
+) {
+    val selectedTabIndex = when (currentTab) {
+        BookImmersiveTab.TAGS -> 0
+        BookImmersiveTab.READ_LISTS -> if (showReadListsTab) 1 else 0
+    }
+    PrimaryTabRow(
+        selectedTabIndex = selectedTabIndex,
+        containerColor = Color.Transparent,
+        indicator = {
+            TabRowDefaults.PrimaryIndicator(
+                modifier = Modifier.tabIndicatorOffset(selectedTabIndex),
+                width = 48.dp,
+                color = accentColor ?: MaterialTheme.colorScheme.primary
+            )
+        },
+        divider = {}
+    ) {
+        Tab(
+            selected = currentTab == BookImmersiveTab.TAGS,
+            onClick = { onTabChange(BookImmersiveTab.TAGS) },
+            text = { Text("Tags") },
+        )
+        if (showReadListsTab) {
+            Tab(
+                selected = currentTab == BookImmersiveTab.READ_LISTS,
+                onClick = { onTabChange(BookImmersiveTab.READ_LISTS) },
+                text = { Text("Read Lists") },
             )
         }
     }
