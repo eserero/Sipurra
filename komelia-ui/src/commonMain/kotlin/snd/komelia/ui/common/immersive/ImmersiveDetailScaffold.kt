@@ -46,6 +46,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -127,6 +129,7 @@ fun ImmersiveDetailScaffold(
     } else {
         MaterialTheme.colorScheme.surfaceVariant
     }
+    val scrimColor = if (immersiveColorEnabled) backgroundColor.copy(alpha = 0.72f) else backgroundColor
 
     // Read shared transition scopes OUTSIDE BoxWithConstraints (which uses SubcomposeLayout).
     // SubcomposeLayout defers content composition to the layout phase, so any CompositionLocal
@@ -354,21 +357,40 @@ fun ImmersiveDetailScaffold(
                     .anchoredDraggable(state, Orientation.Vertical)
                     .shadow(elevation = 6.dp, shape = cardShape)
                     .clip(cardShape)
-                    .background(backgroundColor)
             ) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(28.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (immersiveColorEnabled) {
+                        ThumbnailImage(
+                            data = coverData,
+                            cacheKey = coverKey,
+                            contentScale = ContentScale.Crop,
+                            placeholder = null,
+                            modifier = Modifier
+                                .matchParentSize()
+                                .blur(radius = 40.dp, edgeTreatment = BlurredEdgeTreatment.Rectangle),
+                        )
+                    }
                     Box(
                         modifier = Modifier
-                            .size(width = 32.dp, height = 4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                            .matchParentSize()
+                            .background(scrimColor),
                     )
-                }
-                Column(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                    cardContent(expandFraction)
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(28.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(width = 32.dp, height = 4.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                            )
+                        }
+                        Column(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                            cardContent(expandFraction)
+                        }
+                    }
                 }
             }
 
