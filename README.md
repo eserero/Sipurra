@@ -25,10 +25,10 @@ This is a specialized fork of [Komelia](https://github.com/Gaysuist/Komelia) foc
 #### Immersive Detail Screens (Book, Series, Oneshot)
 *   **Immersive Screen**: Full-bleed cover images extending behind information card for a modern, cinematic feel. ability to swipe left right to move between books, floating buttons to easily read and download.
 *   **Publisher Icons**: Showing publisher icon in the immersive screen (if there is a match).
-*   **Adaptive Card Color**: Detail card backgrounds dynamically sample and apply dominant colors from the cover artwork. Controlled in the settings.
+*   **Adaptive Card Color**: Detail card backgrounds dynamically sample and apply dominant colors and blurred texture from the cover artwork. Controlled in the settings.
 *   **Elevated Card UI**: Material 3 elevated specifications with standard typography and smooth shared-element transitions from the library list.
 
-#### Reader
+#### Image/Comic Reader
 *   **Adaptive Backgrounds**: "Blooming" gradient backgrounds that sample edge colors in real-time for both Paged and Panel modes.
 *   **High-Performance GPU Upscaling**: Integrated NCNN-powered upscaling (Waifu2x, RealCUGAN, RealSR, Real-ESRGAN) specifically optimized for Android GPU hardware. upscaling is really good but may require some time to complete depending on your mobile cpu/gpu. there are page upscaling indicators showing you what is goingn on.
 *   **Swiping Navigation in Page Mode**: swiping now work and allow you to move forward/backward pages smoothly.
@@ -38,6 +38,12 @@ This is a specialized fork of [Komelia](https://github.com/Gaysuist/Komelia) foc
 *   **Double Tap to Zoom**: ability to configure double-tap to zoom for panel and page modes (make tap navigation a bit slower)
 *   **Additional Tap to Navigate Options**: tap left to back and right to forward, tap right to forward and left to back, tap top side to back and lower side to forward, tap lower side to back and top to forward.
 *   **Always On**: setting to prevent the screen to turn off when in the reader.
+
+#### Epub Reader with support for Epub 3 audio layer
+*   **New Epub Viewer**: Completely new epub viewer that can be toggled in settings. based on Storyteller and Redium Kotlin Tookit - support epubs with audio layer to a combined text + Audio reading. 
+*   **Completly new controls**: completly new reading controls, settings and navigation screens and gestures (swipe left/right to move about, scroll based reading etc.)
+*   **Media player**: integrated media player navigation, move chapters, segments and choose sentenses to play, Including an integrated "audio book" interface
+
 
 #### Settings Page
 *   **Nicer Navigation page**: Refactored menu structure for a more moden m3 look.
