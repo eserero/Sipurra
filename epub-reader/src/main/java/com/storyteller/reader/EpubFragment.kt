@@ -39,105 +39,120 @@ class SelectionActionModeCallback(private val epubView: EpubView) : BaseActionMo
     }
 }
 
-@SuppressLint("ViewConstructor")
 @OptIn(ExperimentalReadiumApi::class)
-class EpubFragment(
-    private val publication: Publication,
-    private val listener: EpubView
-) : Fragment(R.layout.fragment_reader) {
+class EpubFragment : Fragment {
+    private var publication: Publication? = null
+    private var listener: EpubView? = null
     var navigator: EpubNavigatorFragment? = null
 
+    // Required no-arg constructor for Android Fragment system (used when restoring from saved state)
+    constructor() : super(R.layout.fragment_reader)
+
+    constructor(publication: Publication, listener: EpubView) : super(R.layout.fragment_reader) {
+        this.publication = publication
+        this.listener = listener
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        childFragmentManager.fragmentFactory = EpubNavigatorFactory(
-            publication,
-            EpubNavigatorFactory.Configuration(
-                defaults = EpubDefaults(
-                    publisherStyles = false
+        val pub = publication
+        val lst = listener
+
+        if (pub != null && lst != null) {
+            childFragmentManager.fragmentFactory = EpubNavigatorFactory(
+                pub,
+                EpubNavigatorFactory.Configuration(
+                    defaults = EpubDefaults(
+                        publisherStyles = false
+                    ),
                 ),
-            ),
-        ).createFragmentFactory(
-            listener.props!!.locator,
-            listener = listener,
-            configuration = EpubNavigatorFragment.Configuration {
-                servedAssets = listOf(
-                    "fonts/OpenDyslexic-Regular.otf",
-                    "fonts/OpenDyslexic-Bold.otf",
-                    "fonts/OpenDyslexic-Bold-Italic.otf",
-                    "fonts/OpenDyslexic-Italic.otf",
-                    "fonts/Literata_500Medium.ttf"
-                )
-                shouldApplyInsetsPadding = false
+            ).createFragmentFactory(
+                lst.props!!.locator,
+                listener = lst,
+                configuration = EpubNavigatorFragment.Configuration {
+                    servedAssets = listOf(
+                        "fonts/OpenDyslexic-Regular.otf",
+                        "fonts/OpenDyslexic-Bold.otf",
+                        "fonts/OpenDyslexic-Bold-Italic.otf",
+                        "fonts/OpenDyslexic-Italic.otf",
+                        "fonts/Literata_500Medium.ttf"
+                    )
+                    shouldApplyInsetsPadding = false
 
-                addFontFamilyDeclaration(FontFamily("OpenDyslexic")) {
-                    addFontFace {
-                        addSource("fonts/OpenDyslexic-Regular.otf")
-                        setFontStyle(FontStyle.NORMAL)
-                        setFontWeight(FontWeight.NORMAL)
-                    }
-
-                    addFontFace {
-                        addSource("fonts/OpenDyslexic-Bold.otf")
-                        setFontStyle(FontStyle.NORMAL)
-                        setFontWeight(FontWeight.BOLD)
-                    }
-
-                    addFontFace {
-                        addSource("fonts/OpenDyslexic-Bold-Italic.otf")
-                        setFontStyle(FontStyle.ITALIC)
-                        setFontWeight(FontWeight.BOLD)
-                    }
-
-                    addFontFace {
-                        addSource("fonts/OpenDyslexic-Italic.otf")
-                        setFontStyle(FontStyle.ITALIC)
-                        setFontWeight(FontWeight.NORMAL)
-                    }
-                }
-
-                addFontFamilyDeclaration(FontFamily("Literata")) {
-                    addFontFace {
-                        addSource("fonts/Literata_500Medium.ttf")
-                        setFontStyle(FontStyle.NORMAL)
-                        setFontWeight(FontWeight.NORMAL)
-                    }
-                }
-
-                listener.props!!.customFonts.forEach {
-                    addFontFamilyDeclaration(FontFamily(it.name)) {
+                    addFontFamilyDeclaration(FontFamily("OpenDyslexic")) {
                         addFontFace {
-                            addSource(it.uri)
+                            addSource("fonts/OpenDyslexic-Regular.otf")
+                            setFontStyle(FontStyle.NORMAL)
+                            setFontWeight(FontWeight.NORMAL)
+                        }
+
+                        addFontFace {
+                            addSource("fonts/OpenDyslexic-Bold.otf")
+                            setFontStyle(FontStyle.NORMAL)
+                            setFontWeight(FontWeight.BOLD)
+                        }
+
+                        addFontFace {
+                            addSource("fonts/OpenDyslexic-Bold-Italic.otf")
+                            setFontStyle(FontStyle.ITALIC)
+                            setFontWeight(FontWeight.BOLD)
+                        }
+
+                        addFontFace {
+                            addSource("fonts/OpenDyslexic-Italic.otf")
+                            setFontStyle(FontStyle.ITALIC)
+                            setFontWeight(FontWeight.NORMAL)
+                        }
+                    }
+
+                    addFontFamilyDeclaration(FontFamily("Literata")) {
+                        addFontFace {
+                            addSource("fonts/Literata_500Medium.ttf")
                             setFontStyle(FontStyle.NORMAL)
                             setFontWeight(FontWeight.NORMAL)
                         }
                     }
-                }
 
-                selectionActionModeCallback = SelectionActionModeCallback(listener)
+                    lst.props!!.customFonts.forEach {
+                        addFontFamilyDeclaration(FontFamily(it.name)) {
+                            addFontFace {
+                                addSource(it.uri)
+                                setFontStyle(FontStyle.NORMAL)
+                                setFontWeight(FontWeight.NORMAL)
+                            }
+                        }
+                    }
 
-                registerJavascriptInterface("storytellerAPI") {
-                    listener.setupUserScript()
-                }
-            },
-            initialPreferences = EpubPreferences(
-                backgroundColor = org.readium.r2.navigator.preferences.Color(listener.props!!.background),
-                fontFamily = listener.props!!.fontFamily,
-                fontSize = listener.props!!.fontSize,
-                lineHeight = listener.props!!.lineHeight,
-                paragraphSpacing = listener.props!!.paragraphSpacing,
-                textAlign = listener.props!!.textAlign,
-                textColor = org.readium.r2.navigator.preferences.Color(listener.props!!.foreground),
-                scroll = listener.props!!.scroll,
-                columnCount = listener.props!!.columnCount,
-                pageMargins = listener.props!!.pageMargins,
-                publisherStyles = listener.props!!.publisherStyles,
-            ),
-        )
+                    selectionActionModeCallback = SelectionActionModeCallback(lst)
+
+                    registerJavascriptInterface("storytellerAPI") {
+                        lst.setupUserScript()
+                    }
+                },
+                initialPreferences = EpubPreferences(
+                    backgroundColor = org.readium.r2.navigator.preferences.Color(lst.props!!.background),
+                    fontFamily = lst.props!!.fontFamily,
+                    fontSize = lst.props!!.fontSize,
+                    lineHeight = lst.props!!.lineHeight,
+                    paragraphSpacing = lst.props!!.paragraphSpacing,
+                    textAlign = lst.props!!.textAlign,
+                    textColor = org.readium.r2.navigator.preferences.Color(lst.props!!.foreground),
+                    scroll = lst.props!!.scroll,
+                    columnCount = lst.props!!.columnCount,
+                    pageMargins = lst.props!!.pageMargins,
+                    publisherStyles = lst.props!!.publisherStyles,
+                ),
+            )
+        }
 
         super.onCreate(savedInstanceState)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // If restored by the system without dependencies, skip setup — EpubView will
+        // remove this shell fragment and create a fresh one via initializeNavigator().
+        val lst = listener ?: return
 
         val navigatorFragmentTag = getString(R.string.epub_navigator_tag)
 

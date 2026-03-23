@@ -13,6 +13,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.size.Precision
+import coil3.size.Scale
 
 @Composable
 fun ThumbnailImage(
@@ -32,6 +33,7 @@ fun ThumbnailImage(
             .apply { if (usePlaceholderKey) placeholderMemoryCacheKey(cacheKey) }
             .diskCacheKey(cacheKey)
             .precision(Precision.INEXACT)
+            .scale(Scale.FIT)
             .crossfade(crossfade)
             .build()
     }

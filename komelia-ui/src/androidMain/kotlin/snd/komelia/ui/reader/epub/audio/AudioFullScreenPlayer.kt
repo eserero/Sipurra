@@ -240,6 +240,8 @@ fun AudioFullScreenPlayer(
                                     text = chapterTitle,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
                                 )
                             },
                             modifier = fadeModifier

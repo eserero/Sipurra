@@ -221,6 +221,7 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                             exit = fadeOut(tween(200)),
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
+                                .padding(horizontal = 2.dp)
                                 .padding(bottom = audioPlayerBottomPadding),
                         ) {
                             AudioMiniPlayer(

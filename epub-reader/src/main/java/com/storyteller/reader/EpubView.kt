@@ -235,10 +235,24 @@ class EpubView(
         )
     }
 
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        destroyNavigator()
+    }
+
     fun initializeNavigator() {
         val publication = BookService.getPublication(props!!.bookUuid) ?: return
 
         val fragmentTag = resources.getString(R.string.epub_fragment_tag)
+
+        // Remove any shell fragment that was restored by the system without its dependencies
+        val existingFragment = activity.supportFragmentManager.findFragmentByTag(fragmentTag)
+        if (existingFragment != null) {
+            activity.supportFragmentManager.commitNow {
+                setReorderingAllowed(true)
+                remove(existingFragment)
+            }
+        }
 
         val epubFragment = EpubFragment(publication, this)
 
