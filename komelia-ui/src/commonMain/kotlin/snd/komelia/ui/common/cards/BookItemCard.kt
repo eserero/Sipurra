@@ -57,8 +57,6 @@ import kotlinx.coroutines.flow.filter
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.offline.sync.model.DownloadEvent
 import snd.komelia.ui.LocalBookDownloadEvents
-import snd.komelia.ui.LocalCardLayoutBelow
-import snd.komelia.ui.LocalCardLayoutOverlayBackground
 import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalLibraries
 import snd.komelia.ui.LocalWindowWidth
@@ -88,16 +86,26 @@ fun BookImageCard(
     val libraryIsDeleted = remember {
         libraries.value.firstOrNull { it.id == book.libraryId }?.unavailable ?: false
     }
-    val cardLayoutBelow = LocalCardLayoutBelow.current
     val hideParentheses = LocalHideParenthesesInNames.current
     val bookTitle = if (hideParentheses && book.oneshot) book.metadata.title.removeParentheses() else book.metadata.title
     val seriesTitle = if (hideParentheses) book.seriesTitle.removeParentheses() else book.seriesTitle
 
-    ItemCard(
+    LibraryItemCard(
         modifier = modifier,
+        title = bookTitle,
+        secondaryText = if (showSeriesTitle && !book.oneshot) seriesTitle else null,
+        secondaryTextTop = true,
+        isUnavailable = book.deleted || libraryIsDeleted,
         onClick = onBookClick,
         onLongClick = onSelect,
         image = {
+            BookThumbnail(
+                book.id,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        },
+        badges = {
             BookHoverOverlay(
                 book = book,
                 libraryIsDeleted = libraryIsDeleted,
@@ -106,69 +114,22 @@ fun BookImageCard(
                 onSelect = onSelect,
                 isSelected = isSelected,
             ) {
-                BookImageOverlay(
-                    bookTitle = bookTitle,
-                    seriesTitle = seriesTitle,
+                BookImageBadges(
                     book = book,
                     libraryIsDeleted = libraryIsDeleted,
-                    showTitle = !cardLayoutBelow,
-                    showSeriesTitle = showSeriesTitle && !cardLayoutBelow,
-                ) {
-                    BookThumbnail(
-                        book.id,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
+                )
             }
         },
-        content = {
-            if (cardLayoutBelow) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    val isUnavailable = book.deleted || libraryIsDeleted
-                    val showSeries = showSeriesTitle && !book.oneshot
-
-                    if (isUnavailable) {
-                        Text(
-                            text = "Unavailable",
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        Text(
-                            text = bookTitle,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    } else if (showSeries) {
-                        Text(
-                            text = seriesTitle,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = bookTitle,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    } else {
-                        Text(
-                            text = bookTitle,
-                            maxLines = 2,
-                            minLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
+        progress = {
+            val readProgress = book.readProgress
+            if (readProgress != null && !readProgress.completed) {
+                LinearProgressIndicator(
+                    progress = { getReadProgressPercentage(book) },
+                    color = MaterialTheme.colorScheme.tertiary,
+                    trackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f),
+                    modifier = Modifier.height(4.dp).fillMaxWidth().align(Alignment.BottomStart),
+                    drawStopIndicator = {}
+                )
             }
         }
     )
@@ -180,167 +141,59 @@ fun BookSimpleImageCard(
     onBookClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val cardLayoutBelow = LocalCardLayoutBelow.current
     val hideParentheses = LocalHideParenthesesInNames.current
     val bookTitle = if (hideParentheses && book.oneshot) book.metadata.title.removeParentheses() else book.metadata.title
-    val seriesTitle = if (hideParentheses) book.seriesTitle.removeParentheses() else book.seriesTitle
 
-    ItemCard(
+    LibraryItemCard(
         modifier = modifier,
+        title = bookTitle,
         onClick = onBookClick,
         image = {
-            BookImageOverlay(
-                bookTitle = bookTitle,
-                seriesTitle = seriesTitle,
+            BookThumbnail(
+                book.id,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        },
+        badges = {
+            BookImageBadges(
                 book = book,
                 libraryIsDeleted = false,
-                showTitle = !cardLayoutBelow
-            ) {
-                BookThumbnail(
-                    book.id,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-        },
-        content = {
-            if (cardLayoutBelow) {
-                Column(Modifier.padding(8.dp)) {
-                    Text(
-                        text = bookTitle,
-                        maxLines = 2,
-                        minLines = 2,
-                        style = MaterialTheme.typography.bodyMedium,
-                        overflow = TextOverflow.Ellipsis,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
+            )
         }
     )
 }
 
 @Composable
-private fun BookImageOverlay(
-    bookTitle: String,
-    seriesTitle: String,
+private fun BookImageBadges(
     book: KomeliaBook,
     libraryIsDeleted: Boolean,
-    showTitle: Boolean = true,
-    showSeriesTitle: Boolean = false,
-    content: @Composable () -> Unit
 ) {
-    val overlayBackground = LocalCardLayoutOverlayBackground.current
-    val shadow = if (overlayBackground) null else Shadow(
-        color = Color.Black,
-        offset = Offset(1f, 1f),
-        blurRadius = 4f
-    )
-    val textColor = if (overlayBackground) MaterialTheme.colorScheme.onSurface else Color.White
-    val secondaryTextColor =
-        if (overlayBackground) MaterialTheme.colorScheme.onSurfaceVariant else Color.White.copy(alpha = 0.8f)
-
-    Box(contentAlignment = Alignment.TopStart) {
-        content()
-        if (showTitle)
-            CardTopGradient()
-        Column {
-            Row {
-                if (book.downloaded) {
-                    val tint =
-                        if (book.isLocalFileOutdated || book.remoteFileUnavailable) MaterialTheme.colorScheme.errorContainer
-                        else MaterialTheme.colorScheme.secondary
-                    Icon(
-                        imageVector = Icons.Filled.OfflinePin,
-                        contentDescription = null,
-                        tint = tint,
-                        modifier = Modifier
-                            .padding(1.dp)
-                            .size(26.dp)
-                            .clip(CircleShape)
-                            .background(Color.Black)
-                    )
-                }
-
-                Spacer(Modifier.weight(1f))
-                if (book.readProgress == null) BookUnreadTick()
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row {
+            if (book.downloaded) {
+                val tint =
+                    if (book.isLocalFileOutdated || book.remoteFileUnavailable) MaterialTheme.colorScheme.errorContainer
+                    else MaterialTheme.colorScheme.secondary
+                Icon(
+                    imageVector = Icons.Filled.OfflinePin,
+                    contentDescription = null,
+                    tint = tint,
+                    modifier = Modifier
+                        .padding(1.dp)
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black)
+                )
             }
 
-            Spacer(modifier = Modifier.weight(1f))
-            if (showTitle) {
-                Box(contentAlignment = Alignment.BottomStart) {
-                    CardTextBackground()
-                    Column(
-                        modifier = Modifier
-                            .height(48.dp)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalArrangement = Arrangement.Top
-                    ) {
-                        val isBothPresent = (showSeriesTitle && !book.oneshot) || book.deleted || libraryIsDeleted
-                        if (showSeriesTitle && !book.oneshot) {
-                            Text(
-                                text = seriesTitle,
-                                maxLines = 1,
-                                style = if (overlayBackground) {
-                                    MaterialTheme.typography.labelMedium.copy(
-                                        fontSize = (MaterialTheme.typography.labelMedium.fontSize.value - 1).sp,
-                                        fontWeight = FontWeight.Normal
-                                    )
-                                } else {
-                                    MaterialTheme.typography.labelMedium.copy(shadow = shadow)
-                                },
-                                color = secondaryTextColor,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        if (book.deleted || libraryIsDeleted) {
-                            Text(
-                                text = "Unavailable",
-                                maxLines = 1,
-                                style = if (overlayBackground) {
-                                    MaterialTheme.typography.bodyMedium.copy(
-                                        fontSize = (MaterialTheme.typography.bodyMedium.fontSize.value - 1).sp,
-                                        fontWeight = FontWeight.Normal
-                                    )
-                                } else {
-                                    MaterialTheme.typography.bodyMedium.copy(shadow = shadow)
-                                },
-                                color = if (overlayBackground) MaterialTheme.colorScheme.error else Color.White,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        Text(
-                            text = bookTitle,
-                            maxLines = if (isBothPresent) 1 else 2,
-                            style = if (overlayBackground) {
-                                MaterialTheme.typography.bodyMedium.copy(
-                                    fontSize = (MaterialTheme.typography.bodyMedium.fontSize.value - 1).sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            } else {
-                                MaterialTheme.typography.bodyMedium.copy(shadow = shadow)
-                            },
-                            color = textColor,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-
-                    val readProgress = book.readProgress
-                    if (readProgress != null && !readProgress.completed) {
-                        LinearProgressIndicator(
-                            progress = { getReadProgressPercentage(book) },
-                            color = MaterialTheme.colorScheme.tertiary,
-                            trackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f),
-                            modifier = Modifier.height(4.dp).fillMaxWidth(),
-                            drawStopIndicator = {}
-                        )
-                    }
-                }
-            }
+            Spacer(Modifier.weight(1f))
+            if (book.readProgress == null) BookUnreadTick()
         }
-        BookDownloadCardOverlay(book)
 
+        Spacer(modifier = Modifier.weight(1f))
     }
+    BookDownloadCardOverlay(book)
 }
 
 @Composable

@@ -53,6 +53,7 @@ fun BookThumbnail(
                 enter = EnterTransition.None,
                 exit = ExitTransition.None,
                 boundsTransform = { _, _ -> tween(durationMillis = 600, easing = emphasizedEasing) },
+                renderInOverlayDuringTransition = false,
             )
         }
     } else Modifier

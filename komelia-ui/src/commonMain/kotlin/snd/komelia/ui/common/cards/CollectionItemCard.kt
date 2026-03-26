@@ -50,43 +50,21 @@ fun CollectionImageCard(
     modifier: Modifier = Modifier
 ) {
     val cardLayoutBelow = LocalCardLayoutBelow.current
-    ItemCard(
+    LibraryItemCard(
         modifier = modifier,
+        title = collection.name,
+        secondaryText = "${collection.seriesIds.size} series",
         onClick = onCollectionClick,
         image = {
-            CollectionCardHoverOverlay(collection, onCollectionDelete) {
-                CollectionImageOverlay(
-                    collection = collection,
-                    showTitle = !cardLayoutBelow,
-                ) {
-                    CollectionThumbnail(
-                        collectionId = collection.id,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
+            CollectionThumbnail(
+                collectionId = collection.id,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
         },
-        content = {
-            if (cardLayoutBelow) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = collection.name,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        text = "${collection.seriesIds.size} series",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+        badges = {
+            CollectionCardHoverOverlay(collection, onCollectionDelete) {
+                CollectionImageBadges(showGradients = !cardLayoutBelow)
             }
         }
     )
@@ -143,69 +121,8 @@ private fun CollectionCardHoverOverlay(
 }
 
 @Composable
-private fun CollectionImageOverlay(
-    collection: KomgaCollection,
-    showTitle: Boolean = true,
-    content: @Composable () -> Unit
+private fun CollectionImageBadges(
+    showGradients: Boolean,
 ) {
-    val overlayBackground = LocalCardLayoutOverlayBackground.current
-    val shadow = if (overlayBackground) null else Shadow(
-        color = Color.Black,
-        offset = Offset(1f, 1f),
-        blurRadius = 4f
-    )
-    val textColor = if (overlayBackground) MaterialTheme.colorScheme.onSurface else Color.White
-    val secondaryTextColor =
-        if (overlayBackground) MaterialTheme.colorScheme.onSurfaceVariant else Color.White.copy(alpha = 0.8f)
-
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.TopStart
-    ) {
-        content()
-        if (showTitle) {
-            CardTopGradient()
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.BottomStart
-            ) {
-                CardTextBackground()
-                Column(
-                    modifier = Modifier
-                        .height(48.dp)
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.Top
-                ) {
-                    Text(
-                        text = collection.name,
-                        maxLines = 1,
-                        style = if (overlayBackground) {
-                            MaterialTheme.typography.bodyMedium.copy(
-                                fontSize = (MaterialTheme.typography.bodyMedium.fontSize.value - 1).sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        } else {
-                            MaterialTheme.typography.bodyMedium.copy(shadow = shadow)
-                        },
-                        color = textColor,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = "${collection.seriesIds.size} series",
-                        maxLines = 1,
-                        style = if (overlayBackground) {
-                            MaterialTheme.typography.labelMedium.copy(
-                                fontSize = (MaterialTheme.typography.labelMedium.fontSize.value - 1).sp,
-                                fontWeight = FontWeight.Normal
-                            )
-                        } else {
-                            MaterialTheme.typography.labelMedium.copy(shadow = shadow)
-                        },
-                        color = secondaryTextColor,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-    }
+    if (showGradients) CardTopGradient()
 }

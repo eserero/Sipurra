@@ -32,7 +32,7 @@ import snd.komelia.ui.LocalCardLayoutBelow
 import snd.komelia.ui.LocalCardLayoutOverlayBackground
 import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalStrings
-import snd.komelia.ui.common.cards.ItemCard
+import snd.komelia.ui.common.cards.LibraryItemCard
 import snd.komelia.ui.common.components.AppSlider
 import snd.komelia.ui.common.components.AppSliderDefaults
 import snd.komelia.ui.common.components.DropdownChoiceMenu
@@ -203,8 +203,10 @@ fun AppearanceSettingsContent(
                 LocalHideParenthesesInNames provides hideParenthesesInNames,
                 LocalCardLayoutOverlayBackground provides cardLayoutOverlayBackground,
             ) {
-                ItemCard(
+                LibraryItemCard(
                     modifier = Modifier.width(cardWidth),
+                    title = "Book Title Example",
+                    secondaryText = "Series Example",
                     image = {
                         Box(
                             Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
@@ -213,28 +215,6 @@ fun AppearanceSettingsContent(
                             Text("Thumbnail")
                         }
                     },
-                    content = {
-                        if (cardLayoutBelow) {
-                            Column(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = "Series Example",
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Text(
-                                    text = "Book Title Example",
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                            }
-                        }
-                    }
                 )
             }
         }

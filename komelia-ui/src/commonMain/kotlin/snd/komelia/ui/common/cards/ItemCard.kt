@@ -39,8 +39,146 @@ import snd.komelia.ui.LocalPlatform
 import snd.komelia.ui.platform.PlatformType
 import snd.komelia.ui.platform.cursorForHand
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+
 const val defaultCardWidth = 240
 const val DEFAULT_CARD_MAX_LINES = 2
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun LibraryItemCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    secondaryText: String? = null,
+    secondaryTextTop: Boolean = false,
+    isUnavailable: Boolean = false,
+    titleBold: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
+    badges: @Composable BoxScope.() -> Unit = {},
+    progress: @Composable BoxScope.() -> Unit = {},
+    image: @Composable () -> Unit,
+) {
+    val cardLayoutBelow = LocalCardLayoutBelow.current
+    val overlayBackground = LocalCardLayoutOverlayBackground.current
+
+    val shape = if (cardLayoutBelow) RoundedCornerShape(12.dp) else RoundedCornerShape(8.dp)
+    val color = if (cardLayoutBelow) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant
+    val elevation = CardDefaults.cardElevation(defaultElevation = if (cardLayoutBelow) 0.dp else 2.dp)
+
+    Card(
+        shape = shape,
+        modifier = modifier
+            .combinedClickable(onClick = onClick ?: {}, onLongClick = onLongClick)
+            .then(if (onClick != null || onLongClick != null) Modifier.cursorForHand() else Modifier),
+        colors = CardDefaults.cardColors(containerColor = color),
+        elevation = elevation
+    ) {
+        // Thumbnail Logic
+        val imageShape = if (cardLayoutBelow) RoundedCornerShape(12.dp) else RoundedCornerShape(8.dp)
+
+        Box(
+            modifier = Modifier
+                .aspectRatio(0.703f)
+                .clip(imageShape)
+        ) {
+            image()
+            badges()
+
+            // Gradients and overlay text — centralized here
+            if (!cardLayoutBelow && !overlayBackground) CardTopGradient()
+            if (!cardLayoutBelow) {
+                Box(
+                    contentAlignment = Alignment.BottomStart,
+                    modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth()
+                ) {
+                    CardTextBackground()
+                    Column(
+                        modifier = Modifier
+                            .height(if (overlayBackground) 38.dp else 48.dp)
+                            .padding(
+                                start = 8.dp,
+                                end = 8.dp,
+                                top = if (overlayBackground) 2.dp else 4.dp,
+                                bottom = 4.dp
+                            ),
+                        verticalArrangement = if (overlayBackground) Arrangement.Top else Arrangement.Bottom
+                    ) {
+                        val textColor = if (overlayBackground) MaterialTheme.colorScheme.onSurface else Color.White
+                        val secondaryTextColor = if (overlayBackground) MaterialTheme.colorScheme.onSurfaceVariant else Color.White.copy(alpha = 0.8f)
+                        val shadow = if (overlayBackground) null else Shadow(color = Color.Black, offset = Offset(1f, 1f), blurRadius = 4f)
+
+                        val primaryStyle = MaterialTheme.typography.bodySmall.copy(
+                            shadow = shadow,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        val secondaryStyle = MaterialTheme.typography.labelSmall.copy(
+                            shadow = shadow,
+                            fontWeight = FontWeight.Normal,
+                        )
+
+                        if (isUnavailable) {
+                            Text("Unavailable", style = primaryStyle, color = MaterialTheme.colorScheme.error, maxLines = 1)
+                            Text(title, style = primaryStyle, color = textColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        } else {
+                            val secondary = @Composable {
+                                if (secondaryText != null) {
+                                    Text(secondaryText, style = secondaryStyle, color = secondaryTextColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                            val primary = @Composable {
+                                Text(title, style = primaryStyle, color = textColor, maxLines = if (secondaryText == null) 2 else 1, overflow = TextOverflow.Ellipsis)
+                            }
+
+                            if (secondaryTextTop) { secondary(); primary() } else { primary(); secondary() }
+                        }
+                    }
+                }
+            }
+            progress() // Always rendered on the image
+        }
+
+        // Below Card Text Logic
+        if (cardLayoutBelow) {
+            Column(
+                modifier = Modifier.padding(top = 4.dp, bottom = 4.dp), // NO horizontal padding
+                verticalArrangement = Arrangement.Center
+            ) {
+                val primaryStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
+                val secondaryStyle = MaterialTheme.typography.labelSmall
+
+                if (isUnavailable) {
+                    Text("Unavailable", style = primaryStyle, color = MaterialTheme.colorScheme.error, maxLines = 1)
+                    Text(title, style = primaryStyle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                } else {
+                    val secondary = @Composable {
+                        if (secondaryText != null) {
+                            Text(secondaryText, style = secondaryStyle, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                    val primary = @Composable {
+                        Text(
+                            text = title,
+                            style = primaryStyle,
+                            maxLines = if (secondaryText == null) 2 else 1,
+                            minLines = if (secondaryText == null) 2 else 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    if (secondaryTextTop) { secondary(); primary() } else { primary(); secondary() }
+                }
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -67,7 +205,7 @@ fun ItemCard(
         colors = CardDefaults.cardColors(containerColor = color),
         elevation = CardDefaults.cardElevation(defaultElevation = if (cardLayoutBelow) 0.dp else 2.dp)
     ) {
-        val imageShape = if (cardLayoutBelow) RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+        val imageShape = if (cardLayoutBelow) RoundedCornerShape(12.dp)
         else RoundedCornerShape(8.dp)
 
         Box(
@@ -102,7 +240,7 @@ fun CardTextBackground(modifier: Modifier = Modifier) {
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .height(48.dp) // Fixed height for ~2 lines + padding
+                .height(38.dp) // Reduced by 20%
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
         )
     } else {
