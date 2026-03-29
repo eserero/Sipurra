@@ -1,5 +1,6 @@
 package snd.komelia.ui.common.immersive
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -7,6 +8,10 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -28,6 +33,7 @@ fun ImmersiveHeroText(
     chapterTitle: String? = null,
     expandFraction: Float,
     accentColor: Color? = null,
+    onSeriesClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val onSurface = MaterialTheme.colorScheme.onSurface
@@ -45,6 +51,9 @@ fun ImmersiveHeroText(
     val titleColor = lerp(onSurface, onSurface, expandFraction)
     val authorColor = lerp(resolvedAccentColor, onSurfaceVariant, expandFraction)
     val chapterColor = lerp(onSurface, onSurfaceVariant, expandFraction)
+
+    var titleMultiplier by remember(seriesTitle) { mutableFloatStateOf(1f) }
+    var chapterMultiplier by remember(chapterTitle) { mutableFloatStateOf(1f) }
 
     Column(
         modifier = modifier.padding(horizontal = 16.dp),
@@ -71,12 +80,19 @@ fun ImmersiveHeroText(
                 fontFamily = FontFamily.Serif,
                 fontWeight = FontWeight.Bold,
                 shadow = shadow,
-                fontSize = lerp(32.sp, 20.sp, expandFraction),
-                lineHeight = lerp(36.sp, 24.sp, expandFraction)
+                fontSize = lerp(32.sp * titleMultiplier, 20.sp * titleMultiplier, expandFraction),
+                lineHeight = lerp(36.sp * titleMultiplier, 24.sp * titleMultiplier, expandFraction)
             ),
-            maxLines = 2,
+            maxLines = if (isCollapsed) 2 else 3,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(vertical = lerp(4.dp, 0.dp, expandFraction))
+            onTextLayout = { textLayoutResult ->
+                if (textLayoutResult.hasVisualOverflow) {
+                    titleMultiplier *= 0.9f
+                }
+            },
+            modifier = Modifier
+                .padding(vertical = lerp(4.dp, 0.dp, expandFraction))
+                .then(if (onSeriesClick != null) Modifier.clickable(onClick = onSeriesClick) else Modifier)
         )
 
         // Chapter Name (Optional)
@@ -87,10 +103,15 @@ fun ImmersiveHeroText(
                 style = MaterialTheme.typography.labelLarge.copy(
                     letterSpacing = 1.5.sp,
                     shadow = shadow,
-                    fontSize = lerp(14.sp, 12.sp, expandFraction)
+                    fontSize = lerp(14.sp * chapterMultiplier, 12.sp * chapterMultiplier, expandFraction)
                 ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                maxLines = if (isCollapsed) 1 else 2,
+                overflow = TextOverflow.Ellipsis,
+                onTextLayout = { textLayoutResult ->
+                    if (textLayoutResult.hasVisualOverflow) {
+                        chapterMultiplier *= 0.9f
+                    }
+                }
             )
         }
     }

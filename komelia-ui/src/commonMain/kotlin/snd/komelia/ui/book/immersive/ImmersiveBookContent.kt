@@ -260,6 +260,7 @@ fun ImmersiveBookContent(
                             chapterTitle = pageBook.metadata.title,
                             expandFraction = expandFraction,
                             accentColor = accentColor,
+                            onSeriesClick = { onSeriesClick(pageBook.seriesId) },
                         )
                     }
                 } else null,
@@ -267,7 +268,7 @@ fun ImmersiveBookContent(
                 fabContent = {},     // Fixed overlay handles this
                 cardContent = { expandFraction, onThumbnailPositioned, onTextPositioned ->
                     val thumbnailOffset = (126.dp * expandFraction).coerceAtLeast(0.dp)
-                    val thumbnailTopGap = 20.dp
+                    val thumbnailTopGap = if (useNewUi2) 48.dp else 20.dp
                     val thumbnailHeight = 110.dp / 0.703f // ≈ 156.5 dp
 
                     val navBarBottom = with(LocalDensity.current) {
@@ -297,7 +298,11 @@ fun ImmersiveBookContent(
                                         if (useNewUi2) {
                                             modifier.layout { measurable, constraints ->
                                                 val placeable = measurable.measure(constraints)
-                                                val desiredHeight = ((thumbnailTopGap + thumbnailHeight) * expandFraction).roundToPx()
+                                                val expandedHeight = maxOf(
+                                                    (thumbnailTopGap + thumbnailHeight).roundToPx(),
+                                                    placeable.height
+                                                )
+                                                val desiredHeight = (expandedHeight * expandFraction).roundToInt()
                                                 layout(constraints.maxWidth, desiredHeight) {
                                                     placeable.place(0, 0)
                                                 }
@@ -344,6 +349,7 @@ fun ImmersiveBookContent(
                                             chapterTitle = pageBook.metadata.title,
                                             expandFraction = 1f,
                                             accentColor = accentColor,
+                                            onSeriesClick = { onSeriesClick(pageBook.seriesId) },
                                             modifier = Modifier.padding(horizontal = 0.dp)
                                         )
                                     }

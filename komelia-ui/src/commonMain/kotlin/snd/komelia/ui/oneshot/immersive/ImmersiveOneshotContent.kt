@@ -365,8 +365,9 @@ private fun OneshotCardContent(
     accentColor: Color?,
     authorYearText: String,
 ) {
+    val useNewUi2 = LocalUseNewLibraryUI2.current
     val thumbnailOffset = (126.dp * expandFraction).coerceAtLeast(0.dp)
-    val thumbnailTopGap = 20.dp
+    val thumbnailTopGap = if (useNewUi2) 48.dp else 20.dp
     val thumbnailHeight = 110.dp / 0.703f // ≈ 156.5 dp
 
     val navBarBottom = with(LocalDensity.current) {
@@ -389,7 +390,6 @@ private fun OneshotCardContent(
 
         // Header: book title + writers (year)
         item {
-            val useNewUi2 = LocalUseNewLibraryUI2.current
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -397,7 +397,11 @@ private fun OneshotCardContent(
                         if (useNewUi2) {
                             modifier.layout { measurable, constraints ->
                                 val placeable = measurable.measure(constraints)
-                                val desiredHeight = ((thumbnailTopGap + thumbnailHeight) * expandFraction).roundToPx()
+                                val expandedHeight = maxOf(
+                                    (thumbnailTopGap + thumbnailHeight).roundToPx(),
+                                    placeable.height
+                                )
+                                val desiredHeight = (expandedHeight * expandFraction).roundToInt()
                                 layout(constraints.maxWidth, desiredHeight) {
                                     placeable.place(0, 0)
                                 }

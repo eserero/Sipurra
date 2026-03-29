@@ -91,6 +91,7 @@ import snd.komelia.utils.removeParentheses
 import snd.komga.client.collection.KomgaCollection
 import snd.komga.client.library.KomgaLibrary
 import snd.komga.client.series.KomgaSeries
+import kotlin.math.roundToInt
 
 private enum class ImmersiveTab { BOOKS, COLLECTIONS, TAGS }
 
@@ -293,7 +294,7 @@ fun ImmersiveSeriesContent(
             val thumbnailOffset = (126.dp * expandFraction).coerceAtLeast(0.dp)
 
             // Thumbnail metrics — must match ImmersiveDetailScaffold Layer 3
-            val thumbnailTopGap = 20.dp
+            val thumbnailTopGap = if (useNewUi2) 48.dp else 20.dp
             val thumbnailHeight = 110.dp / 0.703f // ≈ 156.5 dp
 
             val navBarBottom = with(LocalDensity.current) {
@@ -317,7 +318,11 @@ fun ImmersiveSeriesContent(
                                 if (useNewUi2) {
                                     modifier.layout { measurable, constraints ->
                                         val placeable = measurable.measure(constraints)
-                                        val desiredHeight = ((thumbnailTopGap + thumbnailHeight) * expandFraction).roundToPx()
+                                        val expandedHeight = maxOf(
+                                            (thumbnailTopGap + thumbnailHeight).roundToPx(),
+                                            placeable.height
+                                        )
+                                        val desiredHeight = (expandedHeight * expandFraction).roundToInt()
                                         layout(constraints.maxWidth, desiredHeight) {
                                             placeable.place(0, 0)
                                         }

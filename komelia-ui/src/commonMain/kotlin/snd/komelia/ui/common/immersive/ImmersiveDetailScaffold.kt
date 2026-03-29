@@ -237,6 +237,7 @@ fun ImmersiveDetailScaffold(
 
         var targetThumbnailOffset by remember { mutableStateOf(Offset.Zero) }
         var targetTextOffset by remember { mutableStateOf(Offset.Zero) }
+        var heroTextHeight by remember { mutableStateOf(0.dp) }
         var scaffoldCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
         // Use remember (not rememberSaveable) so pager pages don't restore stale saved state.
@@ -529,7 +530,7 @@ fun ImmersiveDetailScaffold(
                     val targetTextX = with(density) { targetTextOffset.x.toDp() }
                     val targetTextY = with(density) { targetTextOffset.y.toDp() }
 
-                    val startTextY = collapsedOffset - 120.dp // Approximate start position at bottom of image
+                    val startTextY = collapsedOffset - heroTextHeight - 24.dp
                     val currentTextX = lerp(0.dp, targetTextX, expandFraction)
                     val currentTextY = lerp(startTextY, targetTextY, expandFraction)
 
@@ -537,6 +538,7 @@ fun ImmersiveDetailScaffold(
                         modifier = Modifier
                             .offset(x = currentTextX, y = currentTextY)
                             .fillMaxWidth()
+                            .onGloballyPositioned { heroTextHeight = with(density) { it.size.height.toDp() } }
                     ) {
                         heroTextContent(expandFraction)
                     }
