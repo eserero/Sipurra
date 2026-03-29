@@ -92,6 +92,9 @@ kotlin {
             implementation(libs.voyager.navigator)
             implementation(libs.voyager.transition)
 
+            implementation(libs.haze)
+            implementation(libs.haze.materials)
+
         }
 
         androidMain.dependencies {
