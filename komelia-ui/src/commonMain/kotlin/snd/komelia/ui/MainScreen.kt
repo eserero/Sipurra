@@ -63,6 +63,10 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.CurrentScreen
 import cafe.adriel.voyager.navigator.Navigator
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.HazeMaterials
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import snd.komelia.ui.book.BookScreen
@@ -217,8 +221,10 @@ class MainScreen(
                 val theme = LocalTheme.current
                 val transparentBars = useNewLibraryUI && theme.transparentBars
                 val bottomPadding = if (transparentBars) 0.dp else paddingValues.calculateBottomPadding()
+                val hazeState = if (transparentBars) rememberHazeState() else null
                 CompositionLocalProvider(
-                    LocalTransparentNavBarPadding provides if (transparentBars) paddingValues.calculateBottomPadding() else 0.dp
+                    LocalTransparentNavBarPadding provides if (transparentBars) paddingValues.calculateBottomPadding() else 0.dp,
+                    LocalHazeState provides hazeState,
                 ) {
                 ModalNavigationDrawer(
                     drawerState = vm.navBarState,
@@ -235,6 +241,7 @@ class MainScreen(
                                 )
                                 .consumeWindowInsets(paddingValues)
                                 .statusBarsPadding()
+                                .then(if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier)
                         ) {
                             SharedTransitionLayout {
                                 CompositionLocalProvider(LocalSharedTransitionScope provides this) {
