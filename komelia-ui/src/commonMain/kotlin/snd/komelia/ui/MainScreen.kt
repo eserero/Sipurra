@@ -281,6 +281,7 @@ class MainScreen(
         containerColor: Color = LocalNavBarColor.current ?: MaterialTheme.colorScheme.surfaceVariant,
     ) {
         val accentColor = LocalAccentColor.current
+        val hazeState = LocalHazeState.current
         val itemColors = if (accentColor != null) {
             NavigationBarItemDefaults.colors(
                 selectedIconColor = if (accentColor.luminance() > 0.5f) Color.Black else Color.White,
@@ -291,7 +292,10 @@ class MainScreen(
             NavigationBarItemDefaults.colors()
         }
         NavigationBar(
-            containerColor = containerColor,
+            containerColor = if (hazeState != null) Color.Transparent else containerColor,
+            modifier = if (hazeState != null)
+                Modifier.hazeEffect(hazeState) { style = HazeMaterials.regular(containerColor) }
+            else Modifier,
         ) {
                 NavigationBarItem(
                     alwaysShowLabel = true,
