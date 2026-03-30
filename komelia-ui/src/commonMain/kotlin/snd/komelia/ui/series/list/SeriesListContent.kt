@@ -45,9 +45,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.snd_r.komelia.ui.komelia_ui.generated.resources.Inter_SemiBold
+import io.github.snd_r.komelia.ui.komelia_ui.generated.resources.Res
+import org.jetbrains.compose.resources.Font
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.ui.LocalAccentColor
 import snd.komelia.ui.LocalStrings
@@ -289,9 +294,13 @@ private fun BulkActionsToolbar(
 
 @Composable
 private fun LibrarySectionHeader(label: String) {
+    val inter = FontFamily(Font(Res.font.Inter_SemiBold, FontWeight.SemiBold))
     Text(
         label,
-        style = MaterialTheme.typography.titleLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold),
-        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        style = MaterialTheme.typography.titleLarge.copy(
+            fontFamily = inter,
+            fontWeight = FontWeight.SemiBold,
+        ),
+        modifier = Modifier.padding(vertical = 4.dp),
     )
 }

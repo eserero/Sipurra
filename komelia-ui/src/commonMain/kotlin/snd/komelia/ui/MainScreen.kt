@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -183,6 +184,7 @@ class MainScreen(
         vm: MainScreenViewModel
     ) {
         val useNewLibraryUI = LocalUseNewLibraryUI.current
+        val useNewLibraryUI2 = LocalUseNewLibraryUI2.current
         val isImmersiveScreen = navigator.lastItem is SeriesScreen ||
                 navigator.lastItem is BookScreen ||
                 navigator.lastItem is OneshotScreen
@@ -191,7 +193,8 @@ class MainScreen(
         val rawNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val theme = LocalTheme.current
         val transparentBars = useNewLibraryUI && theme.transparentBars
-        val hazeState = if (transparentBars) rememberHazeState() else null
+        val useNewTopBar = useNewLibraryUI2 && useNewLibraryUI
+        val hazeState = if (transparentBars || useNewTopBar) rememberHazeState() else null
         CompositionLocalProvider(
             LocalRawStatusBarHeight provides rawStatusBarHeight,
             LocalRawNavBarHeight provides rawNavBarHeight,
@@ -222,6 +225,8 @@ class MainScreen(
             ) { paddingValues ->
                 val layoutDirection = LocalLayoutDirection.current
                 val bottomPadding = if (transparentBars) 0.dp else paddingValues.calculateBottomPadding()
+                val isModernNewTopBar = useNewTopBar && theme.transparentBars
+                val topPadding = if (isModernNewTopBar) 0.dp else paddingValues.calculateTopPadding()
                 CompositionLocalProvider(
                     LocalTransparentNavBarPadding provides if (transparentBars) paddingValues.calculateBottomPadding() + rawNavBarHeight else 0.dp,
                 ) {
@@ -235,10 +240,15 @@ class MainScreen(
                                 .padding(
                                     start = paddingValues.calculateStartPadding(layoutDirection),
                                     end = paddingValues.calculateEndPadding(layoutDirection),
-                                    top = paddingValues.calculateTopPadding(),
+                                    top = topPadding,
                                     bottom = bottomPadding,
                                 )
-                                .consumeWindowInsets(paddingValues)
+                                .then(
+                                    if (isModernNewTopBar)
+                                        Modifier.consumeWindowInsets(PaddingValues(bottom = paddingValues.calculateBottomPadding()))
+                                    else
+                                        Modifier.consumeWindowInsets(paddingValues)
+                                )
                                 .statusBarsPadding()
                                 .then(if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier)
                         ) {

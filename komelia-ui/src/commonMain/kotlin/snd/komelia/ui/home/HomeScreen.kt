@@ -1,6 +1,8 @@
 package snd.komelia.ui.home
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -11,6 +13,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -25,12 +28,17 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import snd.komelia.ui.LoadState
 import snd.komelia.ui.LocalAccentColor
+import snd.komelia.ui.LocalFloatingToolbarPadding
 import snd.komelia.ui.LocalKomgaState
 import snd.komelia.ui.LocalOfflineMode
+import snd.komelia.ui.LocalRawStatusBarHeight
 import snd.komelia.ui.LocalReloadEvents
+import snd.komelia.ui.LocalTheme
 import snd.komelia.ui.LocalTransparentNavBarPadding
+import snd.komelia.ui.LocalUseNewLibraryUI2
 import snd.komelia.ui.LocalViewModelFactory
 import snd.komelia.ui.ReloadableScreen
+import snd.komelia.ui.topbar.NewTopAppBar
 import snd.komelia.ui.book.bookScreen
 import snd.komelia.ui.common.components.ErrorContent
 import snd.komelia.ui.home.edit.FilterEditScreen
@@ -69,6 +77,13 @@ class HomeScreen(private val libraryId: KomgaLibraryId? = null) : ReloadableScre
         }
 
         val accentColor = LocalAccentColor.current
+        val useNewUI2 = LocalUseNewLibraryUI2.current
+        val theme = LocalTheme.current
+        val barHeight = 45.dp
+        val statusBarHeight = if (theme.transparentBars) LocalRawStatusBarHeight.current else 0.dp
+        val floatingPadding = if (useNewUI2) barHeight + statusBarHeight else 0.dp
+        CompositionLocalProvider(LocalFloatingToolbarPadding provides floatingPadding) {
+        Box(Modifier.fillMaxSize()) {
         ScreenPullToRefreshBox(screenState = vm.state, onRefresh = vm::reload) {
             when (val state = vm.state.collectAsState().value) {
                 is LoadState.Error -> ErrorContent(
@@ -119,6 +134,11 @@ class HomeScreen(private val libraryId: KomgaLibraryId? = null) : ReloadableScre
             ) {
                 Icon(Icons.Rounded.Edit, null)
             }
+        }
+        if (useNewUI2) {
+            NewTopAppBar()
+        }
+        }
         }
     }
 }

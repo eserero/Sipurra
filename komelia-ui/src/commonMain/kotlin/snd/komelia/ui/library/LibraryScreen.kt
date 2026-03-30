@@ -1,15 +1,20 @@
 package snd.komelia.ui.library
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,11 +36,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import io.github.snd_r.komelia.ui.komelia_ui.generated.resources.NotoSerif_Bold
+import io.github.snd_r.komelia.ui.komelia_ui.generated.resources.Res
+import org.jetbrains.compose.resources.Font
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -54,18 +66,22 @@ import snd.komelia.ui.LocalTheme
 import snd.komelia.ui.LocalKomgaState
 import snd.komelia.ui.LocalMainScreenViewModel
 import snd.komelia.ui.LocalOfflineMode
+import snd.komelia.ui.LocalRawStatusBarHeight
 import snd.komelia.ui.LocalReloadEvents
 import snd.komelia.ui.LocalFloatingToolbarPadding
 import snd.komelia.ui.LocalHazeState
+import snd.komelia.ui.LocalUseNewLibraryUI2
 import snd.komelia.ui.LocalViewModelFactory
 import snd.komelia.ui.ReloadableScreen
 import snd.komelia.ui.collection.CollectionScreen
+import snd.komelia.ui.common.components.AppFilterChipDefaults
 import snd.komelia.ui.common.components.AppSuggestionChipDefaults
 import snd.komelia.ui.common.components.ErrorContent
 import snd.komelia.ui.common.components.LoadingMaxSizeIndicator
 import snd.komelia.ui.common.components.PageSizeSelectionDropdown
 import snd.komelia.ui.common.menus.LibraryActionsMenu
 import snd.komelia.ui.common.menus.LibraryMenuActions
+import snd.komelia.ui.topbar.NewTopAppBar
 import snd.komelia.ui.library.LibraryTab.COLLECTIONS
 import snd.komelia.ui.library.LibraryTab.READ_LISTS
 import snd.komelia.ui.library.LibraryTab.SERIES
@@ -112,9 +128,11 @@ class LibraryScreen(
             when (val state = vm.state.collectAsState().value) {
                 is Error -> ErrorContent(message = state.exception.message ?: "Unknown Error", onReload = vm::reload)
                 Uninitialized, Loading, is Success -> {
+                    val useNewUI2 = LocalUseNewLibraryUI2.current
                     val theme = LocalTheme.current
                     val showToolbar = vm.showToolbar.collectAsState().value
                     val floatToolbar = theme.transparentBars && showToolbar
+                    val library = vm.library.collectAsState().value
 
                     val (totalCountInfo, onPageSizeChange) = when (vm.currentTab) {
                         SERIES -> {
@@ -148,7 +166,7 @@ class LibraryScreen(
 
                     val toolbarContent: @Composable () -> Unit = {
                         LibraryToolBar(
-                            library = vm.library.collectAsState().value,
+                            library = library,
                             libraryActions = vm.libraryActions(),
                             totalCount = totalCount,
                             countLabel = countLabel,
@@ -168,15 +186,43 @@ class LibraryScreen(
                         )
                     }
 
+                    val newUI2BeforeContent = @Composable {
+                        LibraryHeaderSection(
+                            library = library,
+                            totalCount = totalCount,
+                            countLabel = countLabel,
+                            pageSize = pageSize,
+                            onPageSizeChange = onPageSizeChange,
+                        )
+                        LibraryTabChips(
+                            currentTab = vm.currentTab,
+                            collectionsCount = vm.collectionsCount,
+                            readListsCount = vm.readListsCount,
+                            onBrowseClick = vm::toBrowseTab,
+                            onCollectionsClick = vm::toCollectionsTab,
+                            onReadListsClick = vm::toReadListsTab,
+                        )
+                    }
+
                     val tabContent: @Composable () -> Unit = {
+                        val beforeContent = if (useNewUI2) newUI2BeforeContent else segmentedButtons
                         when (vm.currentTab) {
-                            SERIES -> BrowseTab(vm.seriesTabState, segmentedButtons)
-                            COLLECTIONS -> CollectionsTab(vm.collectionsTabState, segmentedButtons)
-                            READ_LISTS -> ReadListsTab(vm.readListsTabState, segmentedButtons)
+                            SERIES -> BrowseTab(vm.seriesTabState, beforeContent)
+                            COLLECTIONS -> CollectionsTab(vm.collectionsTabState, beforeContent)
+                            READ_LISTS -> ReadListsTab(vm.readListsTabState, beforeContent)
                         }
                     }
 
-                    if (floatToolbar) {
+                    if (useNewUI2) {
+                        val barHeight = 45.dp
+                        val statusBarHeight = if (theme.transparentBars) LocalRawStatusBarHeight.current else 0.dp
+                        CompositionLocalProvider(LocalFloatingToolbarPadding provides barHeight + statusBarHeight) {
+                            Box(Modifier.fillMaxSize()) {
+                                tabContent()
+                                NewTopAppBar(library = library, libraryActions = vm.libraryActions())
+                            }
+                        }
+                    } else if (floatToolbar) {
                         val toolbarHazeState = if (theme.transparentBars) rememberHazeState() else null
                         CompositionLocalProvider(
                             LocalHazeState provides toolbarHazeState,
@@ -338,6 +384,97 @@ class LibraryScreen(
         }
     }
 
+}
+
+@Composable
+private fun LibraryHeaderSection(
+    library: KomgaLibrary?,
+    totalCount: Int,
+    countLabel: String,
+    pageSize: Int,
+    onPageSizeChange: (Int) -> Unit,
+) {
+    val notoSerif = FontFamily(Font(Res.font.NotoSerif_Bold, FontWeight.Bold))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                library?.name ?: "All Libraries",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontFamily = notoSerif,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.5).sp,
+                ),
+            )
+            if (totalCount > 0) {
+                Text(
+                    "$totalCount ${countLabel.uppercase()}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 1.sp,
+                )
+            }
+        }
+        PageSizeSelectionDropdown(currentSize = pageSize, onPageSizeChange = onPageSizeChange)
+    }
+}
+
+@Composable
+private fun LibraryTabChips(
+    currentTab: LibraryTab,
+    collectionsCount: Int,
+    readListsCount: Int,
+    onBrowseClick: () -> Unit,
+    onCollectionsClick: () -> Unit,
+    onReadListsClick: () -> Unit,
+) {
+    if (collectionsCount == 0 && readListsCount == 0) return
+    val chipColors = AppFilterChipDefaults.filterChipColors()
+    LazyRow(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        contentPadding = PaddingValues(horizontal = 0.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item {
+            FilterChip(
+                selected = currentTab == SERIES,
+                onClick = onBrowseClick,
+                label = { Text("Series") },
+                colors = chipColors,
+                shape = AppFilterChipDefaults.shape(),
+                border = AppFilterChipDefaults.filterChipBorder(currentTab == SERIES),
+            )
+        }
+        if (collectionsCount > 0) {
+            item {
+                FilterChip(
+                    selected = currentTab == COLLECTIONS,
+                    onClick = onCollectionsClick,
+                    label = { Text("Collections") },
+                    colors = chipColors,
+                    shape = AppFilterChipDefaults.shape(),
+                    border = AppFilterChipDefaults.filterChipBorder(currentTab == COLLECTIONS),
+                )
+            }
+        }
+        if (readListsCount > 0) {
+            item {
+                FilterChip(
+                    selected = currentTab == READ_LISTS,
+                    onClick = onReadListsClick,
+                    label = { Text("Read Lists") },
+                    colors = chipColors,
+                    shape = AppFilterChipDefaults.shape(),
+                    border = AppFilterChipDefaults.filterChipBorder(currentTab == READ_LISTS),
+                )
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

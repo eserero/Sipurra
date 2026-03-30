@@ -5,6 +5,8 @@ import androidx.compose.material3.DrawerValue
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.navigator.Navigator
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -17,6 +19,8 @@ import snd.komelia.komga.api.KomgaLibraryApi
 import snd.komelia.offline.settings.OfflineSettingsRepository
 import snd.komelia.offline.tasks.OfflineTaskEmitter
 import snd.komelia.settings.CommonSettingsRepository
+import snd.komelia.settings.model.AppTheme
+import snd.komelia.ui.Theme
 import snd.komelia.ui.book.BookScreen
 import snd.komelia.ui.collection.CollectionScreen
 import snd.komelia.ui.common.menus.LibraryMenuActions
@@ -73,6 +77,20 @@ class MainScreenViewModel(
     suspend fun toggleNavBar() {
         if (navBarState.currentValue == DrawerValue.Closed) navBarState.open()
         else navBarState.close()
+    }
+
+    fun toggleTheme(currentTheme: Theme) {
+        screenModelScope.launch {
+            val (newAppTheme, newAccent) = when (currentTheme) {
+                Theme.LIGHT        -> AppTheme.DARK         to null
+                Theme.DARK         -> AppTheme.LIGHT        to null
+                Theme.DARKER       -> AppTheme.LIGHT        to null
+                Theme.LIGHT_MODERN -> AppTheme.DARK_MODERN  to Color(0xFFBA9EFF.toInt())
+                Theme.DARK_MODERN  -> AppTheme.LIGHT_MODERN to Color(0xFF6A1CF6.toInt())
+            }
+            settingsRepository.putAppTheme(newAppTheme)
+            if (newAccent != null) settingsRepository.putAccentColor(newAccent.toArgb().toLong())
+        }
     }
 
     fun navigateToLibrary() {
