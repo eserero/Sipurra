@@ -109,8 +109,21 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                     },
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 56.dp, bottom = 66.dp)
+                        .then(if (useNewUI2) Modifier else Modifier.padding(top = 56.dp, bottom = 66.dp))
                 )
+
+                if (epub3State != null) {
+                    val showControls by epub3State.showControls.collectAsState()
+                    if (showControls) {
+                        // Scrim — tap outside dismisses. Moved inside hazeSource so it can be blurred.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.4f))
+                                .clickable { epub3State.toggleControls() }
+                        )
+                    }
+                }
             }
 
         if (epub3State != null) {
@@ -182,14 +195,6 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
             }
 
             if (showControls) {
-                // Scrim — tap outside dismisses
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.4f))
-                        .clickable { epub3State.toggleControls() }
-                )
-
                 if (useNewUI2) {
                     val book by epub3State.book.collectAsState()
                     ReaderTopBar(
