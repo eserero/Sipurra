@@ -108,7 +108,7 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                     },
                     modifier = Modifier
                         .fillMaxSize()
-                        .then(if (useNewUI2) Modifier else Modifier.padding(top = 56.dp, bottom = 66.dp))
+                        .padding(top = settings.topMargin.dp, bottom = settings.bottomMargin.dp)
                 )
             }
 

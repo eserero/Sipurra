@@ -47,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -241,6 +242,29 @@ private fun AppearanceTab(
             value = settings.pageMargins.toFloat(),
             onValueChange = { onSettingsChange(settings.copy(pageMargins = it.toDouble())) },
             valueRange = 0.5f..2.0f,
+            accentColor = accentColor,
+        )
+
+        val screenHeight = LocalConfiguration.current.screenHeightDp.toFloat()
+        val maxMargin = screenHeight * 0.2f
+
+        // Top margin slider
+        SliderRow(
+            label = "Top margin",
+            valueLabel = "${settings.topMargin.toInt()}dp",
+            value = settings.topMargin,
+            onValueChange = { onSettingsChange(settings.copy(topMargin = it)) },
+            valueRange = 0f..maxMargin,
+            accentColor = accentColor,
+        )
+
+        // Bottom margin slider
+        SliderRow(
+            label = "Bottom margin",
+            valueLabel = "${settings.bottomMargin.toInt()}dp",
+            value = settings.bottomMargin,
+            onValueChange = { onSettingsChange(settings.copy(bottomMargin = it)) },
+            valueRange = 0f..maxMargin,
             accentColor = accentColor,
         )
 

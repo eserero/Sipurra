@@ -233,7 +233,7 @@ fun ImmersiveDetailScaffold(
         val windowHeightDp = with(density) { LocalWindowInfo.current.containerSize.height.toDp() }
         // Use actual window height (invariant to app nav bar showing/hiding) for stable collapsedOffset.
         val stableScreenHeight = windowHeightDp - statusBarDp - navBarDp
-        val collapsedOffset = stableScreenHeight * 0.65f
+        val collapsedOffset = if (useMorphingCover) (stableScreenHeight * 0.65f) + statusBarDp else stableScreenHeight * 0.65f
         val collapsedOffsetPx = with(density) { collapsedOffset.toPx() }
         val screenWidth = maxWidth
 
