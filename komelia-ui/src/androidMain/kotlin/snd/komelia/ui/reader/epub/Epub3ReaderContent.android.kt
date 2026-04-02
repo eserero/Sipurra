@@ -117,19 +117,10 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
 
                 if (LocalPlatform.current == MOBILE) {
                     val windowState = LocalWindowState.current
-                    if (useNewUI2) {
-                        // UI2: bars always visible, edge-to-edge frosted glass — never enter fullscreen
-                        DisposableEffect(Unit) {
-                            windowState.setFullscreen(false)
-                            onDispose { windowState.setFullscreen(false) }
-                        }
-                    } else {
-                        // Legacy: toggle fullscreen with controls visibility
-                        DisposableEffect(showControls) {
-                            if (showControls) windowState.setFullscreen(false)
-                            else windowState.setFullscreen(true)
-                            onDispose { windowState.setFullscreen(false) }
-                        }
+                    DisposableEffect(showControls) {
+                        if (showControls) windowState.setFullscreen(false)
+                        else windowState.setFullscreen(true)
+                        onDispose { windowState.setFullscreen(false) }
                     }
                 }
 

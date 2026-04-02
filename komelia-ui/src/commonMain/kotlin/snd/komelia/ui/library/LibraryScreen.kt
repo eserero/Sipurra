@@ -9,15 +9,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,7 +46,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -424,9 +430,23 @@ private fun ContinueReadingSection(
     val containerColor = if (theme.type == Theme.ThemeType.DARK) Color(43, 43, 43)
     else MaterialTheme.colorScheme.surfaceVariant
 
+    val gridPadding = 10.dp
+    val density = LocalDensity.current
+
     Surface(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .layout { measurable, constraints ->
+                val insetPx = with(density) { gridPadding.roundToPx() }
+                val placeable = measurable.measure(
+                    constraints.copy(maxWidth = constraints.maxWidth + insetPx * 2)
+                )
+                layout(constraints.maxWidth, placeable.height) {
+                    placeable.place(-insetPx, 0)
+                }
+            }
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        shape = RectangleShape,
         color = containerColor,
     ) {
         Column(
@@ -435,11 +455,11 @@ private fun ContinueReadingSection(
             Text(
                 "Continue Reading",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+                modifier = Modifier.padding(start = gridPadding, end = gridPadding, bottom = 12.dp)
             )
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(horizontal = gridPadding),
+                horizontalArrangement = Arrangement.spacedBy(7.dp)
             ) {
                 items(books, key = { it.id.value }) { book ->
                     BookImageCard(
@@ -556,6 +576,15 @@ private fun LibraryTabChips(
                 colors = chipColors,
                 shape = AppFilterChipDefaults.shape(),
                 border = AppFilterChipDefaults.filterChipBorder(showContinueReading),
+                leadingIcon = if (showContinueReading) {
+                    {
+                        Icon(
+                            imageVector = Icons.Default.Done,
+                            contentDescription = null,
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                } else null
             )
         }
     }

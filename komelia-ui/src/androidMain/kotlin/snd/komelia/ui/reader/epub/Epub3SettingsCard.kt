@@ -31,7 +31,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -79,8 +79,8 @@ fun Epub3SettingsCard(
 
     Surface(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
+        color = MaterialTheme.colorScheme.background,
+        tonalElevation = 0.dp,
         modifier = modifier
             .offset { IntOffset(0, dragOffsetY.roundToInt().coerceAtLeast(0)) },
     ) {
@@ -109,7 +109,10 @@ fun Epub3SettingsCard(
             }
 
             // Tab row — sticky, not scrollable
-            PrimaryTabRow(selectedTabIndex = selectedTab) {
+            SecondaryTabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = Color.Transparent,
+            ) {
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
