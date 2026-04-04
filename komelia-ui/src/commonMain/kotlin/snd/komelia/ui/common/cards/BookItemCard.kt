@@ -3,6 +3,7 @@ package snd.komelia.ui.common.cards
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -23,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.OfflinePin
 import androidx.compose.material.icons.rounded.MoreVert
@@ -172,19 +174,26 @@ private fun BookImageBadges(
     Column(modifier = Modifier.fillMaxSize()) {
         Row {
             if (book.downloaded) {
-                val tint =
-                    if (book.isLocalFileOutdated || book.remoteFileUnavailable) MaterialTheme.colorScheme.errorContainer
-                    else MaterialTheme.colorScheme.secondary
-                Icon(
-                    imageVector = Icons.Filled.OfflinePin,
-                    contentDescription = null,
-                    tint = tint,
+                val isOutOfSync = book.isLocalFileOutdated || book.remoteFileUnavailable
+                val neonGreen = Color(0xFF39FF14)
+                val neonRed = Color(0xFFFF3131)
+                val color = if (isOutOfSync) neonRed else neonGreen
+
+                Box(
                     modifier = Modifier
                         .padding(1.dp)
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black)
-                )
+                        .size(24.dp)
+                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.8f), CircleShape)
+                        .border(1.dp, Color.Black, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = null,
+                        tint = color,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
 
             Spacer(Modifier.weight(1f))

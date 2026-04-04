@@ -1,6 +1,7 @@
 package snd.komelia.ui.common.cards
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -21,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.OfflinePin
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.Card
@@ -196,16 +198,22 @@ private fun SeriesImageBadges(
     Column(modifier = Modifier.fillMaxSize()) {
         Row {
             if (isDownloaded) {
-                Icon(
-                    imageVector = Icons.Filled.OfflinePin,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary,
+                val neonGreen = Color(0xFF39FF14)
+                Box(
                     modifier = Modifier
                         .padding(1.dp)
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black)
-                )
+                        .size(24.dp)
+                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.8f), CircleShape)
+                        .border(1.dp, Color.Black, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = null,
+                        tint = neonGreen,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }
