@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.MoreVert
@@ -485,14 +486,16 @@ private fun LibraryHeaderSection(
     onPageSizeChange: (Int) -> Unit,
 ) {
     val notoSerif = FontFamily(Font(Res.font.NotoSerif_Bold, FontWeight.Bold))
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Column(Modifier.weight(1f)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
             Text(
                 library?.name ?: "All Libraries",
                 style = MaterialTheme.typography.headlineLarge.copy(
@@ -500,17 +503,18 @@ private fun LibraryHeaderSection(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = (-0.5).sp,
                 ),
+                modifier = Modifier.weight(1f)
             )
-            if (totalCount > 0) {
-                Text(
-                    "$totalCount ${countLabel.uppercase()}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    letterSpacing = 1.sp,
-                )
-            }
+            PageSizeSelectionDropdown(currentSize = pageSize, onPageSizeChange = onPageSizeChange)
         }
-        PageSizeSelectionDropdown(currentSize = pageSize, onPageSizeChange = onPageSizeChange)
+        if (totalCount > 0) {
+            Text(
+                "$totalCount ${countLabel.uppercase()}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 1.sp,
+            )
+        }
     }
 }
 
@@ -576,15 +580,6 @@ private fun LibraryTabChips(
                 colors = chipColors,
                 shape = AppFilterChipDefaults.shape(),
                 border = AppFilterChipDefaults.filterChipBorder(showContinueReading),
-                leadingIcon = if (showContinueReading) {
-                    {
-                        Icon(
-                            imageVector = Icons.Default.Done,
-                            contentDescription = null,
-                            modifier = Modifier.size(FilterChipDefaults.IconSize)
-                        )
-                    }
-                } else null
             )
         }
     }

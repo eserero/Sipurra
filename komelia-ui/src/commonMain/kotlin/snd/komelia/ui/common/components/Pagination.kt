@@ -1,5 +1,6 @@
 package snd.komelia.ui.common.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -12,20 +13,30 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
+import io.github.snd_r.komelia.ui.komelia_ui.generated.resources.Res
+import io.github.snd_r.komelia.ui.komelia_ui.generated.resources.ic_view_grid_plus
+import org.jetbrains.compose.resources.painterResource
 import snd.komelia.ui.common.components.LabeledEntry.Companion.intEntry
 
 @Composable
@@ -123,27 +134,40 @@ private fun PageNumberButton(
     }
 }
 
-
 @Composable
 fun PageSizeSelectionDropdown(
     currentSize: Int,
     onPageSizeChange: (Int) -> Unit
 ) {
-    DropdownChoiceMenu(
-        selectedOption = intEntry(currentSize),
-        options = listOf(
-            intEntry(20),
-            intEntry(50),
-            intEntry(100),
-            intEntry(200),
-            intEntry(500)
-        ),
-        onOptionChange = { onPageSizeChange(it.value) },
-        contentPadding = PaddingValues(5.dp),
-        inputFieldColor = Color.Transparent,
-        inputFieldModifier = Modifier
-            .widthIn(min = 70.dp)
-            .clip(RoundedCornerShape(5.dp))
-            .padding(end = 10.dp)
-    )
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_view_grid_plus),
+                contentDescription = "Grid Size"
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            val options = listOf(20, 50, 100, 200, 500)
+            options.forEach { size ->
+                DropdownMenuItem(
+                    text = { Text(size.toString()) },
+                    onClick = {
+                        onPageSizeChange(size)
+                        expanded = false
+                    },
+                    modifier = if (size == currentSize) Modifier.background(MaterialTheme.colorScheme.secondaryContainer) else Modifier,
+                    colors = if (size == currentSize) {
+                        MenuDefaults.itemColors(
+                            textColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    } else MenuDefaults.itemColors()
+                )
+            }
+        }
+    }
 }

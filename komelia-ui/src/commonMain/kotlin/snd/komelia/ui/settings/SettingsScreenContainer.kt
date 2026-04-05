@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import snd.komelia.ui.LocalPlatform
+import snd.komelia.ui.LocalTransparentNavBarPadding
 import snd.komelia.ui.platform.BackPressHandler
 import snd.komelia.ui.platform.PlatformTitleBar
 import snd.komelia.ui.platform.PlatformType.DESKTOP
@@ -53,6 +54,7 @@ fun SettingsScreenContainer(
 @Composable
 private fun MobileContainer(title: String, content: @Composable ColumnScope.() -> Unit) {
     val navigator = LocalNavigator.currentOrThrow
+    val extraBottomPadding = LocalTransparentNavBarPadding.current
     Column(Modifier.padding()) {
         PlatformTitleBar()
         Row(
@@ -73,9 +75,14 @@ private fun MobileContainer(title: String, content: @Composable ColumnScope.() -
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             content()
+            if (extraBottomPadding > 0.dp) {
+                Spacer(Modifier.height(extraBottomPadding))
+            }
         }
 
-        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+        if (extraBottomPadding == 0.dp) {
+            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+        }
     }
     BackPressHandler { navigator.pop() }
 }
