@@ -1,10 +1,12 @@
 package snd.komelia.ui.library
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,14 +19,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -82,6 +88,7 @@ import snd.komelia.ui.LocalRawStatusBarHeight
 import snd.komelia.ui.LocalReloadEvents
 import snd.komelia.ui.LocalFloatingToolbarPadding
 import snd.komelia.ui.LocalHazeState
+import snd.komelia.ui.LocalStrings
 import snd.komelia.ui.LocalUseNewLibraryUI2
 import snd.komelia.ui.LocalViewModelFactory
 import snd.komelia.ui.ReloadableScreen
@@ -186,7 +193,9 @@ class LibraryScreen(
                             totalCount = totalCount,
                             countLabel = countLabel,
                             pageSize = pageSize,
-                            onPageSizeChange = onPageSizeChange
+                            onPageSizeChange = onPageSizeChange,
+                            sortOrder = if (vm.currentTab == SERIES) vm.seriesTabState.filterState.state.collectAsState().value.sortOrder else null,
+                            onSortChange = if (vm.currentTab == SERIES) vm.seriesTabState.filterState::onSortOrderChange else null
                         )
                     }
 
@@ -210,6 +219,8 @@ class LibraryScreen(
                                 countLabel = countLabel,
                                 pageSize = pageSize,
                                 onPageSizeChange = onPageSizeChange,
+                                sortOrder = if (vm.currentTab == SERIES) vm.seriesTabState.filterState.state.collectAsState().value.sortOrder else null,
+                                onSortChange = if (vm.currentTab == SERIES) vm.seriesTabState.filterState::onSortOrderChange else null
                             )
                             LibraryTabChips(
                                 currentTab = vm.currentTab,
@@ -484,6 +495,8 @@ private fun LibraryHeaderSection(
     countLabel: String,
     pageSize: Int,
     onPageSizeChange: (Int) -> Unit,
+    sortOrder: LibrarySeriesTabState.SeriesSort? = null,
+    onSortChange: ((LibrarySeriesTabState.SeriesSort) -> Unit)? = null,
 ) {
     val notoSerif = FontFamily(Font(Res.font.NotoSerif_Bold, FontWeight.Bold))
     Column(
@@ -505,7 +518,14 @@ private fun LibraryHeaderSection(
                 ),
                 modifier = Modifier.weight(1f)
             )
-            PageSizeSelectionDropdown(currentSize = pageSize, onPageSizeChange = onPageSizeChange)
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (sortOrder != null && onSortChange != null) {
+                    LibrarySortDropdown(sortOrder, onSortChange)
+                    Spacer(Modifier.width(8.dp))
+                }
+                PageSizeSelectionDropdown(currentSize = pageSize, onPageSizeChange = onPageSizeChange)
+            }
         }
         if (totalCount > 0) {
             Text(
@@ -594,6 +614,8 @@ fun LibraryToolBar(
     countLabel: String,
     pageSize: Int,
     onPageSizeChange: (Int) -> Unit,
+    sortOrder: LibrarySeriesTabState.SeriesSort? = null,
+    onSortChange: ((LibrarySeriesTabState.SeriesSort) -> Unit)? = null,
 ) {
     var showOptionsMenu by remember { mutableStateOf(false) }
     val isAdmin = LocalKomgaState.current.authenticatedUser.collectAsState().value?.roleAdmin() ?: true
@@ -637,6 +659,9 @@ fun LibraryToolBar(
                         modifier = Modifier.padding(end = 5.dp)
                     )
 
+                    if (sortOrder != null && onSortChange != null) {
+                        LibrarySortDropdown(sortOrder, onSortChange)
+                    }
                     PageSizeSelectionDropdown(pageSize, onPageSizeChange)
                 }
 
@@ -726,6 +751,43 @@ private fun getTabCount(collectionsCount: Int, readListsCount: Int): Int {
     if (collectionsCount > 0) count++
     if (readListsCount > 0) count++
     return count
+}
+
+@Composable
+private fun LibrarySortDropdown(
+    currentSort: LibrarySeriesTabState.SeriesSort,
+    onSortChange: (LibrarySeriesTabState.SeriesSort) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                Icons.Default.FilterList,
+                contentDescription = null
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            LibrarySeriesTabState.SeriesSort.entries.forEach { sort ->
+                DropdownMenuItem(
+                    text = { Text(LocalStrings.current.seriesFilter.forSeriesSort(sort)) },
+                    onClick = {
+                        onSortChange(sort)
+                        expanded = false
+                    },
+                    modifier = if (sort == currentSort) Modifier.background(MaterialTheme.colorScheme.secondaryContainer) else Modifier,
+                    colors = if (sort == currentSort) {
+                        MenuDefaults.itemColors(
+                            textColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    } else MenuDefaults.itemColors()
+                )
+            }
+        }
+    }
 }
 
 data class SeriesScreenFilter(

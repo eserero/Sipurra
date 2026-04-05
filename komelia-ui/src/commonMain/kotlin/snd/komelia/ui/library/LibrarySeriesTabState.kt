@@ -67,7 +67,7 @@ class LibrarySeriesTabState(
         private set
 
     val filterState: SeriesFilterState = SeriesFilterState(
-        defaultSort = SeriesSort.TITLE_ASC,
+        defaultSort = SeriesSort.DATE_ADDED_DESC,
         library = library,
         referentialApi = referentialApi,
         appNotifications = notifications,
