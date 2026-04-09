@@ -17,6 +17,7 @@ import org.readium.r2.shared.util.file.FileResource
 import org.readium.r2.shared.util.file.FileSystemError
 import org.readium.r2.shared.util.resource.Resource
 import org.readium.r2.shared.util.toUrl
+import android.util.Log
 import java.io.File
 
 /**
@@ -27,11 +28,16 @@ class DirectoryContainer(
     override val entries: Set<Url>,
 ) : Container<Resource> {
 
-    override fun get(url: Url): Resource? = url
-        .takeIf { it in entries }
-        ?.let { (it as? RelativeUrl)?.path }
-        ?.let { File(root, it) }
-        ?.let { FileResource(it) }
+    override fun get(url: Url): Resource? {
+        val path = (url as? RelativeUrl)?.path ?: run {
+            Log.d("epub-container", "get: non-relative url=$url")
+            return null
+        }
+        val file = File(root, path)
+        val exists = file.exists()
+        Log.d("epub-container", "get: path=$path exists=$exists")
+        return if (exists) FileResource(file) else null
+    }
 
     override fun close() {}
 

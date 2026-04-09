@@ -317,10 +317,16 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                     exit = slideOutVertically(targetOffsetY = { it }),
                     modifier = Modifier.align(Alignment.BottomCenter)
                 ) {
+                    val userFonts by remember(epub3State) {
+                        epub3State?.userFonts ?: MutableStateFlow(emptyList())
+                    }.collectAsState()
                     Epub3SettingsCard(
                         settings = settings,
                         onSettingsChange = epub3State::updateSettings,
                         onDismiss = { epub3State.toggleSettings() },
+                        userFonts = userFonts,
+                        onLoadFont = { epub3State.loadFont(it) },
+                        onDeleteFont = { epub3State.deleteFont(it) },
                     )
                 }
 

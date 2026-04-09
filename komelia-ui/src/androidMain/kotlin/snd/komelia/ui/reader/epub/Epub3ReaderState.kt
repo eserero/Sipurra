@@ -3,9 +3,12 @@ package snd.komelia.ui.reader.epub
 import android.content.Context
 import cafe.adriel.voyager.navigator.Navigator
 import com.storyteller.reader.BookService
+import com.storyteller.reader.CustomFont
 import com.storyteller.reader.EpubView
 import com.storyteller.reader.EpubViewListener
 import com.storyteller.reader.OverlayPar
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.name
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +24,8 @@ import org.readium.r2.shared.util.Url
 import org.readium.r2.shared.util.mediatype.MediaType
 import snd.komelia.AppNotifications
 import snd.komelia.AppWindowState
+import snd.komelia.fonts.UserFont
+import snd.komelia.fonts.UserFontsRepository
 import snd.komelia.komga.api.KomgaBookApi
 import snd.komelia.komga.api.model.KomeliaBook
 import snd.komelia.settings.EpubReaderSettingsRepository
@@ -52,6 +57,7 @@ class Epub3ReaderState(
     private val context: Context,
     private val bookApi: KomgaBookApi,
     private val epubSettingsRepository: EpubReaderSettingsRepository,
+    private val fontsRepository: UserFontsRepository,
     private val notifications: AppNotifications,
     private val markReadProgress: Boolean,
     private val windowState: AppWindowState,
@@ -70,12 +76,15 @@ class Epub3ReaderState(
     val showToc = MutableStateFlow(false)
     val tableOfContents = MutableStateFlow<List<Link>>(emptyList())
     val settings = MutableStateFlow(Epub3NativeSettings())
+    val userFonts = MutableStateFlow<List<UserFont>>(emptyList())
     val mediaOverlayController = MutableStateFlow<MediaOverlayController?>(null)
     val positions = MutableStateFlow<List<Locator>>(emptyList())
     val currentLocator = MutableStateFlow<Locator?>(null)
     private var epubView: EpubView? = null
     private val navigator = MutableStateFlow<Navigator?>(null)
     private val bookUuid: String get() = this.bookId.value.value
+    // Directory the epub is extracted to; set during initialize().
+    private var extractedDir: File? = null
 
     // Populated once the EPUB is extracted and ready; handed to EpubView in onEpubViewCreated.
     private var savedLocator: Locator? = null
@@ -139,7 +148,68 @@ class Epub3ReaderState(
         }
         view.pendingProps.pageMargins      = s.pageMargins
         view.pendingProps.publisherStyles  = s.publisherStyles
+        view.pendingProps.customFonts      = buildCustomFontList()
         view.finalizeProps()
+    }
+
+    private fun buildCustomFontList(): List<CustomFont> {
+        return userFonts.value.map { font ->
+            val ext = font.path.name.substringAfterLast(".", "ttf")
+            val fontFileName = "${font.canonicalName}.$ext"
+            // Readium serves publication resources at https://readium/publication/<path>.
+            // Using a relative path would resolve against https://readium/assets/ (wrong).
+            // Using the absolute publication URL routes the font request to DirectoryContainer.
+            // Percent-encode the filename so spaces and special chars don't produce invalid URLs.
+            val encodedFileName = java.net.URLEncoder.encode(fontFileName, "UTF-8").replace("+", "%20")
+            val uri = "https://readium/publication/komelia-user-fonts/$encodedFileName"
+            logger.debug { "[epub3-fonts] registering font: name=${font.canonicalName} uri=$uri" }
+            CustomFont(uri = uri, name = font.canonicalName, type = ext)
+        }
+    }
+
+    private suspend fun loadUserFontsIntoCache(fonts: List<UserFont>) {
+        copyFontsToEpubDir(fonts)
+        userFonts.value = fonts
+    }
+
+    private suspend fun copyFontsToEpubDir(fonts: List<UserFont>) {
+        val dir = extractedDir ?: run {
+            logger.warn { "[epub3-fonts] copyFontsToEpubDir: extractedDir is null, skipping" }
+            return
+        }
+        withContext(Dispatchers.IO) {
+            val fontsDir = File(dir, "komelia-user-fonts").also { it.mkdirs() }
+            logger.debug { "[epub3-fonts] font staging dir: $fontsDir" }
+            for (font in fonts) {
+                val ext = font.path.name.substringAfterLast(".", "ttf")
+                val destFile = File(fontsDir, "${font.canonicalName}.$ext")
+                if (!destFile.exists()) {
+                    File(font.path.toString()).copyTo(destFile)
+                    logger.debug { "[epub3-fonts] copied ${font.path} -> $destFile" }
+                } else {
+                    logger.debug { "[epub3-fonts] already exists: $destFile" }
+                }
+            }
+        }
+    }
+
+    fun loadFont(file: PlatformFile) {
+        coroutineScope.launch {
+            val name = file.name.substringBeforeLast(".")
+            val userFont = UserFont.saveFontToAppDirectory(name, file) ?: return@launch
+            fontsRepository.putFont(userFont)
+            loadUserFontsIntoCache(fontsRepository.getAllFonts())
+            applySettingsToView(settings.value)
+        }
+    }
+
+    fun deleteFont(font: UserFont) {
+        coroutineScope.launch {
+            fontsRepository.deleteFont(font)
+            font.deleteFontFile()
+            loadUserFontsIntoCache(fontsRepository.getAllFonts())
+            applySettingsToView(settings.value)
+        }
     }
 
     override suspend fun initialize(navigator: Navigator) {
@@ -156,12 +226,19 @@ class Epub3ReaderState(
 
             logger.debug { "[epub3-init] preparing epub directory" }
             val extractedDir = prepareEpubDirectory()
+            this.extractedDir = extractedDir
             logger.debug { "[epub3-init] epub directory ready: $extractedDir" }
 
             // One-time cleanup: delete stale overlay_clips.json cache from old builds
             withContext(Dispatchers.IO) {
                 File(extractedDir, "overlay_clips.json").delete()
             }
+
+            // Copy user fonts into the epub directory BEFORE openPublication() so that
+            // DirectoryContainer.entries (built via root.walk() inside openPublication) includes them.
+            val allFonts = fontsRepository.getAllFonts()
+            copyFontsToEpubDir(allFonts)
+            userFonts.value = allFonts
 
             logger.debug { "[epub3-init] opening publication" }
             withContext(Dispatchers.IO) {

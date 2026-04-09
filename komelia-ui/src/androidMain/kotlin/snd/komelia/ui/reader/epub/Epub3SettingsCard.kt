@@ -57,6 +57,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.OutlinedTextField
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
+import kotlinx.coroutines.launch
+import snd.komelia.fonts.UserFont
 import snd.komelia.settings.model.Epub3ColumnCount
 import snd.komelia.settings.model.Epub3ReadAloudColor
 import snd.komelia.settings.model.Epub3TextAlign
@@ -73,6 +87,9 @@ fun Epub3SettingsCard(
     settings: Epub3NativeSettings,
     onSettingsChange: (Epub3NativeSettings) -> Unit,
     onDismiss: () -> Unit,
+    userFonts: List<UserFont> = emptyList(),
+    onLoadFont: (PlatformFile) -> Unit = {},
+    onDeleteFont: (UserFont) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var dragOffsetY by remember { mutableStateOf(0f) }
@@ -145,7 +162,7 @@ fun Epub3SettingsCard(
                     .padding(bottom = 16.dp),
                 tabs = listOf(
                     { AppearanceTab(settings, onSettingsChange, accentColor) },
-                    { FontTextTab(settings, onSettingsChange, accentColor) },
+                    { FontTextTab(settings, onSettingsChange, accentColor, userFonts, onLoadFont, onDeleteFont) },
                     { AudioTab(settings, onSettingsChange, accentColor) },
                 ),
             )
@@ -351,14 +368,24 @@ private fun AppearanceTab(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FontTextTab(
     settings: Epub3NativeSettings,
     onSettingsChange: (Epub3NativeSettings) -> Unit,
     accentColor: Color,
+    userFonts: List<UserFont>,
+    onLoadFont: (PlatformFile) -> Unit,
+    onDeleteFont: (UserFont) -> Unit,
 ) {
+    val builtInFonts = listOf("Literata", "OpenDyslexic")
+    var dropdownExpanded by remember { mutableStateOf(false) }
+    val fontPicker = rememberFilePickerLauncher(
+        type = FileKitType.File(listOf("ttf", "otf")),
+    ) { file -> file?.let { onLoadFont(it) } }
+
     Column {
-        // Font family
+        // Font family — dropdown with built-in + user fonts
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -366,13 +393,73 @@ private fun FontTextTab(
                 .padding(horizontal = 16.dp, vertical = 10.dp),
         ) {
             Text("Font", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(112.dp))
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(1f)) {
-                listOf("Literata", "OpenDyslexic").forEachIndexed { i, name ->
-                    SegmentedButton(
-                        shape = SegmentedButtonDefaults.itemShape(i, 2),
-                        selected = settings.fontFamily == name,
-                        onClick = { onSettingsChange(settings.copy(fontFamily = name)) },
-                        label = { Text(name, style = MaterialTheme.typography.labelSmall) },
+            ExposedDropdownMenuBox(
+                expanded = dropdownExpanded,
+                onExpandedChange = { dropdownExpanded = it },
+                modifier = Modifier.weight(1f),
+            ) {
+                OutlinedTextField(
+                    value = settings.fontFamily,
+                    onValueChange = {},
+                    readOnly = true,
+                    singleLine = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    modifier = Modifier
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                        .fillMaxWidth(),
+                )
+                ExposedDropdownMenu(
+                    expanded = dropdownExpanded,
+                    onDismissRequest = { dropdownExpanded = false },
+                ) {
+                    builtInFonts.forEach { name ->
+                        DropdownMenuItem(
+                            text = { Text(name) },
+                            onClick = {
+                                onSettingsChange(settings.copy(fontFamily = name))
+                                dropdownExpanded = false
+                            },
+                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                        )
+                    }
+                    if (userFonts.isNotEmpty()) {
+                        HorizontalDivider()
+                        userFonts.forEach { font ->
+                            DropdownMenuItem(
+                                text = { Text(font.name) },
+                                onClick = {
+                                    onSettingsChange(settings.copy(fontFamily = font.canonicalName))
+                                    dropdownExpanded = false
+                                },
+                                trailingIcon = {
+                                    IconButton(onClick = {
+                                        if (settings.fontFamily == font.canonicalName) {
+                                            onSettingsChange(settings.copy(fontFamily = builtInFonts.first()))
+                                        }
+                                        onDeleteFont(font)
+                                        dropdownExpanded = false
+                                    }) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = "Delete ${font.name}",
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                    }
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                            )
+                        }
+                    }
+                    HorizontalDivider()
+                    DropdownMenuItem(
+                        text = { Text("Load font…") },
+                        leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        onClick = {
+                            dropdownExpanded = false
+                            fontPicker.launch()
+                        },
+                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
                     )
                 }
             }

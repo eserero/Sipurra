@@ -22,6 +22,7 @@ import org.readium.r2.navigator.util.BaseActionModeCallback
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.InternalReadiumApi
 import org.readium.r2.shared.publication.Publication
+import org.readium.r2.shared.util.AbsoluteUrl
 import kotlin.math.ceil
 
 class SelectionActionModeCallback(private val epubView: EpubView) : BaseActionModeCallback() {
@@ -113,9 +114,12 @@ class EpubFragment : Fragment {
                     }
 
                     lst.props!!.customFonts.forEach {
+                        val fontUrl = checkNotNull(AbsoluteUrl(it.uri)) {
+                            "Invalid custom font URI: ${it.uri}"
+                        }
                         addFontFamilyDeclaration(FontFamily(it.name)) {
                             addFontFace {
-                                addSource(it.uri)
+                                addSource(fontUrl)
                                 setFontStyle(FontStyle.NORMAL)
                                 setFontWeight(FontWeight.NORMAL)
                             }
