@@ -90,6 +90,8 @@ fun AppearanceSettingsContent(
     onShowImmersiveNavBarChange: (Boolean) -> Unit,
     hideParenthesesInNames: Boolean,
     onHideParenthesesInNamesChange: (Boolean) -> Unit,
+    lockScreenRotation: Boolean,
+    onLockScreenRotationChange: (Boolean) -> Unit,
     cardLayoutOverlayBackground: Boolean,
     onCardLayoutOverlayBackgroundChange: (Boolean) -> Unit,
     useNewLibraryUI2: Boolean,
@@ -276,6 +278,18 @@ fun AppearanceSettingsContent(
             onCheckedChange = onHideParenthesesInNamesChange,
             label = { Text("Hide parentheses in names") },
             supportingText = { Text("Remove anything in parentheses when displaying series and oneshot names") },
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+        )
+
+        HorizontalDivider()
+
+        // j. Lock screen rotation
+        SwitchWithLabel(
+            checked = lockScreenRotation,
+            onCheckedChange = onLockScreenRotationChange,
+            label = { Text("Lock screen rotation") },
+            supportingText = { Text("Prevent the application screen from rotating") },
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
         )

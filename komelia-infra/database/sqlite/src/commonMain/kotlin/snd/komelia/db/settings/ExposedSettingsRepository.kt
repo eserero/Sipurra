@@ -82,6 +82,7 @@ class ExposedSettingsRepository(database: Database) : ExposedRepository(database
             immersiveColorAlpha = get(AppSettingsTable.immersiveColorAlpha),
             lastSelectedLibraryId = get(AppSettingsTable.lastSelectedLibraryId),
             hideParenthesesInNames = get(AppSettingsTable.hideParenthesesInNames),
+            lockScreenRotation = get(AppSettingsTable.lockScreenRotation),
             keepReaderScreenOn = get(AppSettingsTable.keepReaderScreenOn),
             cardLayoutOverlayBackground = get(AppSettingsTable.cardLayoutOverlayBackground),
             showImmersiveNavBar = get(AppSettingsTable.showImmersiveNavBar),

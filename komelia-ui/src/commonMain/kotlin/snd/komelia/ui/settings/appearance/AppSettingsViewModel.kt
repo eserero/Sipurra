@@ -29,6 +29,7 @@ class AppSettingsViewModel(
     var immersiveColorAlpha by mutableStateOf(0.12f)
     var showImmersiveNavBar by mutableStateOf(false)
     var hideParenthesesInNames by mutableStateOf(false)
+    var lockScreenRotation by mutableStateOf(false)
     var cardLayoutOverlayBackground by mutableStateOf(true)
     var useNewLibraryUI2 by mutableStateOf(false)
     var useImmersiveMorphingCover by mutableStateOf(false)
@@ -45,6 +46,7 @@ class AppSettingsViewModel(
         immersiveColorAlpha = settingsRepository.getImmersiveColorAlpha().first()
         showImmersiveNavBar = settingsRepository.getShowImmersiveNavBar().first()
         hideParenthesesInNames = settingsRepository.getHideParenthesesInNames().first()
+        lockScreenRotation = settingsRepository.getLockScreenRotation().first()
         cardLayoutOverlayBackground = settingsRepository.getCardLayoutOverlayBackground().first()
         useNewLibraryUI2 = settingsRepository.getUseNewLibraryUI2().first()
         useImmersiveMorphingCover = settingsRepository.getUseImmersiveMorphingCover().first()
@@ -109,6 +111,11 @@ class AppSettingsViewModel(
     fun onHideParenthesesInNamesChange(hide: Boolean) {
         this.hideParenthesesInNames = hide
         screenModelScope.launch { settingsRepository.putHideParenthesesInNames(hide) }
+    }
+
+    fun onLockScreenRotationChange(locked: Boolean) {
+        this.lockScreenRotation = locked
+        screenModelScope.launch { settingsRepository.putLockScreenRotation(locked) }
     }
 
     fun onCardLayoutOverlayBackgroundChange(enabled: Boolean) {

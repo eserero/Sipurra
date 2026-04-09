@@ -174,6 +174,12 @@ class SettingsRepositoryWrapper(
     override suspend fun putHideParenthesesInNames(hide: Boolean) =
         wrapper.transform { it.copy(hideParenthesesInNames = hide) }
 
+    override fun getLockScreenRotation(): Flow<Boolean> =
+        wrapper.state.map { it.lockScreenRotation }.distinctUntilChanged()
+
+    override suspend fun putLockScreenRotation(locked: Boolean) =
+        wrapper.transform { it.copy(lockScreenRotation = locked) }
+
     override fun getKeepReaderScreenOn(): Flow<Boolean> =
         wrapper.state.map { it.keepReaderScreenOn }.distinctUntilChanged()
 

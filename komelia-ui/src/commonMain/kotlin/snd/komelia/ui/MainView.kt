@@ -81,10 +81,15 @@ fun MainView(
     var useNewLibraryUI2 by remember { mutableStateOf(false) }
     var useImmersiveMorphingCover by remember { mutableStateOf(false) }
     var hideParenthesesInNames by remember { mutableStateOf(false) }
+    var lockScreenRotation by remember { mutableStateOf(false) }
     var cardLayoutOverlayBackground by remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(dependencies) {
         dependencies?.appRepositories?.settingsRepository?.getAppTheme()?.collect { theme = it.toTheme() }
+    }
+    LaunchedEffect(dependencies) {
+        dependencies?.appRepositories?.settingsRepository?.getLockScreenRotation()
+            ?.collect { lockScreenRotation = it }
     }
     LaunchedEffect(dependencies) {
         dependencies?.appRepositories?.settingsRepository?.getNavBarColor()
@@ -158,6 +163,8 @@ fun MainView(
 
             val notificationToaster = rememberToasterState()
 
+            snd.komelia.ui.platform.LockScreenOrientation(lockScreenRotation)
+
             CompositionLocalProvider(
                 LocalViewModelFactory provides viewModelFactory,
                 LocalToaster provides notificationToaster,
@@ -182,6 +189,12 @@ fun MainView(
                 LocalImmersiveColorAlpha provides immersiveColorAlpha,
                 LocalShowImmersiveNavBar provides showImmersiveNavBar,
                 LocalHideParenthesesInNames provides hideParenthesesInNames,
+                LocalLockScreenRotation provides lockScreenRotation,
+                LocalOnLockScreenRotationChange provides { newRotation ->
+                    coroutineScope.launch {
+                        dependencies.appRepositories.settingsRepository.putLockScreenRotation(newRotation)
+                    }
+                },
                 LocalCardLayoutOverlayBackground provides cardLayoutOverlayBackground,
                 LocalUseNewLibraryUI2 provides useNewLibraryUI2,
                 LocalUseImmersiveMorphingCover provides useImmersiveMorphingCover,

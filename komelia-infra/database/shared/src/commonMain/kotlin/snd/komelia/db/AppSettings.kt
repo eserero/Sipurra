@@ -30,6 +30,7 @@ data class AppSettings(
     val immersiveColorAlpha: Float = 0.12f,
     val lastSelectedLibraryId: String? = null,
     val hideParenthesesInNames: Boolean = false,
+    val lockScreenRotation: Boolean = false,
     val keepReaderScreenOn: Boolean = false,
     val cardLayoutOverlayBackground: Boolean = true,
     val showImmersiveNavBar: Boolean = false,

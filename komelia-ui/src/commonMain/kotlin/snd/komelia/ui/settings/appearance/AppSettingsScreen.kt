@@ -43,6 +43,8 @@ class AppSettingsScreen : Screen {
                     onShowImmersiveNavBarChange = vm::onShowImmersiveNavBarChange,
                     hideParenthesesInNames = vm.hideParenthesesInNames,
                     onHideParenthesesInNamesChange = vm::onHideParenthesesInNamesChange,
+                    lockScreenRotation = vm.lockScreenRotation,
+                    onLockScreenRotationChange = vm::onLockScreenRotationChange,
                     cardLayoutOverlayBackground = vm.cardLayoutOverlayBackground,
                     onCardLayoutOverlayBackgroundChange = vm::onCardLayoutOverlayBackgroundChange,
                     useNewLibraryUI2 = vm.useNewLibraryUI2,

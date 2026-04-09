@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.ScreenLockRotation
+import androidx.compose.material.icons.rounded.ScreenRotation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,8 +38,12 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import snd.komelia.image.UpscaleStatus
 import snd.komelia.ui.LocalAccentColor
 import snd.komelia.ui.LocalHazeState
+import snd.komelia.ui.LocalHideParenthesesInNames
+import snd.komelia.ui.LocalLockScreenRotation
+import snd.komelia.ui.LocalOnLockScreenRotationChange
 import snd.komelia.ui.LocalTheme
 import snd.komelia.ui.reader.image.settings.UpscaleActivityIndicator
+import snd.komelia.utils.removeParentheses
 
 @Composable
 fun ReaderTopBar(
@@ -52,8 +58,15 @@ fun ReaderTopBar(
     val accentColor = LocalAccentColor.current ?: MaterialTheme.colorScheme.primary
     val hazeStyle = if (hazeState != null) HazeMaterials.thin(theme.colorScheme.surface) else null
 
-    var seriesMultiplier by remember(seriesTitle) { mutableFloatStateOf(1f) }
-    var bookMultiplier by remember(bookTitle) { mutableFloatStateOf(1f) }
+    val hideParentheses = LocalHideParenthesesInNames.current
+    val finalSeriesTitle = if (hideParentheses) seriesTitle.removeParentheses() else seriesTitle
+    val finalBookTitle = if (hideParentheses) bookTitle.removeParentheses() else bookTitle
+
+    val lockScreenRotation = LocalLockScreenRotation.current
+    val onLockScreenRotationChange = LocalOnLockScreenRotationChange.current
+
+    var seriesMultiplier by remember(finalSeriesTitle) { mutableFloatStateOf(1f) }
+    var bookMultiplier by remember(finalBookTitle) { mutableFloatStateOf(1f) }
 
     Surface(
         color = if (hazeState != null) Color.Transparent else MaterialTheme.colorScheme.surface,
@@ -90,7 +103,7 @@ fun ReaderTopBar(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = seriesTitle,
+                        text = finalSeriesTitle,
                         color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontFamily = FontFamily.Serif,
@@ -107,7 +120,7 @@ fun ReaderTopBar(
                     )
 
                     Text(
-                        text = bookTitle,
+                        text = finalBookTitle,
                         color = accentColor,
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontSize = (14.sp * bookMultiplier)
@@ -119,6 +132,14 @@ fun ReaderTopBar(
                                 bookMultiplier *= 0.9f
                             }
                         }
+                    )
+                }
+                
+                IconButton(onClick = { onLockScreenRotationChange(!lockScreenRotation) }) {
+                    Icon(
+                        if (lockScreenRotation) Icons.Rounded.ScreenLockRotation else Icons.Rounded.ScreenRotation,
+                        contentDescription = if (lockScreenRotation) "Unlock screen rotation" else "Lock screen rotation",
+                        tint = accentColor
                     )
                 }
             }

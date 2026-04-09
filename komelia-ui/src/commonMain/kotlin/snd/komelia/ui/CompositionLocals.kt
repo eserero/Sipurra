@@ -54,6 +54,8 @@ val LocalUseImmersiveMorphingCover = compositionLocalOf { false }
 val LocalToggleImmersiveMorphingCover = staticCompositionLocalOf<() -> Unit> { {} }
 val LocalHideParenthesesInNames = compositionLocalOf { false }
 val LocalCardLayoutOverlayBackground = compositionLocalOf { true }
+val LocalLockScreenRotation = compositionLocalOf { false }
+val LocalOnLockScreenRotationChange = staticCompositionLocalOf<(Boolean) -> Unit> { {} }
 val LocalRawStatusBarHeight = staticCompositionLocalOf { 0.dp }
 val LocalRawNavBarHeight = staticCompositionLocalOf { 0.dp }
 // When transparent bars mode is active and content extends behind the nav bar,

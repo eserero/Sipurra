@@ -1,0 +1,1 @@
+ALTER TABLE AppSettings ADD COLUMN lock_screen_rotation BOOLEAN NOT NULL DEFAULT 0;
