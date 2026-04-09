@@ -15,6 +15,8 @@ object EpubReaderSettingsTable : Table("EpubReaderSettings") {
     val epub3NativeSettingsJson = json<Epub3NativeSettings>("epub3_native_settings_json", JsonDbDefault).default(Epub3NativeSettings())
     val topMargin = float("epub3_top_margin").default(56f)
     val bottomMargin = float("epub3_bottom_margin").default(66f)
+    val showDateTimeOverlay = bool("epub3_show_datetime_overlay").default(false)
+    val showLocationOverlay = bool("epub3_show_location_overlay").default(false)
 
     override val primaryKey = PrimaryKey(bookId)
 }

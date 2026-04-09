@@ -2,6 +2,7 @@ package snd.komelia.ui.reader.epub
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.SeekableTransitionState
@@ -35,6 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -132,6 +134,17 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                 val positions by epub3State.positions.collectAsState()
                 val controller by epub3State.mediaOverlayController.collectAsState()
                 val currentLocator by epub3State.currentLocator.collectAsState()
+
+                val dateTimeText by produceState("") {
+                    while (true) {
+                        val now = java.time.LocalDateTime.now()
+                        val formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm · EEE, MMM d")
+                        value = now.format(formatter)
+                        val secondsUntilNextMinute = 60L - now.second
+                        kotlinx.coroutines.delay(secondsUntilNextMinute * 1000L)
+                    }
+                }
+                val overlayColor = Color(settings.theme.foreground).copy(alpha = 0.45f)
 
                 val chapterTitle = remember(currentLocator, toc) {
                     currentLocator?.let { loc ->
@@ -308,6 +321,45 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                         settings = settings,
                         onSettingsChange = epub3State::updateSettings,
                         onDismiss = { epub3State.toggleSettings() },
+                    )
+                }
+
+                // Date/time overlay — top left, shown when controls are hidden.
+                // Delayed enter so the overlay only appears after the fullscreen/inset
+                // transition has settled (avoids a jump from status-bar height to zero).
+                AnimatedVisibility(
+                    visible = settings.showDateTimeOverlay && !showControls,
+                    enter = fadeIn(animationSpec = tween(durationMillis = 600, delayMillis = 400)),
+                    exit = ExitTransition.None,
+                    modifier = Modifier.align(Alignment.TopStart),
+                ) {
+                    Text(
+                        text = dateTimeText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = overlayColor,
+                        modifier = Modifier
+                            .statusBarsPadding()
+                            .padding(start = 8.dp, top = 4.dp),
+                    )
+                }
+
+                // Location overlay — top right, shown when controls are hidden.
+                AnimatedVisibility(
+                    visible = settings.showLocationOverlay && !showControls && positions.isNotEmpty(),
+                    enter = fadeIn(animationSpec = tween(durationMillis = 600, delayMillis = 400)),
+                    exit = ExitTransition.None,
+                    modifier = Modifier.align(Alignment.TopEnd),
+                ) {
+                    val locationIndex = remember(currentLocator, positions) {
+                        locatorToPositionIndex(positions, currentLocator)
+                    }
+                    Text(
+                        text = "Loc. ${locationIndex + 1} of ${positions.size}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = overlayColor,
+                        modifier = Modifier
+                            .statusBarsPadding()
+                            .padding(end = 8.dp, top = 4.dp),
                     )
                 }
 

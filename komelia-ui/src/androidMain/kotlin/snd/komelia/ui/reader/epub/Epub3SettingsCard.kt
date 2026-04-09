@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -76,16 +78,20 @@ fun Epub3SettingsCard(
     var dragOffsetY by remember { mutableStateOf(0f) }
     var selectedTab by remember { mutableIntStateOf(0) }
     val accentColor = LocalAccentColor.current ?: MaterialTheme.colorScheme.primary
+    val maxHeight = (LocalConfiguration.current.screenHeightDp * 2f / 3f).dp
 
     Surface(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         color = MaterialTheme.colorScheme.background,
         tonalElevation = 0.dp,
         modifier = modifier
+            .heightIn(max = maxHeight)
             .offset { IntOffset(0, dragOffsetY.roundToInt().coerceAtLeast(0)) },
     ) {
         Column(
-            modifier = Modifier.navigationBarsPadding(),
+            modifier = Modifier
+                .fillMaxHeight()
+                .navigationBarsPadding(),
         ) {
             // Drag handle
             Box(
@@ -130,10 +136,11 @@ fun Epub3SettingsCard(
                 )
             }
 
-            // Tab content — scrollable, fixed height = tallest tab
+            // Tab content — fills remaining height, scrollable within it
             TabContentLayout(
                 selectedTab = selectedTab,
                 modifier = Modifier
+                    .weight(1f)
                     .verticalScroll(rememberScrollState())
                     .padding(bottom = 16.dp),
                 tabs = listOf(
@@ -310,6 +317,36 @@ private fun AppearanceTab(
                     },
                 )
             }
+        }
+
+        // Date & time overlay toggle
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Show date & time", style = MaterialTheme.typography.labelLarge)
+            Switch(
+                checked = settings.showDateTimeOverlay,
+                onCheckedChange = { onSettingsChange(settings.copy(showDateTimeOverlay = it)) },
+            )
+        }
+
+        // Location overlay toggle
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Show location", style = MaterialTheme.typography.labelLarge)
+            Switch(
+                checked = settings.showLocationOverlay,
+                onCheckedChange = { onSettingsChange(settings.copy(showLocationOverlay = it)) },
+            )
         }
     }
 }

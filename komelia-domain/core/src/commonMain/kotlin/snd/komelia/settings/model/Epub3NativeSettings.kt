@@ -39,6 +39,8 @@ data class Epub3NativeSettings(
     val pageMargins: Double = 1.0,
     val topMargin: Float = 56f,
     val bottomMargin: Float = 66f,
+    val showDateTimeOverlay: Boolean = false,
+    val showLocationOverlay: Boolean = false,
     val publisherStyles: Boolean = false,
     val playbackSpeed: Double = 1.0,
     val rewindEnabled: Boolean = true,

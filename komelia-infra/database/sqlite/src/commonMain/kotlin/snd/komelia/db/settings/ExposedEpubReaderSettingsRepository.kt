@@ -24,7 +24,9 @@ class ExposedEpubReaderSettingsRepository(database: Database) : ExposedRepositor
                         ttsuReaderSettings = it[EpubReaderSettingsTable.ttsuSettingsJson],
                         epub3NativeSettings = it[EpubReaderSettingsTable.epub3NativeSettingsJson].copy(
                             topMargin = it[EpubReaderSettingsTable.topMargin],
-                            bottomMargin = it[EpubReaderSettingsTable.bottomMargin]
+                            bottomMargin = it[EpubReaderSettingsTable.bottomMargin],
+                            showDateTimeOverlay = it[EpubReaderSettingsTable.showDateTimeOverlay],
+                            showLocationOverlay = it[EpubReaderSettingsTable.showLocationOverlay],
                         ),
                     )
                 }
@@ -41,6 +43,8 @@ class ExposedEpubReaderSettingsRepository(database: Database) : ExposedRepositor
                 it[epub3NativeSettingsJson] = settings.epub3NativeSettings
                 it[topMargin] = settings.epub3NativeSettings.topMargin
                 it[bottomMargin] = settings.epub3NativeSettings.bottomMargin
+                it[showDateTimeOverlay] = settings.epub3NativeSettings.showDateTimeOverlay
+                it[showLocationOverlay] = settings.epub3NativeSettings.showLocationOverlay
             }
         }
     }
