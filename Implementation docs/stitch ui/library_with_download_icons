@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ink &amp; Glass | The Collector Library</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-error": "#490013",
+              "on-primary-fixed-variant": "#370086",
+              "inverse-surface": "#fcf9f8",
+              "tertiary-container": "#fc81ab",
+              "tertiary-fixed": "#ff8db2",
+              "primary-fixed-dim": "#a27cff",
+              "primary": "#ba9eff",
+              "on-primary-fixed": "#000000",
+              "secondary-container": "#3323cc",
+              "on-primary": "#39008c",
+              "on-surface-variant": "#adaaaa",
+              "outline-variant": "#484847",
+              "secondary": "#9492ff",
+              "surface-container-high": "#20201f",
+              "surface-variant": "#262626",
+              "on-primary-container": "#2b006e",
+              "on-surface": "#ffffff",
+              "inverse-on-surface": "#565555",
+              "inverse-primary": "#6e3bd7",
+              "tertiary": "#ff97b8",
+              "on-tertiary-fixed": "#380019",
+              "tertiary-dim": "#ef77a0",
+              "primary-fixed": "#ae8dff",
+              "on-error-container": "#ffb2b9",
+              "surface-container-lowest": "#000000",
+              "surface-dim": "#0e0e0e",
+              "on-tertiary-container": "#59002b",
+              "on-secondary-container": "#cecbff",
+              "on-secondary-fixed-variant": "#3e32d5",
+              "outline": "#767575",
+              "surface-container-highest": "#262626",
+              "surface-container": "#1a1a1a",
+              "error-dim": "#d73357",
+              "surface": "#0e0e0e",
+              "surface-bright": "#2c2c2c",
+              "secondary-dim": "#645efb",
+              "background": "#0e0e0e",
+              "surface-tint": "#ba9eff",
+              "primary-container": "#ae8dff",
+              "on-background": "#ffffff",
+              "secondary-fixed-dim": "#c0bdff",
+              "secondary-fixed": "#cfcdff",
+              "on-tertiary": "#6a0936",
+              "primary-dim": "#8455ef",
+              "tertiary-fixed-dim": "#f57ca5",
+              "surface-container-low": "#131313",
+              "on-tertiary-fixed-variant": "#70103b",
+              "on-secondary-fixed": "#2000b0",
+              "on-secondary": "#120076",
+              "error-container": "#a70138",
+              "error": "#ff6e84"
+            },
+            fontFamily: {
+              "headline": ["Noto Serif"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #0e0e0e; color: #ffffff; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-panel { backdrop-filter: blur(32px); }
+        .comic-card-shadow { transition: transform 0.3s ease-in-out; }
+        .comic-card-shadow:hover { transform: translateY(-8px); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background text-on-background selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar Execution -->
+<header class="fixed top-0 w-full z-50 bg-neutral-950/70 backdrop-blur-xl flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-serif italic text-violet-300">Ink &amp; Glass</span>
+<nav class="hidden md:flex gap-6 items-center">
+<a class="text-violet-400 font-bold font-serif tracking-tight hover:text-violet-200 transition-colors" href="#">Library</a>
+<a class="text-neutral-400 font-serif tracking-tight hover:text-violet-200 transition-colors" href="#">Explore</a>
+<a class="text-neutral-400 font-serif tracking-tight hover:text-violet-200 transition-colors" href="#">Community</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden lg:flex items-center bg-surface-container-high px-4 py-2 rounded-full border border-outline-variant/15">
+<span class="material-symbols-outlined text-on-surface-variant text-sm" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48 text-on-surface ml-2" placeholder="Search archives..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<button class="text-neutral-400 hover:text-violet-200 transition-colors active:scale-95 duration-100">
+<span class="material-symbols-outlined" data-icon="download_done">download_done</span>
+</button>
+<button class="text-neutral-400 hover:text-violet-200 transition-colors active:scale-95 duration-100">
+<span class="material-symbols-outlined" data-icon="cloud_sync">cloud_sync</span>
+</button>
+<button class="text-neutral-400 hover:text-violet-200 transition-colors active:scale-95 duration-100">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<div class="flex min-h-screen pt-20">
+<!-- SideNavBar Execution -->
+<aside class="hidden md:flex flex-col h-screen sticky left-0 top-0 h-full w-64 border-r border-neutral-800/20 bg-neutral-900/80 backdrop-blur-2xl py-8 px-4 justify-between">
+<div>
+<div class="flex items-center gap-3 px-4 mb-10">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest border border-outline-variant/20 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="professional male portrait avatar in warm studio lighting with dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAewar1nWztMlVeCcqtWvtWy7UeMoK7Wg21SkH-16HL_exlk_CEBmYbgRbPbmp9UCUFd_IH6cO5gcKZ_Wdvd8o2nbgxXgRRq5NW4XKUAumKwnbhOizI8k-wdkzJGJDH7rJ2io4TduD2sr8rzc5jH-XefibElbGMwtb30nnaV87TzhF3fJpNwb72CzpW5a-CeSELnOIt4IX763hZ5u2cES22p5USRNgJOYp_VhCWJOnZzstVf16hzFM0q3IH_Q8B63aWQiYk62nPDI0"/>
+</div>
+<div>
+<p class="font-serif text-sm text-neutral-100">The Collector</p>
+<p class="font-sans uppercase tracking-widest text-[10px] text-violet-400">Premium Tier</p>
+</div>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 bg-violet-500/10 text-violet-400 border-r-2 border-violet-500 transition-all font-sans uppercase tracking-widest text-xs" href="#">
+<span class="material-symbols-outlined" data-icon="library_books">library_books</span>
+                        Library
+                    </a>
+<a class="flex items-center gap-3 px-4 py-3 text-neutral-500 hover:text-neutral-200 hover:bg-white/5 transition-all font-sans uppercase tracking-widest text-xs" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+                        Recent
+                    </a>
+<a class="flex items-center gap-3 px-4 py-3 text-neutral-500 hover:text-neutral-200 hover:bg-white/5 transition-all font-sans uppercase tracking-widest text-xs" href="#">
+<span class="material-symbols-outlined" data-icon="auto_stories">auto_stories</span>
+                        Collections
+                    </a>
+<a class="flex items-center gap-3 px-4 py-3 text-neutral-500 hover:text-neutral-200 hover:bg-white/5 transition-all font-sans uppercase tracking-widest text-xs" href="#">
+<span class="material-symbols-outlined" data-icon="download_for_offline">download_for_offline</span>
+                        Downloads
+                    </a>
+<a class="flex items-center gap-3 px-4 py-3 text-neutral-500 hover:text-neutral-200 hover:bg-white/5 transition-all font-sans uppercase tracking-widest text-xs" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                        Settings
+                    </a>
+</nav>
+</div>
+<div class="space-y-1 pt-8 border-t border-white/5">
+<button class="w-full mb-4 py-3 bg-primary text-on-primary font-bold rounded-full text-xs uppercase tracking-widest active:scale-95 transition-all">
+                    Sync All
+                </button>
+<a class="flex items-center gap-3 px-4 py-3 text-neutral-500 hover:text-neutral-200 hover:bg-white/5 transition-all font-sans uppercase tracking-widest text-xs" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+                    Support
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-neutral-500 hover:text-neutral-200 hover:bg-white/5 transition-all font-sans uppercase tracking-widest text-xs" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                    Sign Out
+                </a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 px-6 md:px-12 pb-32">
+<!-- Continue Reading Section -->
+<section class="mt-8 mb-16 relative rounded-xl overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-r from-surface-container-lowest via-surface-container/60 to-transparent z-10"></div>
+<img class="absolute inset-0 w-full h-full object-cover grayscale-[0.2] group-hover:scale-105 transition-transform duration-700" data-alt="dramatic cinematic comic book illustration of a superhero standing over a neon lit cyberpunk city at night" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCuoFH78bpzkYddhurQ_AJmGPCddiZGJGFUC2Vve3auSPS3of_WMUy8s8-NtEo0J4QjrPH4PqwBgwQYALbO9WoafNjVg-BLVk2oDFHp4esZ6nZds3B_9zmmGRkU1frhvoXCGLHeD8pNMKt2J7MnjRuM3BI6rtzVEH7VTYBIxw8lhLALaZgq1ZP0FuAJyjyh1LvBIjETQx8pLShPyu8dXjsJqzIej6gI68EDDcY7I5lh0IUfC_xU34IKC8BhENWoPQjNmO8NyOYrX_E"/>
+<div class="relative z-20 p-8 md:p-12 flex flex-col justify-end min-h-[400px]">
+<span class="text-violet-400 font-sans uppercase tracking-[0.3em] text-[10px] mb-4">Continue Reading</span>
+<h1 class="font-serif text-4xl md:text-6xl text-white mb-2 leading-tight">Neon Vanguard:<br/><span class="italic text-primary">Zero Protocol</span></h1>
+<p class="text-on-surface-variant max-w-lg mb-8 font-light leading-relaxed">Chapter 14: The Singularity Threshold. You were 82% through. The resistance awaits your command.</p>
+<div class="flex items-center gap-4">
+<button class="bg-primary text-on-primary px-8 py-3 rounded-full font-bold text-sm hover:shadow-[0_0_20px_rgba(186,158,255,0.4)] transition-all">
+                            RESUME ARCHIVE
+                        </button>
+<button class="bg-surface-container-highest/40 backdrop-blur-md text-white border border-outline-variant/20 px-8 py-3 rounded-full font-bold text-sm hover:bg-white/10 transition-all">
+                            SERIES DETAILS
+                        </button>
+</div>
+</div>
+<!-- Floating status indicator for featured -->
+<div class="absolute top-8 right-8 z-20">
+<div class="flex items-center gap-2 bg-surface-container-lowest/80 backdrop-blur-md px-4 py-2 rounded-full border border-outline-variant/10">
+<span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant">Synced Locally</span>
+</div>
+</div>
+</section>
+<!-- Density Grid: Comic Cards -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="font-serif text-3xl text-neutral-100">Curated Library</h2>
+<p class="text-on-surface-variant text-sm mt-1">1,402 Volumes Managed</p>
+</div>
+<div class="flex gap-4">
+<button class="p-2 text-on-surface-variant hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-6 gap-y-12">
+<!-- Card 1 -->
+<div class="group comic-card-shadow">
+<div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-surface-container-low">
+<img class="w-full h-full object-cover" data-alt="vibrant abstract comic book art with bold ink lines and watercolor textures of a mysterious masked figure" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5aPhpS0tEQQAS6kdHjNxnlZOd_Rq3eFIb-NeIqiQlXr0PrptL2Vq3ylJ9rrS951QydQIFfOpNlCvE5qdyc4l0_3Cj3-XehHhcPoswYc2CZw6Lgtc5izbs4TacfNae3jSweEYlkDXs8tEyGDjpYgfRXOPqdy1hdTFfiJ14IjAq5pwN5S7oKnTDilAKWflVy7F-l0u-HjDedjtT_Dwhhx1_1Irnd3dwBXmuS673pZf7UfV3dzYRS18ATGkRzxeXYQr4PD2XwJZdo5U"/>
+<!-- Download Status Badge -->
+<div class="absolute top-4 right-4 z-10">
+<div class="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/10">
+<span class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]"></span>
+</div>
+</div>
+<!-- Progress Overlay -->
+<div class="absolute bottom-0 left-0 w-full h-1.5 bg-white/10 overflow-hidden">
+<div class="h-full bg-primary w-[75%] rounded-r-full shadow-[0_0_10px_rgba(186,158,255,0.6)]"></div>
+</div>
+</div>
+<div class="mt-4 px-1">
+<h3 class="font-serif text-lg leading-snug group-hover:text-primary transition-colors">The Obsidian Spires</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="text-on-surface-variant text-[10px] uppercase tracking-widest font-medium">Vol. 4: Reckoning</span>
+<span class="bg-surface-container-highest/60 text-[9px] font-bold text-on-surface-variant px-2 py-0.5 rounded-sm border border-outline-variant/10">24 ISSUES</span>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group comic-card-shadow">
+<div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-surface-container-low">
+<img class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" data-alt="vintage aesthetic comic book cover art featuring a mysterious gothic castle under a full moon with deep purple shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuL8tLeN5TXR0M0uu_TTaD8PdzhagtIbEBfgN86raW7h4p49ltiAUy9ZqZ2yER4_3VMUFC0rHpUQuxELtOpXphEPWKExoayZMX23CJUOxamYvHIoKm_NoBtznkjQODckl_C73GyU5keqRAWbdDkhwSfKLq0C33EtiiFNXvMuE6frLcSjmkW1s-KvfgP6fmCZa2HE8b9-LqBGXQPrdI1UvnexkR-vYsIOMHSJ1L9kUXpj2WYVnug5sNrXAnDWtj4HpjJIsjIWcgEUw"/>
+<!-- Out of Sync Badge -->
+<div class="absolute top-4 right-4 z-10">
+<div class="px-3 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center gap-2 border border-orange-500/30">
+<span class="material-symbols-outlined text-[14px] text-orange-400" data-icon="refresh">refresh</span>
+<span class="text-[9px] font-bold text-orange-400">SYNCING</span>
+</div>
+</div>
+<div class="absolute bottom-0 left-0 w-full h-1.5 bg-white/10 overflow-hidden">
+<div class="h-full bg-primary w-[15%] rounded-r-full"></div>
+</div>
+</div>
+<div class="mt-4 px-1">
+<h3 class="font-serif text-lg leading-snug group-hover:text-primary transition-colors">Chronicles of Elden</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="text-on-surface-variant text-[10px] uppercase tracking-widest font-medium">Dark Fantasy</span>
+<span class="bg-surface-container-highest/60 text-[9px] font-bold text-on-surface-variant px-2 py-0.5 rounded-sm border border-outline-variant/10">12 ISSUES</span>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group comic-card-shadow">
+<div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-surface-container-low">
+<img class="w-full h-full object-cover" data-alt="modern flat style comic illustration of a futuristic starship fleet entering a colorful nebula" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_cmzY2WmguuwSmSyvW_qUo_L8kEfNY6pX64sFvlO8CdAoW_HWPmgNDh9AtRVQzdwMyaKBDamL51lVfr1fVYXidPfh0TrhVWBeOrpPt4M6yzR-am8amguO51KeBJx2Hi8ezMxP2tpzfYWeOfTQDNMmBqgM7-AkUaBLnCngLaHUaAmyhdehfdK_v67rnGJAQr_qGY1bBq9xgFKUSXyVB6rj8KdzyBt1G086IrL1RLje72zMEmiUXav_ogn6RW86E3oylhotbxu6Onk"/>
+<div class="absolute top-4 right-4 z-10">
+<div class="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/10">
+<span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+</div>
+</div>
+<div class="absolute bottom-0 left-0 w-full h-1.5 bg-white/10 overflow-hidden">
+<div class="h-full bg-primary w-full shadow-[0_0_10px_rgba(186,158,255,0.6)]"></div>
+</div>
+</div>
+<div class="mt-4 px-1">
+<h3 class="font-serif text-lg leading-snug group-hover:text-primary transition-colors">Void Runner</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="text-on-surface-variant text-[10px] uppercase tracking-widest font-medium">Sci-Fi Epic</span>
+<span class="bg-surface-container-highest/60 text-[9px] font-bold text-on-surface-variant px-2 py-0.5 rounded-sm border border-outline-variant/10">48 ISSUES</span>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="group comic-card-shadow">
+<div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-surface-container-low">
+<img class="w-full h-full object-cover opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500" data-alt="detailed pen and ink drawing of an ancient library with giant towering shelves and golden dust particles floating in light beams" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgLxpPD3-UorXlRmiMNHbscmEYC_XIIAVGxrnPQA9taZDZ6zIk-SSJ3D0QFCH-Ma5L9I2g1yHv-TMD-fEzTCjG0MMvmR5-SGh1gYWxBB6TvGJelnj7nWBWalDnSyo7WkZK7I3v_SMpqUzihPxXxwaRjm6z7I0p2U82swuQ-YOvKBCH9Fr-5vVs_RKSsz2uh5_9ktsnpi4Frj1LJGCPE17Mg_CA6bH3A40KyWQs1udRVWY4A8bK9fp23B6krRtVpzlDlhQw49jCGQM"/>
+<div class="absolute top-4 right-4 z-10">
+<div class="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/10">
+<span class="w-2.5 h-2.5 rounded-full bg-neutral-600"></span>
+</div>
+</div>
+</div>
+<div class="mt-4 px-1">
+<h3 class="font-serif text-lg leading-snug group-hover:text-primary transition-colors">Archive: Prime</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="text-on-surface-variant text-[10px] uppercase tracking-widest font-medium">Encyclopedia</span>
+<span class="bg-surface-container-highest/60 text-[9px] font-bold text-on-surface-variant px-2 py-0.5 rounded-sm border border-outline-variant/10">1 ISSUE</span>
+</div>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="group comic-card-shadow">
+<div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-surface-container-low">
+<img class="w-full h-full object-cover" data-alt="dynamic comic panel of a martial arts fight scene in a rainy alleyway with vibrant neon reflection in puddles" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCf3ySW9Iaw6fYPx5gD5pVwXDVlHzYBcgi6DMzZ2LLteiyzGIaVxJSKxmoad_y660caE1MDjOKXgPfgNTesf7axCVhLVisrA9Rkh3-Xh2NYLP98Rp4575SoPcGeha4_f8guP2UBwaxp0RZlAxzdDhqHmc_XUsqRu3nj_XfkILfg_8fu2m0Yff2oy_HRPxqBnJ8vKuN76SkBHkRD7RGkfUwnr2IYPcoxaXP9seknUa_id4h0f8iBm3r_tt8pkNGIRJcAtM81pziQQ5M"/>
+<div class="absolute top-4 right-4 z-10">
+<div class="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/10">
+<span class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]"></span>
+</div>
+</div>
+</div>
+<div class="mt-4 px-1">
+<h3 class="font-serif text-lg leading-snug group-hover:text-primary transition-colors">Ghost of Kyoto</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="text-on-surface-variant text-[10px] uppercase tracking-widest font-medium">Urban Mystery</span>
+<span class="bg-surface-container-highest/60 text-[9px] font-bold text-on-surface-variant px-2 py-0.5 rounded-sm border border-outline-variant/10">36 ISSUES</span>
+</div>
+</div>
+</div>
+<!-- Additional Card Placeholder for density demonstration -->
+<div class="group comic-card-shadow hidden lg:block">
+<div class="relative aspect-[2/3] rounded-lg overflow-hidden bg-surface-container-low">
+<img class="w-full h-full object-cover" data-alt="dramatic close up of a hero looking at a burning sunset, heavy shading and comic line work style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAasHvvlhCZyrO18QTelrp7o80G7x8qC8vfvo-KCYr3d50Xrba_c4ZQB9ul4DK1okRVT9oQI_EgjWeOJWSmU67lHTPaoHf43CTjixZ1KnXJuIyfCnh5ZCqhqPzMPRHwu5i4T1FkfOnPAxqsAsmL4HSlZfKGGgVol6gnxrV3MyioQNEnCVzzJe4lmuMh3cOsNbmZ0E_B5jGtdc_tXJo-a8M8Oe4jxBNjyR1kjLsHBrA4W1GMlGG_Vd6soYRyDA2ci9XaMY4d5ljHcn4"/>
+<div class="absolute top-4 right-4 z-10">
+<div class="px-3 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center gap-2 border border-orange-500/30">
+<span class="material-symbols-outlined text-[14px] text-orange-400" data-icon="refresh">refresh</span>
+<span class="text-[9px] font-bold text-orange-400">OUT-OF-SYNC</span>
+</div>
+</div>
+</div>
+<div class="mt-4 px-1">
+<h3 class="font-serif text-lg leading-snug group-hover:text-primary transition-colors">Solar Flare</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="text-on-surface-variant text-[10px] uppercase tracking-widest font-medium">Drama</span>
+<span class="bg-surface-container-highest/60 text-[9px] font-bold text-on-surface-variant px-2 py-0.5 rounded-sm border border-outline-variant/10">9 ISSUES</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- BottomNavBar Execution -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-6 pb-6 pt-3 md:hidden bg-neutral-950/60 backdrop-blur-lg rounded-t-3xl border-t border-white/5 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+<a class="flex flex-col items-center justify-center text-neutral-500 hover:text-neutral-100 tap-highlight-transparent" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="menu_book">menu_book</span>
+<span class="font-sans font-medium text-[10px]">Read Now</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-violet-600/20 text-violet-300 rounded-full px-5 py-1 tap-highlight-transparent" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="grid_view">grid_view</span>
+<span class="font-sans font-medium text-[10px]">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center text-neutral-500 hover:text-neutral-100 tap-highlight-transparent" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="search">search</span>
+<span class="font-sans font-medium text-[10px]">Search</span>
+</a>
+<a class="flex flex-col items-center justify-center text-neutral-500 hover:text-neutral-100 tap-highlight-transparent" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-sans font-medium text-[10px]">Profile</span>
+</a>
+</nav>
+</body></html>

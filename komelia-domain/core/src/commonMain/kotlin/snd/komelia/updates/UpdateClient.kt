@@ -8,7 +8,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Instant
 
-private const val komeliaBaseUrl = "https://api.github.com/repos/Snd-R/Komelia"
+private const val komeliaBaseUrl = "https://api.github.com/repos/eserero/Komelia"
 private const val onnxRuntimeBaseUrl = "https://api.github.com/repos/microsoft/onnxruntime"
 
 class UpdateClient(
