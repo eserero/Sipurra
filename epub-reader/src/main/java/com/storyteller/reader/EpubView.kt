@@ -294,9 +294,11 @@ class EpubView(
 
     fun destroyNavigator() {
         val navigator = this.navigator ?: return
-        activity.supportFragmentManager.commitNow {
-            setReorderingAllowed(true)
-            remove(navigator.requireParentFragment())
+        if (!activity.supportFragmentManager.isStateSaved && !activity.supportFragmentManager.isDestroyed) {
+            activity.supportFragmentManager.commitNow(allowStateLoss = true) {
+                setReorderingAllowed(true)
+                remove(navigator.requireParentFragment())
+            }
         }
 
         removeView(navigator.view)
