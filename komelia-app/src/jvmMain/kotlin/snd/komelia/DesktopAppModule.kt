@@ -165,6 +165,7 @@ class DesktopAppModule(
                     )
                 )
             },
+            epubBookmarkRepository = snd.komelia.db.bookmarks.ExposedEpubBookmarkRepository(databases.app),
             imageReaderSettingsRepository = ExposedImageReaderSettingsRepository(databases.app).let { repository ->
                 ReaderSettingsRepositoryWrapper(
                     SettingsStateWrapper(

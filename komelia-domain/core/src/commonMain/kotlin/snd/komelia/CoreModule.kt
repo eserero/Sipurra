@@ -21,6 +21,7 @@ class CoreModule(
 data class AppRepositories(
     val settingsRepository: CommonSettingsRepository,
     val epubReaderSettingsRepository: EpubReaderSettingsRepository,
+    val epubBookmarkRepository: snd.komelia.bookmarks.EpubBookmarkRepository,
     val imageReaderSettingsRepository: ImageReaderSettingsRepository,
     val fontsRepository: UserFontsRepository,
     val colorCurvesPresetsRepository: ColorCurvePresetRepository,

@@ -26,6 +26,7 @@ actual fun createEpub3ReaderState(
     readListApi: KomgaReadListApi,
     settingsRepository: CommonSettingsRepository,
     epubSettingsRepository: EpubReaderSettingsRepository,
+    epubBookmarkRepository: snd.komelia.bookmarks.EpubBookmarkRepository,
     fontsRepository: UserFontsRepository,
     notifications: AppNotifications,
     windowState: AppWindowState,

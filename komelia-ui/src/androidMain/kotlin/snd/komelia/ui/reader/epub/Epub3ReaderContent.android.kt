@@ -130,6 +130,8 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
 
                 val showSettings by epub3State.showSettings.collectAsState()
                 val showToc by epub3State.showToc.collectAsState()
+                val showBookmarks by epub3State.showBookmarks.collectAsState()
+                val bookmarks by epub3State.bookmarks.collectAsState()
                 val toc by epub3State.tableOfContents.collectAsState()
                 val positions by epub3State.positions.collectAsState()
                 val controller by epub3State.mediaOverlayController.collectAsState()
@@ -213,6 +215,7 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                                 state = epub3State,
                                 onSettingsClick = { epub3State.toggleSettings() },
                                 onChapterClick = { epub3State.toggleToc() },
+                                onBookmarksClick = { epub3State.toggleBookmarks() },
                                 onCardHeightChanged = { cardHeightPx = it },
                             )
                         } else {
@@ -222,6 +225,7 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                                 onCardHeightChanged = { cardHeightPx = it },
                                 onSettingsClick = { epub3State.toggleSettings() },
                                 onChapterClick = { epub3State.toggleToc() },
+                                onBookmarksClick = { epub3State.toggleBookmarks() },
                             )
                         }
                     }
@@ -379,6 +383,21 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                             epub3State.showToc.value = false
                         },
                         onDismiss = { epub3State.showToc.value = false },
+                    )
+                }
+
+                // Bookmarks dialog
+                if (showBookmarks) {
+                    Epub3BookmarksDialog(
+                        bookmarks = bookmarks,
+                        currentLocator = currentLocator,
+                        onAddBookmark = { epub3State.addBookmark(it) },
+                        onDeleteBookmark = { epub3State.deleteBookmark(it) },
+                        onNavigate = {
+                            epub3State.navigateToLocator(it)
+                            epub3State.showBookmarks.value = false
+                        },
+                        onDismiss = { epub3State.showBookmarks.value = false }
                     )
                 }
             }

@@ -49,6 +49,11 @@ import java.io.File
 import java.net.URL
 import kotlin.time.Clock
 
+import snd.komelia.bookmarks.EpubBookmark
+import snd.komelia.bookmarks.EpubBookmarkRepository
+import org.json.JSONObject
+import java.util.UUID
+
 private val logger = KotlinLogging.logger {}
 
 class Epub3ReaderState(
@@ -57,6 +62,7 @@ class Epub3ReaderState(
     private val context: Context,
     private val bookApi: KomgaBookApi,
     private val epubSettingsRepository: EpubReaderSettingsRepository,
+    private val epubBookmarkRepository: EpubBookmarkRepository,
     private val fontsRepository: UserFontsRepository,
     private val notifications: AppNotifications,
     private val markReadProgress: Boolean,
@@ -74,6 +80,8 @@ class Epub3ReaderState(
     val showControls = MutableStateFlow(false)
     val showSettings = MutableStateFlow(false)
     val showToc = MutableStateFlow(false)
+    val showBookmarks = MutableStateFlow(false)
+    val bookmarks = MutableStateFlow<List<EpubBookmark>>(emptyList())
     val tableOfContents = MutableStateFlow<List<Link>>(emptyList())
     val settings = MutableStateFlow(Epub3NativeSettings())
     val userFonts = MutableStateFlow<List<UserFont>>(emptyList())
@@ -99,6 +107,32 @@ class Epub3ReaderState(
 
     fun toggleToc() {
         showToc.value = !showToc.value
+    }
+
+    fun toggleBookmarks() {
+        showBookmarks.value = !showBookmarks.value
+    }
+
+    fun addBookmark(locator: Locator) {
+        val bookmark = EpubBookmark(
+            id = UUID.randomUUID().toString(),
+            bookId = bookId.value,
+            locatorJson = locator.toJSON().toString(),
+            createdAt = Clock.System.now().toEpochMilliseconds()
+        )
+        coroutineScope.launch {
+            epubBookmarkRepository.saveBookmark(bookmark)
+        }
+    }
+
+    fun deleteBookmark(bookmark: EpubBookmark) {
+        coroutineScope.launch {
+            epubBookmarkRepository.deleteBookmark(bookmark.id)
+        }
+    }
+
+    fun navigateToLocator(locator: Locator) {
+        epubView?.go(locator)
     }
 
     fun navigateToLink(link: Link) {
@@ -278,6 +312,12 @@ class Epub3ReaderState(
                     .onFailure { logger.catching(it) }
                 val post = (rt.totalMemory() - rt.freeMemory()) / 1_048_576
                 logger.info { "[epub3-diag] getPositions-coroutine END heap=${post}MB delta=${post - pre}MB" }
+            }
+
+            coroutineScope.launch {
+                epubBookmarkRepository.getBookmarks(bookId.value).collect {
+                    bookmarks.value = it
+                }
             }
 
             if (clips.isNotEmpty()) {

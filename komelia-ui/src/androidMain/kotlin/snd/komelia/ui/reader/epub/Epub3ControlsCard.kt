@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.BottomSheetDefaults
@@ -55,6 +56,7 @@ fun Epub3ControlsCardNewUI(
     state: Epub3ReaderState,
     onSettingsClick: () -> Unit,
     onChapterClick: () -> Unit,
+    onBookmarksClick: () -> Unit,
     modifier: Modifier = Modifier,
     onCardHeightChanged: (Int) -> Unit = {},
 ) {
@@ -136,6 +138,10 @@ fun Epub3ControlsCardNewUI(
                 )
             }
 
+            IconButton(onClick = onBookmarksClick) {
+                Icon(Icons.Default.BookmarkAdd, contentDescription = "Bookmarks", tint = accentColor ?: MaterialTheme.colorScheme.primary)
+            }
+
             IconButton(onClick = onSettingsClick) {
                 Icon(Icons.Default.Tune, contentDescription = "Reader settings", tint = accentColor ?: MaterialTheme.colorScheme.primary)
             }
@@ -170,6 +176,7 @@ fun Epub3ControlsCard(
     onCardHeightChanged: (Int) -> Unit,
     onSettingsClick: () -> Unit,
     onChapterClick: () -> Unit,
+    onBookmarksClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val positions by state.positions.collectAsState()
@@ -262,6 +269,9 @@ fun Epub3ControlsCard(
             ) {
                 IconButton(onClick = onSettingsClick) {
                     Icon(Icons.Default.Tune, contentDescription = "Reader settings")
+                }
+                IconButton(onClick = onBookmarksClick) {
+                    Icon(Icons.Default.BookmarkAdd, contentDescription = "Bookmarks")
                 }
             }
         }

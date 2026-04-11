@@ -42,6 +42,7 @@ class AppMigrations : MigrationResourcesProvider() {
         "V33__use_immersive_morphing_cover.sql",
         "V34__lock_screen_rotation.sql",
         "V35__epub3_overlay_settings.sql",
+        "V36__epub3_bookmarks.sql",
     )
 
     override suspend fun getMigration(name: String): ByteArray? {
