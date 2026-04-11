@@ -1,17 +1,22 @@
 package snd.komelia.ui.reader.epub
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Tune
@@ -24,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,6 +43,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,7 +65,7 @@ fun Epub3ControlsCardNewUI(
     state: Epub3ReaderState,
     onSettingsClick: () -> Unit,
     onChapterClick: () -> Unit,
-    onBookmarksClick: () -> Unit,
+    onBookmarkToggle: (Locator) -> Unit,
     modifier: Modifier = Modifier,
     onCardHeightChanged: (Int) -> Unit = {},
 ) {
@@ -64,6 +73,7 @@ fun Epub3ControlsCardNewUI(
     val currentLocator by state.currentLocator.collectAsState()
     val toc by state.tableOfContents.collectAsState()
     val accentColor = LocalAccentColor.current
+    val isBookmarked = state.isBookmarked(currentLocator)
 
     ReaderControlsCard(modifier = modifier.onSizeChanged { onCardHeightChanged(it.height) }) {
         if (positions.isNotEmpty()) {
@@ -127,7 +137,7 @@ fun Epub3ControlsCardNewUI(
 
             Button(
                 onClick = onChapterClick,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).padding(end = 8.dp),
             ) {
                 Text(
                     text = chapterTitle,
@@ -138,9 +148,17 @@ fun Epub3ControlsCardNewUI(
                 )
             }
 
-            IconButton(onClick = onBookmarksClick) {
-                Icon(Icons.Default.BookmarkAdd, contentDescription = "Bookmarks", tint = accentColor ?: MaterialTheme.colorScheme.primary)
-            }
+            Epub3BookmarkToggleButton(
+                isBookmarked = isBookmarked,
+                onClick = { currentLocator?.let { onBookmarkToggle(it) } },
+                accentColor = accentColor
+            )
+
+            VerticalDivider(
+                modifier = Modifier
+                    .height(24.dp)
+                    .padding(horizontal = 8.dp)
+            )
 
             IconButton(onClick = onSettingsClick) {
                 Icon(Icons.Default.Tune, contentDescription = "Reader settings", tint = accentColor ?: MaterialTheme.colorScheme.primary)
@@ -176,12 +194,14 @@ fun Epub3ControlsCard(
     onCardHeightChanged: (Int) -> Unit,
     onSettingsClick: () -> Unit,
     onChapterClick: () -> Unit,
-    onBookmarksClick: () -> Unit,
+    onBookmarkToggle: (Locator) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val positions by state.positions.collectAsState()
     val currentLocator by state.currentLocator.collectAsState()
     val toc by state.tableOfContents.collectAsState()
+    val isBookmarked = state.isBookmarked(currentLocator)
+    val accentColor = LocalAccentColor.current
 
     var dragOffsetY by remember { mutableStateOf(0f) }
 
@@ -260,20 +280,56 @@ fun Epub3ControlsCard(
                 )
             }
 
-            // Settings button
+            // Settings and Bookmark buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp),
                 horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onSettingsClick) {
-                    Icon(Icons.Default.Tune, contentDescription = "Reader settings")
+                    Icon(Icons.Default.Tune, contentDescription = "Reader settings", tint = accentColor ?: MaterialTheme.colorScheme.primary)
                 }
-                IconButton(onClick = onBookmarksClick) {
-                    Icon(Icons.Default.BookmarkAdd, contentDescription = "Bookmarks")
-                }
+                
+                VerticalDivider(
+                    modifier = Modifier
+                        .height(24.dp)
+                        .padding(horizontal = 4.dp)
+                )
+                
+                Epub3BookmarkToggleButton(
+                    isBookmarked = isBookmarked,
+                    onClick = { currentLocator?.let { onBookmarkToggle(it) } },
+                    accentColor = accentColor
+                )
             }
+        }
+    }
+}
+
+@Composable
+fun Epub3BookmarkToggleButton(
+    isBookmarked: Boolean,
+    onClick: () -> Unit,
+    accentColor: Color?,
+) {
+    val indicatorColor = accentColor ?: MaterialTheme.colorScheme.secondaryContainer
+    val selectedIconTint = if (accentColor != null && accentColor.luminance() > 0.5f) Color.Black else Color.White
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(if (isBookmarked) indicatorColor else Color.Transparent)
+    ) {
+        IconButton(onClick = onClick) {
+            Icon(
+                if (isBookmarked) Icons.Filled.Bookmark else Icons.Default.BookmarkAdd,
+                contentDescription = "Toggle Bookmark",
+                tint = if (isBookmarked) selectedIconTint else (accentColor ?: MaterialTheme.colorScheme.onSurfaceVariant)
+            )
         }
     }
 }

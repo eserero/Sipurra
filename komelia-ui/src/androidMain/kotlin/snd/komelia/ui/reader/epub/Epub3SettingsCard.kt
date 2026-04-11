@@ -94,12 +94,15 @@ fun Epub3SettingsCard(
 ) {
     var dragOffsetY by remember { mutableStateOf(0f) }
     var selectedTab by remember { mutableIntStateOf(0) }
+    val theme = snd.komelia.ui.LocalTheme.current
+    val surfaceColor = if (theme.type == snd.komelia.ui.Theme.ThemeType.DARK) Color(43, 43, 43)
+    else MaterialTheme.colorScheme.background
     val accentColor = LocalAccentColor.current ?: MaterialTheme.colorScheme.primary
     val maxHeight = (LocalConfiguration.current.screenHeightDp * 2f / 3f).dp
 
     Surface(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        color = MaterialTheme.colorScheme.background,
+        color = surfaceColor,
         tonalElevation = 0.dp,
         modifier = modifier
             .heightIn(max = maxHeight)

@@ -79,8 +79,8 @@ class Epub3ReaderState(
     val bookId = MutableStateFlow(bookId)
     val showControls = MutableStateFlow(false)
     val showSettings = MutableStateFlow(false)
-    val showToc = MutableStateFlow(false)
-    val showBookmarks = MutableStateFlow(false)
+    val showContentDialog = MutableStateFlow(false)
+    var initialContentTab = 0
     val bookmarks = MutableStateFlow<List<EpubBookmark>>(emptyList())
     val tableOfContents = MutableStateFlow<List<Link>>(emptyList())
     val settings = MutableStateFlow(Epub3NativeSettings())
@@ -105,12 +105,48 @@ class Epub3ReaderState(
         showSettings.value = !showSettings.value
     }
 
-    fun toggleToc() {
-        showToc.value = !showToc.value
+    fun openContentDialog(tab: Int) {
+        initialContentTab = tab
+        showContentDialog.value = true
     }
 
-    fun toggleBookmarks() {
-        showBookmarks.value = !showBookmarks.value
+    fun toggleBookmark(locator: Locator) {
+        val existing = findBookmark(locator)
+        if (existing != null) {
+            deleteBookmark(existing)
+        } else {
+            addBookmark(locator)
+        }
+    }
+
+    fun isBookmarked(locator: Locator?): Boolean {
+        if (locator == null) return false
+        return findBookmark(locator) != null
+    }
+
+    private fun findBookmark(locator: Locator): EpubBookmark? {
+        val position = locator.locations.position
+        val progression = locator.locations.progression
+        val href = locator.href.toString()
+
+        return bookmarks.value.find { b ->
+            val bLocator = runCatching { Locator.fromJSON(JSONObject(b.locatorJson)) }.getOrNull() ?: return@find false
+            if (bLocator.href.toString() != href) return@find false
+
+            if (position != null && bLocator.locations.position != null) {
+                return@find position == bLocator.locations.position
+            }
+
+            if (progression != null) {
+                val bProgression = bLocator.locations.progression
+                if (bProgression != null) {
+                    // Allow small difference in progression due to floating point or Readium versions
+                    return@find kotlin.math.abs(progression - bProgression) < 0.0001
+                }
+            }
+
+            false
+        }
     }
 
     fun addBookmark(locator: Locator) {
@@ -385,9 +421,9 @@ class Epub3ReaderState(
             }
 
             override fun onMiddleTouch() {
-                if (showSettings.value || showToc.value || showControls.value) {
+                if (showSettings.value || showContentDialog.value || showControls.value) {
                     showSettings.value = false
-                    showToc.value = false
+                    showContentDialog.value = false
                     showControls.value = false
                 } else {
                     showControls.value = true

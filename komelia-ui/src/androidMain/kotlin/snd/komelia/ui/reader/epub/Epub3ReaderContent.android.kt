@@ -129,8 +129,7 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                 }
 
                 val showSettings by epub3State.showSettings.collectAsState()
-                val showToc by epub3State.showToc.collectAsState()
-                val showBookmarks by epub3State.showBookmarks.collectAsState()
+                val showContentDialog by epub3State.showContentDialog.collectAsState()
                 val bookmarks by epub3State.bookmarks.collectAsState()
                 val toc by epub3State.tableOfContents.collectAsState()
                 val positions by epub3State.positions.collectAsState()
@@ -214,8 +213,8 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                             Epub3ControlsCardNewUI(
                                 state = epub3State,
                                 onSettingsClick = { epub3State.toggleSettings() },
-                                onChapterClick = { epub3State.toggleToc() },
-                                onBookmarksClick = { epub3State.toggleBookmarks() },
+                                onChapterClick = { epub3State.openContentDialog(0) },
+                                onBookmarkToggle = { epub3State.toggleBookmark(it) },
                                 onCardHeightChanged = { cardHeightPx = it },
                             )
                         } else {
@@ -224,8 +223,8 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                                 onDismiss = { epub3State.toggleControls() },
                                 onCardHeightChanged = { cardHeightPx = it },
                                 onSettingsClick = { epub3State.toggleSettings() },
-                                onChapterClick = { epub3State.toggleToc() },
-                                onBookmarksClick = { epub3State.toggleBookmarks() },
+                                onChapterClick = { epub3State.openContentDialog(0) },
+                                onBookmarkToggle = { epub3State.toggleBookmark(it) },
                             )
                         }
                     }
@@ -302,7 +301,7 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                                             else playerTransitionState.animateTo(true)
                                         }
                                     },
-                                    onChapterClick = { epub3State.toggleToc() },
+                                    onChapterClick = { epub3State.openContentDialog(0) },
                                     playbackSpeed = settings.playbackSpeed,
                                     onSpeedChange = { epub3State.updateSettings(settings.copy(playbackSpeed = it)) },
                                     sharedTransitionScope = this@SharedTransitionLayout,
@@ -373,31 +372,29 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                     )
                 }
 
-                // TOC dialog
-                if (showToc) {
-                    Epub3TocDialog(
+                // Content dialog
+                AnimatedVisibility(
+                    visible = showContentDialog,
+                    enter = slideInVertically(initialOffsetY = { it }),
+                    exit = slideOutVertically(targetOffsetY = { it }),
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                ) {
+                    Epub3ContentDialog(
                         toc = toc,
-                        currentHref = currentLocator?.href,
-                        onNavigate = { link ->
-                            epub3State.navigateToLink(link)
-                            epub3State.showToc.value = false
-                        },
-                        onDismiss = { epub3State.showToc.value = false },
-                    )
-                }
-
-                // Bookmarks dialog
-                if (showBookmarks) {
-                    Epub3BookmarksDialog(
                         bookmarks = bookmarks,
+                        currentHref = currentLocator?.href,
                         currentLocator = currentLocator,
-                        onAddBookmark = { epub3State.addBookmark(it) },
-                        onDeleteBookmark = { epub3State.deleteBookmark(it) },
-                        onNavigate = {
-                            epub3State.navigateToLocator(it)
-                            epub3State.showBookmarks.value = false
+                        onNavigateLink = { link ->
+                            epub3State.navigateToLink(link)
+                            epub3State.showContentDialog.value = false
                         },
-                        onDismiss = { epub3State.showBookmarks.value = false }
+                        onNavigateLocator = {
+                            epub3State.navigateToLocator(it)
+                            epub3State.showContentDialog.value = false
+                        },
+                        onDeleteBookmark = { epub3State.deleteBookmark(it) },
+                        onDismiss = { epub3State.showContentDialog.value = false },
+                        initialTab = epub3State.initialContentTab
                     )
                 }
             }
