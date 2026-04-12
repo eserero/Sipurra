@@ -4,6 +4,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import cafe.adriel.voyager.navigator.Navigator
 import io.ktor.client.plugins.*
+import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.http.HttpStatusCode.Companion.NotFound
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -68,6 +69,7 @@ class ReaderState(
     private val progressUpdateChannel = Channel<Int>(Channel.CONFLATED)
 
     val state = MutableStateFlow<LoadState<Unit>>(LoadState.Uninitialized)
+    val serverUnavailableDialogVisible = MutableStateFlow(false)
     val expandImageSettings = MutableStateFlow(false)
 
     val booksState = MutableStateFlow<BookState?>(null)
@@ -167,7 +169,10 @@ class ReaderState(
             }
 
             state.value = LoadState.Success(Unit)
-        }.onFailure { state.value = LoadState.Error(it) }
+        }.onFailure { throwable ->
+            state.value = LoadState.Error(throwable)
+            if (throwable.isNetworkError()) serverUnavailableDialogVisible.value = true
+        }
 
     }
 
@@ -353,11 +358,18 @@ class ReaderState(
         }
     }
 
+    fun dismissServerUnavailableDialog() {
+        serverUnavailableDialogVisible.value = false
+    }
+
     fun onDispose() {
         currentBookId.value = null
         previewLoadScope.cancel()
     }
 }
+
+private fun Throwable.isNetworkError(): Boolean =
+    this is ConnectTimeoutException || this is HttpRequestTimeoutException
 
 @CommonParcelize
 data class PageMetadata(

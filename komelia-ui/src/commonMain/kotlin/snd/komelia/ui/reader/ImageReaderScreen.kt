@@ -1,11 +1,17 @@
 package snd.komelia.ui.reader
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +44,7 @@ import snd.komelia.ui.LocalWindowState
 import snd.komelia.ui.MainScreen
 import snd.komelia.ui.book.bookScreen
 import snd.komelia.ui.color.view.ColorCorrectionScreen
+import snd.komelia.ui.login.LoginScreen
 import snd.komelia.ui.common.components.ErrorContent
 import snd.komelia.ui.platform.PlatformTitleBar
 import snd.komelia.ui.platform.canIntegrateWithSystemBar
@@ -120,6 +127,8 @@ class ImageReaderScreen(
         }
 
         val vmState = vm.readerState.state.collectAsState(Dispatchers.Main.immediate)
+        val serverUnavailableDialogVisible by vm.readerState.serverUnavailableDialogVisible
+            .collectAsState(Dispatchers.Main.immediate)
         val currentBook = vm.readerState.booksState.collectAsState().value?.currentBook
 
         Column {
@@ -145,6 +154,21 @@ class ImageReaderScreen(
                 LoadState.Loading, LoadState.Uninitialized -> LoadIndicator()
                 is Success -> ReaderScreenContent(vm)
             }
+        }
+
+        if (serverUnavailableDialogVisible) {
+            ServerUnavailableDialog(
+                onDismiss = { vm.readerState.dismissServerUnavailableDialog() },
+                onRetry = {
+                    vm.readerState.dismissServerUnavailableDialog()
+                    coroutineScope.launch { vm.initialize(bookId) }
+                },
+                onGoOffline = {
+                    vm.readerState.dismissServerUnavailableDialog()
+                    val rootNavigator = navigator.parent ?: navigator
+                    rootNavigator.replaceAll(LoginScreen())
+                }
+            )
         }
     }
 
@@ -209,5 +233,27 @@ class ImageReaderScreen(
             navigator.replace(MainScreen(bookScreen(book)))
         }
     }
+}
+
+@Composable
+private fun ServerUnavailableDialog(
+    onDismiss: () -> Unit,
+    onRetry: () -> Unit,
+    onGoOffline: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Server Unavailable") },
+        text = { Text("Could not connect to the server. Would you like to switch to offline mode?") },
+        confirmButton = {
+            TextButton(onClick = onGoOffline) { Text("Go Offline") }
+        },
+        dismissButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = onRetry) { Text("Retry") }
+            }
+        }
+    )
 }
 

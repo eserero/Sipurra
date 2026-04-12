@@ -53,6 +53,7 @@ import snd.komelia.komga.api.KomgaBookApi
 import snd.komelia.offline.OfflineDependencies
 import snd.komelia.offline.OfflineModule
 import snd.komelia.offline.OfflineRepositories
+import snd.komelia.offline.book.repository.OfflineBookRepository
 import snd.komelia.onnxruntime.OnnxRuntime
 import snd.komelia.settings.ImageReaderSettingsRepository
 import snd.komelia.ui.DependencyContainer
@@ -223,7 +224,9 @@ abstract class AppModule {
             bookImageLoader = createReaderImageLoader(
                 bookApi = komgaNoRemoteCacheApi.map { it.bookApi }.stateIn(initScope),
                 imageFactory = readerImageFactory,
-                imageDecoder = createImageDecoder()
+                imageDecoder = createImageDecoder(),
+                offlineBookRepository = offlineRepositories.bookRepository,
+                offlineBookApi = offlineModule.komgaApi.bookApi,
             ),
             readerImageFactory = readerImageFactory,
             windowState = createWindowState(),
@@ -303,7 +306,9 @@ abstract class AppModule {
     protected fun createReaderImageLoader(
         bookApi: StateFlow<KomgaBookApi>,
         imageFactory: ReaderImageFactory,
-        imageDecoder: KomeliaImageDecoder
+        imageDecoder: KomeliaImageDecoder,
+        offlineBookRepository: OfflineBookRepository,
+        offlineBookApi: KomgaBookApi,
     ): BookImageLoader {
         val diskCache = getReaderCacheDirectory()?.let { kotlinxPath ->
             DiskCache.Builder()
@@ -314,7 +319,9 @@ abstract class AppModule {
             bookClient = bookApi,
             readerImageFactory = imageFactory,
             imageDecoder = imageDecoder,
-            diskCache = diskCache
+            diskCache = diskCache,
+            offlineBookRepository = offlineBookRepository,
+            offlineBookApi = offlineBookApi,
         )
     }
 

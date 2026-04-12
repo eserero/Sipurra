@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import snd.komelia.komga.api.KomgaBookApi
+import snd.komelia.offline.book.repository.OfflineBookRepository
 import snd.komga.client.book.KomgaBookId
 
 private val logger = KotlinLogging.logger {}
@@ -18,6 +19,8 @@ class BookImageLoader(
     private val readerImageFactory: ReaderImageFactory,
     //TODO consider non coil disk cache implementation?
     val diskCache: DiskCache?,
+    private val offlineBookRepository: OfflineBookRepository? = null,
+    private val offlineBookApi: KomgaBookApi? = null,
 ) {
     val fileSystem = diskCache?.fileSystem
 
@@ -53,10 +56,23 @@ class BookImageLoader(
         }
     }
 
+    private suspend fun fetchPage(bookId: KomgaBookId, page: Int): ByteArray {
+        if (offlineBookRepository?.find(bookId) != null && offlineBookApi != null) {
+            return try {
+                offlineBookApi.getPage(bookId, page)
+            } catch (e: Exception) {
+                currentCoroutineContext().ensureActive()
+                logger.warn(e) { "Local page read failed for $bookId page $page, falling back to network" }
+                bookClient.value.getPage(bookId, page)
+            }
+        }
+        return bookClient.value.getPage(bookId, page)
+    }
+
     private suspend fun doLoad(bookId: KomgaBookId, page: Int): ImageSource {
         val pageId = ReaderImage.PageId(bookId.value, page)
         if (diskCache == null) {
-            val bytes: ByteArray = bookClient.value.getPage(bookId, page)
+            val bytes: ByteArray = fetchPage(bookId, page)
             return ImageSource.MemorySource(bytes)
         }
 
@@ -66,7 +82,7 @@ class BookImageLoader(
             return ImageSource.FilePathSource(existingSnapshot)
         }
 
-        val bytes = bookClient.value.getPage(bookId, page)
+        val bytes = fetchPage(bookId, page)
         val newSnapshot = writeToDiskCache(
             fileSystem = fileSystem,
             cacheKey = pageId.toString(),
