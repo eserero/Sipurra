@@ -218,7 +218,7 @@ fun OneshotActionsMenu(
             )
         }
 
-        if (isOffline) {
+        if (book.downloaded) {
             DropdownMenuItem(
                 text = { Text("Delete downloaded", style = MaterialTheme.typography.labelLarge) },
                 leadingIcon = { Icon(Icons.Rounded.Delete, null) },
