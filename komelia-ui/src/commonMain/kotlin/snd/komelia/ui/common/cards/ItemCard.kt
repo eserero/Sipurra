@@ -49,13 +49,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import io.github.snd_r.komelia.ui.komelia_ui.generated.resources.Inter_SemiBold
-import io.github.snd_r.komelia.ui.komelia_ui.generated.resources.NotoSerif_Bold
-import io.github.snd_r.komelia.ui.komelia_ui.generated.resources.Res
-import org.jetbrains.compose.resources.Font
 import snd.komelia.ui.LocalUseNewLibraryUI2
 import snd.komelia.ui.common.ThumbnailConstants.ASPECT_RATIO
 import snd.komelia.ui.common.ThumbnailConstants.CARD_SCALE
@@ -78,9 +73,6 @@ fun LibraryItemCard(
     progress: @Composable BoxScope.() -> Unit = {},
     image: @Composable () -> Unit,
 ) {
-    val inter = FontFamily(Font(Res.font.Inter_SemiBold, FontWeight.SemiBold))
-    val notoSerif = FontFamily(Font(Res.font.NotoSerif_Bold, FontWeight.Bold))
-
     val cardLayoutBelow = LocalCardLayoutBelow.current
     val overlayBackground = LocalCardLayoutOverlayBackground.current
     val cardWidthScale = LocalCardWidthScale.current
@@ -139,33 +131,14 @@ fun LibraryItemCard(
                         val shadow = if (overlayBackground) null else Shadow(color = Color.Black, offset = Offset(1f, 1f), blurRadius = 4f)
 
                         val useNewLibraryUI2 = LocalUseNewLibraryUI2.current
-                        val primaryStyle = if (useNewLibraryUI2) {
-                            MaterialTheme.typography.bodySmall.copy(
-                                shadow = shadow,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = notoSerif,
-                                fontSize = 13.sp,
-                            )
-                        } else {
-                            MaterialTheme.typography.bodySmall.copy(
-                                shadow = shadow,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                        val secondaryStyle = if (useNewLibraryUI2) {
-                            MaterialTheme.typography.labelSmall.copy(
-                                shadow = shadow,
-                                fontWeight = FontWeight.SemiBold,
-                                fontFamily = inter,
-                                fontSize = 10.sp,
-                                letterSpacing = 0.5.sp
-                            )
-                        } else {
-                            MaterialTheme.typography.labelSmall.copy(
-                                shadow = shadow,
-                                fontWeight = FontWeight.Normal,
-                            )
-                        }
+                        val primaryStyle = MaterialTheme.typography.bodySmall.copy(
+                            shadow = shadow,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        val secondaryStyle = MaterialTheme.typography.labelSmall.copy(
+                            shadow = shadow,
+                            fontWeight = FontWeight.Normal,
+                        )
 
                         if (isUnavailable) {
                             Text("Unavailable", style = primaryStyle, color = MaterialTheme.colorScheme.error, maxLines = 1)
@@ -196,26 +169,8 @@ fun LibraryItemCard(
                 verticalArrangement = Arrangement.Center
             ) {
                 val useNewLibraryUI2 = LocalUseNewLibraryUI2.current
-                val primaryStyle = if (useNewLibraryUI2) {
-                    MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = notoSerif,
-                        fontSize = 13.sp,
-                    )
-                } else {
-                    MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
-                }
-
-                val secondaryStyle = if (useNewLibraryUI2) {
-                    MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontFamily = inter,
-                        fontSize = 10.sp,
-                        letterSpacing = 0.5.sp
-                    )
-                } else {
-                    MaterialTheme.typography.labelSmall
-                }
+                val primaryStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
+                val secondaryStyle = MaterialTheme.typography.labelSmall
 
                 if (isUnavailable) {
                     Text("Unavailable", style = primaryStyle, color = MaterialTheme.colorScheme.error, maxLines = 1)
