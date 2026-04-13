@@ -392,6 +392,8 @@ data class SettingsStrings(
     val appThemeLightModern: String,
     val appThemeDarkModern: String,
     val imageCardSize: String,
+    val cardShadowLevel: String,
+    val cardCornerRadius: String,
     val decoder: String,
 
     val epubReaderTypeKomga: String,

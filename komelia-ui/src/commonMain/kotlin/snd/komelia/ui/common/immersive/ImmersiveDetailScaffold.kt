@@ -4,6 +4,8 @@ import snd.komelia.ui.common.ThumbnailConstants.ASPECT_RATIO
 import snd.komelia.ui.common.ThumbnailConstants.CARD_SCALE
 import snd.komelia.ui.LocalCardHeightScale
 import snd.komelia.ui.LocalCardWidthScale
+import snd.komelia.ui.LocalCardShadowLevel
+import snd.komelia.ui.LocalCardCornerRadius
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.AnimationVector
@@ -388,7 +390,7 @@ fun ImmersiveDetailScaffold(
                     .height(screenHeight)
                     .nestedScroll(nestedScrollConnection)
                     .anchoredDraggable(state, Orientation.Vertical)
-                    .shadow(elevation = if (useMorphingCover) 0.dp else 6.dp, shape = cardShape)
+                    .shadow(elevation = if (useMorphingCover) 0.dp else LocalCardShadowLevel.current.dp, shape = cardShape)
                     .clip(cardShape)
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -509,9 +511,9 @@ fun ImmersiveDetailScaffold(
                 val currentX = lerp(0.dp, targetX, expandFraction)
                 val currentY = lerp(startY, targetY, expandFraction)
 
-                val currentTopRadius = lerp(0f, 8f, expandFraction).dp
-                val currentBottomRadius = lerp(0f, 8f, expandFraction).dp
-                val currentElevation = lerp(0f, 2f, expandFraction).dp
+                val currentTopRadius = lerp(0f, LocalCardCornerRadius.current, expandFraction).dp
+                val currentBottomRadius = lerp(0f, LocalCardCornerRadius.current, expandFraction).dp
+                val currentElevation = lerp(0f, LocalCardShadowLevel.current, expandFraction).dp
 
                 val morphShape = RoundedCornerShape(
                     topStart = currentTopRadius, topEnd = currentTopRadius,

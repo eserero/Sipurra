@@ -5,6 +5,8 @@ import snd.komelia.ui.common.ThumbnailConstants.CARD_SCALE
 import snd.komelia.ui.LocalCardHeightScale
 import snd.komelia.ui.LocalCardSpacingBelow
 import snd.komelia.ui.LocalCardWidthScale
+import snd.komelia.ui.LocalCardShadowLevel
+import snd.komelia.ui.LocalCardCornerRadius
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.CubicBezierEasing
@@ -281,11 +283,13 @@ fun ImmersiveBookContent(
                 topBarContent = {},  // Fixed overlay handles this
                 fabContent = {},     // Fixed overlay handles this
                 cardContent = { expandFraction, onThumbnailPositioned, onTextPositioned ->
+                    val cardWidthScale = LocalCardWidthScale.current
                     val cardHeightScale = LocalCardHeightScale.current
                     val cardSpacingBelow = LocalCardSpacingBelow.current
+                    val cornerRadius = LocalCardCornerRadius.current
                     val thumbnailOffset = ((cardWidth + 16.dp) * expandFraction).coerceAtLeast(0.dp)
                     val thumbnailTopGap = if (useMorphingCover) 48.dp else 20.dp
-                    val thumbnailHeight = (cardWidth * cardHeightScale) / ASPECT_RATIO + (cardWidth * cardSpacingBelow)
+                    val thumbnailHeight = ((cardWidth * cardWidthScale * cardHeightScale) / ASPECT_RATIO) + (cardWidth * cardSpacingBelow)
 
                     val navBarBottom = with(LocalDensity.current) {
                         WindowInsets.navigationBars.getBottom(this).toDp()
@@ -329,7 +333,7 @@ fun ImmersiveBookContent(
                                     // overlay. The real thumbnail fades in only after the overlay disappears.
                                     Box(
                                         modifier = Modifier
-                                            .size(width = cardWidth, height = thumbnailHeight)
+                                            .size(width = cardWidth * cardWidthScale, height = thumbnailHeight)
                                             .onGloballyPositioned { onThumbnailPositioned(it) }
                                             .graphicsLayer { alpha = if (expandFraction > 0.99f) 1f else 0f }
                                     ) {
@@ -339,8 +343,8 @@ fun ImmersiveBookContent(
                                             crossfade = false,
                                             contentScale = ContentScale.Crop,
                                             modifier = Modifier
-                                                .size(width = cardWidth, height = thumbnailHeight)
-                                                .clip(RoundedCornerShape(8.dp))
+                                                .size(width = cardWidth * cardWidthScale, height = thumbnailHeight)
+                                                .clip(RoundedCornerShape(cornerRadius.dp))
                                         )
                                     }
                                 } else if (expandFraction > 0.01f) {
@@ -354,8 +358,8 @@ fun ImmersiveBookContent(
                                             crossfade = false,
                                             contentScale = ContentScale.Crop,
                                             modifier = Modifier
-                                                .size(width = cardWidth, height = thumbnailHeight)
-                                                .clip(RoundedCornerShape(8.dp))
+                                                .size(width = cardWidth * cardWidthScale, height = thumbnailHeight)
+                                                .clip(RoundedCornerShape(cornerRadius.dp))
                                         )
                                     }
                                 }

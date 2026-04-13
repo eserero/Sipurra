@@ -57,6 +57,10 @@ class AppSettingsScreen : Screen {
                     onCardHeightScaleChange = vm::onCardHeightScaleChange,
                     cardSpacingBelow = vm.cardSpacingBelow,
                     onCardSpacingBelowChange = vm::onCardSpacingBelowChange,
+                    cardShadowLevel = vm.cardShadowLevel,
+                    onCardShadowLevelChange = vm::onCardShadowLevelChange,
+                    cardCornerRadius = vm.cardCornerRadius,
+                    onCardCornerRadiusChange = vm::onCardCornerRadiusChange,
                 )
             }
         }

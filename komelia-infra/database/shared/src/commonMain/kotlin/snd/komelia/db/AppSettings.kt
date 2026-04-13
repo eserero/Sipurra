@@ -40,4 +40,6 @@ data class AppSettings(
     val cardWidthScale: Float = 0.95f,
     val cardHeightScale: Float = 0.95f,
     val cardSpacingBelow: Float = 0.0f,
+    val cardShadowLevel: Float = 2.0f,
+    val cardCornerRadius: Float = 8.0f,
 )

@@ -40,6 +40,8 @@ object AppSettingsTable : Table("AppSettings") {
     val cardWidthScale = float("card_width_scale").default(0.95f)
     val cardHeightScale = float("card_height_scale").default(0.95f)
     val cardSpacingBelow = float("card_spacing_below").default(0.0f)
+    val cardShadowLevel = float("card_shadow_level").default(2.0f)
+    val cardCornerRadius = float("card_corner_radius").default(8.0f)
 
     override val primaryKey = PrimaryKey(version)
 }

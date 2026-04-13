@@ -59,6 +59,8 @@ import snd.komelia.ui.LoadState
 import snd.komelia.ui.LocalCardHeightScale
 import snd.komelia.ui.LocalCardSpacingBelow
 import snd.komelia.ui.LocalCardWidthScale
+import snd.komelia.ui.LocalCardShadowLevel
+import snd.komelia.ui.LocalCardCornerRadius
 import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalKomgaEvents
 import snd.komelia.ui.LocalToggleImmersiveMorphingCover
@@ -298,13 +300,15 @@ fun ImmersiveSeriesContent(
             )
         },
         cardContent = { expandFraction, onThumbnailPositioned, onTextPositioned ->
+            val cardWidthScale = LocalCardWidthScale.current
+            val cardHeightScale = LocalCardHeightScale.current
+            val cardSpacingBelow = LocalCardSpacingBelow.current
+            val cornerRadius = LocalCardCornerRadius.current
             val thumbnailOffset = ((gridMinWidth + 16.dp) * expandFraction).coerceAtLeast(0.dp)
 
             // Thumbnail metrics — must match ImmersiveDetailScaffold Layer 3
             val thumbnailTopGap = if (useMorphingCover) 48.dp else 20.dp
-            val cardHeightScale = LocalCardHeightScale.current
-            val cardSpacingBelow = LocalCardSpacingBelow.current
-            val thumbnailHeight = (gridMinWidth * cardHeightScale) / ASPECT_RATIO + (gridMinWidth * cardSpacingBelow)
+            val thumbnailHeight = ((gridMinWidth * cardWidthScale * cardHeightScale) / ASPECT_RATIO) + (gridMinWidth * cardSpacingBelow)
 
             val navBarBottom = with(LocalDensity.current) {
                 WindowInsets.navigationBars.getBottom(this).toDp()
@@ -349,7 +353,7 @@ fun ImmersiveSeriesContent(
                         if (useMorphingCover) {
                             Box(
                                 modifier = Modifier
-                                    .size(width = gridMinWidth, height = thumbnailHeight)
+                                    .size(width = gridMinWidth * cardWidthScale, height = thumbnailHeight)
                                     .onGloballyPositioned { onThumbnailPositioned(it) }
                                     .graphicsLayer { alpha = if (expandFraction > 0.99f) 1f else 0f }
                             ) {
@@ -359,8 +363,8 @@ fun ImmersiveSeriesContent(
                                     crossfade = false,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
-                                        .size(width = gridMinWidth, height = thumbnailHeight)
-                                        .clip(RoundedCornerShape(8.dp))
+                                        .size(width = gridMinWidth * cardWidthScale, height = thumbnailHeight)
+                                        .clip(RoundedCornerShape(cornerRadius.dp))
                                 )
                             }
                         } else if (expandFraction > 0.01f) {
@@ -374,8 +378,8 @@ fun ImmersiveSeriesContent(
                                     crossfade = false,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
-                                        .size(width = gridMinWidth, height = thumbnailHeight)
-                                        .clip(RoundedCornerShape(8.dp))
+                                        .size(width = gridMinWidth * cardWidthScale, height = thumbnailHeight)
+                                        .clip(RoundedCornerShape(cornerRadius.dp))
                                 )
                             }
                         }

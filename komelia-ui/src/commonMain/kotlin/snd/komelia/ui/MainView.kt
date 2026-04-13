@@ -83,6 +83,8 @@ fun MainView(
     var cardWidthScale by remember { mutableStateOf(1.0f) }
     var cardHeightScale by remember { mutableStateOf(1.0f) }
     var cardSpacingBelow by remember { mutableStateOf(0.0f) }
+    var cardShadowLevel by remember { mutableStateOf(2.0f) }
+    var cardCornerRadius by remember { mutableStateOf(8.0f) }
     var hideParenthesesInNames by remember { mutableStateOf(false) }
     var lockScreenRotation by remember { mutableStateOf(false) }
     var cardLayoutOverlayBackground by remember { mutableStateOf(true) }
@@ -149,6 +151,14 @@ fun MainView(
     LaunchedEffect(dependencies) {
         dependencies?.appRepositories?.settingsRepository?.getCardSpacingBelow()
             ?.collect { cardSpacingBelow = it }
+    }
+    LaunchedEffect(dependencies) {
+        dependencies?.appRepositories?.settingsRepository?.getCardShadowLevel()
+            ?.collect { cardShadowLevel = it }
+    }
+    LaunchedEffect(dependencies) {
+        dependencies?.appRepositories?.settingsRepository?.getCardCornerRadius()
+            ?.collect { cardCornerRadius = it }
     }
 
     MaterialTheme(colorScheme = theme.colorScheme) {
@@ -221,6 +231,8 @@ fun MainView(
                 LocalCardWidthScale provides cardWidthScale,
                 LocalCardHeightScale provides cardHeightScale,
                 LocalCardSpacingBelow provides cardSpacingBelow,
+                LocalCardShadowLevel provides cardShadowLevel,
+                LocalCardCornerRadius provides cardCornerRadius,
             ) {
                 MainContent(platformType, dependencies.komgaSharedState)
 

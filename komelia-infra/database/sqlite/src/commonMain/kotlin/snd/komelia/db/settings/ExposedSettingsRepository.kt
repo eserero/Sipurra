@@ -56,6 +56,8 @@ class ExposedSettingsRepository(database: Database) : ExposedRepository(database
                 it[cardWidthScale] = settings.cardWidthScale
                 it[cardHeightScale] = settings.cardHeightScale
                 it[cardSpacingBelow] = settings.cardSpacingBelow
+                it[cardShadowLevel] = settings.cardShadowLevel
+                it[cardCornerRadius] = settings.cardCornerRadius
             }
         }
     }
@@ -95,6 +97,8 @@ class ExposedSettingsRepository(database: Database) : ExposedRepository(database
             cardWidthScale = get(AppSettingsTable.cardWidthScale),
             cardHeightScale = get(AppSettingsTable.cardHeightScale),
             cardSpacingBelow = get(AppSettingsTable.cardSpacingBelow),
+            cardShadowLevel = get(AppSettingsTable.cardShadowLevel),
+            cardCornerRadius = get(AppSettingsTable.cardCornerRadius),
         )
     }
 }

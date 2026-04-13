@@ -31,6 +31,8 @@ import snd.komelia.settings.model.AppTheme
 import snd.komelia.ui.LocalCardHeightScale
 import snd.komelia.ui.LocalCardSpacingBelow
 import snd.komelia.ui.LocalCardWidthScale
+import snd.komelia.ui.LocalCardShadowLevel
+import snd.komelia.ui.LocalCardCornerRadius
 import snd.komelia.ui.LocalCardLayoutBelow
 import snd.komelia.ui.LocalCardLayoutOverlayBackground
 import snd.komelia.ui.LocalHideParenthesesInNames
@@ -107,6 +109,10 @@ fun AppearanceSettingsContent(
     onCardHeightScaleChange: (Float) -> Unit,
     cardSpacingBelow: Float,
     onCardSpacingBelowChange: (Float) -> Unit,
+    cardShadowLevel: Float,
+    onCardShadowLevelChange: (Float) -> Unit,
+    cardCornerRadius: Float,
+    onCardCornerRadiusChange: (Float) -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -253,6 +259,24 @@ fun AppearanceSettingsContent(
             modifier = Modifier.cursorForHand().padding(end = 20.dp),
         )
 
+        Text("${strings.cardShadowLevel}: ${cardShadowLevel.roundToInt()}dp", modifier = Modifier.padding(10.dp))
+        AppSlider(
+            value = cardShadowLevel,
+            onValueChange = onCardShadowLevelChange,
+            valueRange = 0.0f..16.0f,
+            colors = AppSliderDefaults.colors(accentColor = accentColor),
+            modifier = Modifier.cursorForHand().padding(end = 20.dp),
+        )
+
+        Text("${strings.cardCornerRadius}: ${cardCornerRadius.roundToInt()}dp", modifier = Modifier.padding(10.dp))
+        AppSlider(
+            value = cardCornerRadius,
+            onValueChange = onCardCornerRadiusChange,
+            valueRange = 0.0f..32.0f,
+            colors = AppSliderDefaults.colors(accentColor = accentColor),
+            modifier = Modifier.cursorForHand().padding(end = 20.dp),
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -269,6 +293,8 @@ fun AppearanceSettingsContent(
                 LocalCardWidthScale provides cardWidthScale,
                 LocalCardHeightScale provides cardHeightScale,
                 LocalCardSpacingBelow provides cardSpacingBelow,
+                LocalCardShadowLevel provides cardShadowLevel,
+                LocalCardCornerRadius provides cardCornerRadius,
             ) {
                 LibraryItemCard(
                     modifier = Modifier.width(cardWidth),

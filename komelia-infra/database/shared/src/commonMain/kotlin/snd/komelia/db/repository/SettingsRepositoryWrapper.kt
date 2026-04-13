@@ -224,4 +224,16 @@ class SettingsRepositoryWrapper(
 
     override suspend fun putCardSpacingBelow(spacing: Float) =
         wrapper.transform { it.copy(cardSpacingBelow = spacing) }
+
+    override fun getCardShadowLevel(): Flow<Float> =
+        wrapper.state.map { it.cardShadowLevel }.distinctUntilChanged()
+
+    override suspend fun putCardShadowLevel(level: Float) =
+        wrapper.transform { it.copy(cardShadowLevel = level) }
+
+    override fun getCardCornerRadius(): Flow<Float> =
+        wrapper.state.map { it.cardCornerRadius }.distinctUntilChanged()
+
+    override suspend fun putCardCornerRadius(radius: Float) =
+        wrapper.transform { it.copy(cardCornerRadius = radius) }
 }

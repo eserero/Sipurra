@@ -39,6 +39,8 @@ import snd.komelia.ui.LocalCardLayoutOverlayBackground
 import snd.komelia.ui.LocalCardWidthScale
 import snd.komelia.ui.LocalCardHeightScale
 import snd.komelia.ui.LocalCardSpacingBelow
+import snd.komelia.ui.LocalCardShadowLevel
+import snd.komelia.ui.LocalCardCornerRadius
 import snd.komelia.ui.LocalPlatform
 import snd.komelia.ui.platform.PlatformType
 import snd.komelia.ui.platform.cursorForHand
@@ -78,10 +80,12 @@ fun LibraryItemCard(
     val cardWidthScale = LocalCardWidthScale.current
     val cardHeightScale = LocalCardHeightScale.current
     val cardSpacingBelow = LocalCardSpacingBelow.current
+    val cornerRadius = LocalCardCornerRadius.current
+    val shadowLevel = LocalCardShadowLevel.current
 
-    val shape = if (cardLayoutBelow) RoundedCornerShape(12.dp) else RoundedCornerShape(8.dp)
+    val shape = RoundedCornerShape(cornerRadius.dp)
     val color = if (cardLayoutBelow) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant
-    val elevation = CardDefaults.cardElevation(defaultElevation = if (cardLayoutBelow) 0.dp else 2.dp)
+    val elevation = CardDefaults.cardElevation(defaultElevation = if (cardLayoutBelow) 0.dp else shadowLevel.dp)
 
     Box(
         modifier = modifier.fillMaxWidth().padding(bottom = (defaultCardWidth * cardSpacingBelow).dp),
@@ -97,7 +101,7 @@ fun LibraryItemCard(
             elevation = elevation
         ) {
             // Thumbnail Logic
-            val imageShape = if (cardLayoutBelow) RoundedCornerShape(12.dp) else RoundedCornerShape(8.dp)
+            val imageShape = RoundedCornerShape(cornerRadius.dp)
 
             Box(
                 modifier = Modifier
@@ -217,9 +221,10 @@ fun ItemCard(
     val cardWidthScale = LocalCardWidthScale.current
     val cardHeightScale = LocalCardHeightScale.current
     val cardSpacingBelow = LocalCardSpacingBelow.current
+    val cornerRadius = LocalCardCornerRadius.current
+    val shadowLevel = LocalCardShadowLevel.current
 
-    val shape = if (cardLayoutBelow) RoundedCornerShape(12.dp)
-    else RoundedCornerShape(8.dp)
+    val shape = RoundedCornerShape(cornerRadius.dp)
 
     Box(
         modifier = modifier.fillMaxWidth().padding(bottom = (defaultCardWidth * cardSpacingBelow).dp),
@@ -232,10 +237,9 @@ fun ItemCard(
                 .combinedClickable(onClick = onClick ?: {}, onLongClick = onLongClick)
                 .then(if (onClick != null || onLongClick != null) Modifier.cursorForHand() else Modifier),
             colors = CardDefaults.cardColors(containerColor = color),
-            elevation = CardDefaults.cardElevation(defaultElevation = if (cardLayoutBelow) 0.dp else 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = if (cardLayoutBelow) 0.dp else shadowLevel.dp)
         ) {
-            val imageShape = if (cardLayoutBelow) RoundedCornerShape(12.dp)
-            else RoundedCornerShape(8.dp)
+            val imageShape = RoundedCornerShape(cornerRadius.dp)
 
             Box(
                 modifier = Modifier
@@ -256,15 +260,17 @@ fun ItemCardWithContent(
     val cardWidthScale = LocalCardWidthScale.current
     val cardHeightScale = LocalCardHeightScale.current
     val cardSpacingBelow = LocalCardSpacingBelow.current
+    val cornerRadius = LocalCardCornerRadius.current
+    val shadowLevel = LocalCardShadowLevel.current
 
     Box(
         modifier = modifier.fillMaxWidth().padding(bottom = (defaultCardWidth * cardSpacingBelow).dp),
         contentAlignment = Alignment.Center
     ) {
         Card(
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(cornerRadius.dp),
             modifier = Modifier.fillMaxWidth(cardWidthScale),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = if (LocalCardLayoutBelow.current) 0.dp else shadowLevel.dp)
         ) {
             Box(modifier = Modifier.aspectRatio(ASPECT_RATIO * (cardWidthScale / cardHeightScale))) { image() }
             content()

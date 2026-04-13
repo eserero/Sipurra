@@ -94,4 +94,10 @@ interface CommonSettingsRepository {
 
     fun getCardSpacingBelow(): Flow<Float>
     suspend fun putCardSpacingBelow(spacing: Float)
+
+    fun getCardShadowLevel(): Flow<Float>
+    suspend fun putCardShadowLevel(level: Float)
+
+    fun getCardCornerRadius(): Flow<Float>
+    suspend fun putCardCornerRadius(radius: Float)
 }
