@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreHoriz
@@ -35,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -48,6 +53,12 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.material3.contentColorFor
+import snd.komelia.ui.LocalAccentColor
+import snd.komelia.ui.LocalTheme
+import snd.komelia.ui.Theme
 import snd.komelia.ui.platform.cursorForHand
 import kotlin.math.roundToInt
 
@@ -59,53 +70,94 @@ fun BulkActionsContainer(
     onSelectAll: () -> Unit,
     content: @Composable RowScope.() -> Unit
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .clip(RoundedCornerShape(5.dp))
-            .background(MaterialTheme.colorScheme.secondary.copy(alpha = .3f))
-    ) {
-        IconButton(onClick = onCancel) { Icon(Icons.Default.Close, null) }
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(5.dp))
-                .clickable { onSelectAll() }
-                .cursorForHand()
-                .padding(end = 15.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            RadioButton(
-                selected = allSelected,
-                onClick = { onSelectAll() }
-            )
-            Text("Select All")
-        }
-        Text("$selectedCount selected", modifier = Modifier.width(110.dp).padding(start = 10.dp))
+    val theme = LocalTheme.current
+    val accentColor = LocalAccentColor.current
+    val containerColor = accentColor ?: MaterialTheme.colorScheme.secondaryContainer
+    val contentColor = if (accentColor != null) {
+        if (accentColor.luminance() > 0.5f) Color.Black else Color.White
+    } else contentColorFor(containerColor)
 
-        content()
+    Popup(popupPositionProvider = TopScreenPopupPositionProvider) {
+        Surface(
+            color = containerColor,
+            contentColor = contentColor,
+            tonalElevation = 4.dp,
+            shape = RectangleShape
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                if (theme.transparentBars) {
+                    Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .padding(horizontal = 4.dp)
+                ) {
+                    IconButton(onClick = onCancel) { Icon(Icons.Default.Close, null, tint = contentColor) }
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(5.dp))
+                            .clickable { onSelectAll() }
+                            .cursorForHand()
+                            .padding(end = 15.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = allSelected,
+                            onClick = { onSelectAll() },
+                            colors = androidx.compose.material3.RadioButtonDefaults.colors(
+                                selectedColor = contentColor,
+                                unselectedColor = contentColor.copy(alpha = 0.6f)
+                            )
+                        )
+                        Text("Select All")
+                    }
+                    Text("$selectedCount selected", modifier = Modifier.width(110.dp).padding(start = 10.dp))
+
+                    content()
+                }
+            }
+        }
     }
 }
 
 @Composable
 fun BottomPopupBulkActionsPanel(content: @Composable RowScope.() -> Unit) {
+    val accentColor = LocalAccentColor.current
+    val containerColor = accentColor ?: MaterialTheme.colorScheme.secondaryContainer
+    val contentColor = if (accentColor != null) {
+        if (accentColor.luminance() > 0.5f) Color.Black else Color.White
+    } else contentColorFor(containerColor)
+
     Popup(popupPositionProvider = BottomScreenPopupPositionProvider) {
-        Surface {
+        Surface(
+            color = containerColor,
+            contentColor = contentColor,
+            tonalElevation = 4.dp,
+            shape = RoundedCornerShape(5.dp)
+        ) {
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
-                    .clip(RoundedCornerShape(5.dp))
-                    .background(MaterialTheme.colorScheme.secondary.copy(alpha = .3f))
             ) {
                 content()
             }
         }
     }
+}
 
+object TopScreenPopupPositionProvider : PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: LayoutDirection,
+        popupContentSize: IntSize
+    ) = IntOffset(0, 0)
 }
 
 object BottomScreenPopupPositionProvider : PopupPositionProvider {
