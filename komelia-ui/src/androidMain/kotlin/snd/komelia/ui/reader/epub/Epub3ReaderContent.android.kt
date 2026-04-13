@@ -259,6 +259,8 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                         else surface
                     }
 
+                    val isBookmarked = remember(currentLocator, bookmarks) { epub3State.isBookmarked(currentLocator) }
+
                     SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
                         Box(modifier = Modifier.fillMaxSize()) {
                             // Mini player at bottom — fades out as shared elements morph upward
@@ -311,6 +313,8 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                                         }
                                     },
                                     onChapterClick = { epub3State.openContentDialog(0) },
+                                    isBookmarked = isBookmarked,
+                                    onBookmarkToggle = { currentLocator?.let { epub3State.toggleBookmark(it) } },
                                     playbackSpeed = settings.playbackSpeed,
                                     onSpeedChange = { epub3State.updateSettings(settings.copy(playbackSpeed = it)) },
                                     sharedTransitionScope = this@SharedTransitionLayout,

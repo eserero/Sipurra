@@ -64,6 +64,7 @@ import snd.komelia.ui.common.components.AppSlider
 import snd.komelia.ui.common.components.AppSliderDefaults
 import snd.komelia.ui.common.components.accentFilterChipColors
 import snd.komelia.ui.common.images.ThumbnailImage
+import snd.komelia.ui.reader.epub.Epub3BookmarkToggleButton
 import snd.komelia.ui.reader.epub.Epub3PageNavigatorRow
 import snd.komga.client.book.KomgaBookId
 
@@ -95,6 +96,8 @@ fun AudioFullScreenPlayer(
     onDrag: (fraction: Float) -> Unit,
     onDragEnd: (fraction: Float) -> Unit,
     onChapterClick: () -> Unit,
+    isBookmarked: Boolean,
+    onBookmarkToggle: () -> Unit,
     playbackSpeed: Double,
     onSpeedChange: (Double) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
@@ -236,22 +239,32 @@ fun AudioFullScreenPlayer(
                                 .padding(top = 16.dp, bottom = 4.dp),
                         )
 
-                        // Chapter title — tap to open TOC
-                        SuggestionChip(
-                            onClick = onChapterClick,
-                            label = {
-                                Text(
-                                    text = chapterTitle,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            },
+                        // Chapter title — tap to open TOC; bookmark button to the right
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = fadeModifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 48.dp),
-                        )
+                        ) {
+                            SuggestionChip(
+                                onClick = onChapterClick,
+                                label = {
+                                    Text(
+                                        text = chapterTitle,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
+                            Epub3BookmarkToggleButton(
+                                isBookmarked = isBookmarked,
+                                onClick = onBookmarkToggle,
+                                accentColor = accentColor,
+                            )
+                        }
 
                         // Page slider
                         if (positions.size > 1) {
@@ -349,34 +362,27 @@ fun AudioFullScreenPlayer(
                             )
                         }
 
-                        // Speed chips — 2 rows with label and accent color
-                        val speeds = listOf(1.0, 1.25, 1.5, 1.75, 2.0)
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                        // Speed chips — 2 rows of 3, no label
+                        val speeds = listOf(0.5, 1.0, 1.25, 1.5, 1.75, 2.0)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = fadeModifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 48.dp)
                                 .padding(top = 8.dp),
                         ) {
-                            Text(
-                                text = "Speed",
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(end = 8.dp),
-                            )
-                            Column(modifier = Modifier.weight(1f)) {
-                                speeds.chunked(3).forEach { rowSpeeds ->
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    ) {
-                                        rowSpeeds.forEach { speed ->
-                                            val selected = kotlin.math.abs(playbackSpeed - speed) < 0.01
-                                            FilterChip(
-                                                selected = selected,
-                                                onClick = { onSpeedChange(speed) },
-                                                label = { Text("${speed}×") },
-                                                colors = accentFilterChipColors(),
-                                            )
-                                        }
+                            speeds.chunked(3).forEach { rowSpeeds ->
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    rowSpeeds.forEach { speed ->
+                                        val selected = kotlin.math.abs(playbackSpeed - speed) < 0.01
+                                        FilterChip(
+                                            selected = selected,
+                                            onClick = { onSpeedChange(speed) },
+                                            label = { Text("${speed}×") },
+                                            colors = accentFilterChipColors(),
+                                        )
                                     }
                                 }
                             }
