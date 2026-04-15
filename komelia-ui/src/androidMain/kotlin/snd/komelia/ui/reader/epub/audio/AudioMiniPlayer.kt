@@ -50,7 +50,7 @@ private val emphasizedAccelerateEasing = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.1
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AudioMiniPlayer(
-    controller: MediaOverlayController,
+    controller: EpubAudioController,
     bookId: KomgaBookId,
     bookTitle: String,
     chapterTitle: String,
@@ -124,7 +124,7 @@ fun AudioMiniPlayer(
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun SharedTransitionScope.PlayerRow(
-    controller: MediaOverlayController,
+    controller: EpubAudioController,
     bookId: KomgaBookId,
     bookTitle: String,
     chapterTitle: String,
@@ -182,7 +182,7 @@ private fun SharedTransitionScope.PlayerRow(
         }
 
         // Controls
-        IconButton(onClick = controller::seekToPrevClip) {
+        IconButton(onClick = controller::seekToPrev) {
             Icon(
                 Icons.Filled.SkipPrevious,
                 contentDescription = "Previous segment",
@@ -194,7 +194,7 @@ private fun SharedTransitionScope.PlayerRow(
                 contentDescription = if (isPlaying) "Pause" else "Play",
             )
         }
-        IconButton(onClick = controller::seekToNextClip) {
+        IconButton(onClick = controller::seekToNext) {
             Icon(
                 Icons.Filled.SkipNext,
                 contentDescription = "Next segment",

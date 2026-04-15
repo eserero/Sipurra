@@ -57,6 +57,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.readium.r2.shared.publication.Locator
+import snd.komelia.audiobook.AudioBookmark
+import snd.komelia.audiobook.AudioFolderTrack
 import snd.komelia.image.coil.BookDefaultThumbnailRequest
 import snd.komelia.ui.LocalAccentColor
 import snd.komelia.ui.LocalImmersiveColorEnabled
@@ -84,7 +86,7 @@ private fun formatTimeLeft(seconds: Double): String = "−" + formatHMS(seconds)
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AudioFullScreenPlayer(
-    controller: MediaOverlayController,
+    controller: EpubAudioController,
     bookId: KomgaBookId,
     bookTitle: String,
     chapterTitle: String,
@@ -98,6 +100,10 @@ fun AudioFullScreenPlayer(
     onChapterClick: () -> Unit,
     isBookmarked: Boolean,
     onBookmarkToggle: () -> Unit,
+    audioTracks: List<AudioFolderTrack> = emptyList(),
+    audioBookmarks: List<AudioBookmark> = emptyList(),
+    isAudioBookmarked: Boolean = false,
+    onAudioBookmarkToggle: () -> Unit = {},
     playbackSpeed: Double,
     onSpeedChange: (Double) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
@@ -259,14 +265,16 @@ fun AudioFullScreenPlayer(
                                 },
                                 modifier = Modifier.weight(1f),
                             )
+                            val effectiveIsBookmarked = if (audioTracks.isNotEmpty()) isAudioBookmarked else isBookmarked
+                            val effectiveOnBookmarkToggle = if (audioTracks.isNotEmpty()) onAudioBookmarkToggle else onBookmarkToggle
                             Epub3BookmarkToggleButton(
-                                isBookmarked = isBookmarked,
-                                onClick = onBookmarkToggle,
+                                isBookmarked = effectiveIsBookmarked,
+                                onClick = effectiveOnBookmarkToggle,
                                 accentColor = accentColor,
                             )
                         }
 
-                        // Page slider
+                        // Page slider — only in SMIL mode
                         if (positions.size > 1) {
                             Epub3PageNavigatorRow(
                                 positions = positions,
@@ -277,13 +285,16 @@ fun AudioFullScreenPlayer(
                                     .padding(horizontal = 32.dp)
                                     .padding(top = 16.dp),
                             )
+                        }
 
-                            // Three-column time row: elapsed | time-remaining | total
+                        // Time display — shown whenever there is a known duration (both modes)
+                        if (totalDurationSeconds > 0) {
                             val remaining = (totalDurationSeconds - elapsedSeconds).coerceAtLeast(0.0)
                             Row(
                                 modifier = fadeModifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 48.dp),
+                                    .padding(horizontal = 48.dp)
+                                    .padding(top = if (positions.size > 1) 0.dp else 16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
@@ -314,7 +325,7 @@ fun AudioFullScreenPlayer(
                                 .fillMaxWidth()
                                 .padding(top = 8.dp),
                         ) {
-                            IconButton(onClick = controller::seekToPrevClip) {
+                            IconButton(onClick = controller::seekToPrev) {
                                 Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous segment")
                             }
                             FilledIconButton(
@@ -327,7 +338,7 @@ fun AudioFullScreenPlayer(
                                     modifier = Modifier.size(36.dp),
                                 )
                             }
-                            IconButton(onClick = controller::seekToNextClip) {
+                            IconButton(onClick = controller::seekToNext) {
                                 Icon(Icons.Filled.SkipNext, contentDescription = "Next segment")
                             }
                         }
