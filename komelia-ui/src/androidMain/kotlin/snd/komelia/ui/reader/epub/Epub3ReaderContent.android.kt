@@ -69,8 +69,12 @@ import snd.komelia.ui.common.immersive.extractDominantColor
 import snd.komelia.ui.platform.BackPressHandler
 import snd.komelia.ui.platform.PlatformType.MOBILE
 import snd.komelia.ui.reader.ReaderTopBar
+import snd.komelia.audiobook.AudioBookmark
+import snd.komelia.audiobook.AudioFolderTrack
+import snd.komelia.ui.reader.epub.audio.AudiobookFolderController
 import snd.komelia.ui.reader.epub.audio.AudioFullScreenPlayer
 import snd.komelia.ui.reader.epub.audio.AudioMiniPlayer
+import snd.komelia.ui.reader.epub.audio.AudioTrackListDialog
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -145,6 +149,13 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                 val controller by epub3State.mediaOverlayController.collectAsState()
                 val currentLocator by epub3State.currentLocator.collectAsState()
 
+                val folderController = controller as? AudiobookFolderController
+                val audioTracks by (folderController?.tracks ?: MutableStateFlow(emptyList<AudioFolderTrack>())).collectAsState()
+                val audioBookmarks by (folderController?.audioBookmarks ?: MutableStateFlow(emptyList<AudioBookmark>())).collectAsState()
+                val currentAudioTrackIndex by (folderController?.currentTrackIndex ?: MutableStateFlow(0)).collectAsState()
+                val isAudioBookmarked by (folderController?.isCurrentPositionBookmarked ?: MutableStateFlow(false)).collectAsState()
+                var showAudioTrackDialog by remember { mutableStateOf(false) }
+
                 val dateTimeText by produceState("") {
                     while (true) {
                         val now = java.time.LocalDateTime.now()
@@ -156,14 +167,18 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                 }
                 val overlayColor = Color(settings.theme.foreground).copy(alpha = 0.45f)
 
-                val chapterTitle = remember(currentLocator, toc) {
-                    currentLocator?.let { loc ->
-                        loc.title
-                            ?: findTocLink(toc, loc.href)?.title
-                            ?: loc.href.toString()
-                                .substringAfterLast('/').substringBeforeLast('.')
-                                .replace('-', ' ').replace('_', ' ')
-                    } ?: ""
+                val chapterTitle = remember(currentLocator, toc, currentAudioTrackIndex, audioTracks) {
+                    if (audioTracks.isNotEmpty()) {
+                        audioTracks.getOrNull(currentAudioTrackIndex)?.title ?: ""
+                    } else {
+                        currentLocator?.let { loc ->
+                            loc.title
+                                ?: findTocLink(toc, loc.href)?.title
+                                ?: loc.href.toString()
+                                    .substringAfterLast('/').substringBeforeLast('.')
+                                    .replace('-', ' ').replace('_', ' ')
+                        } ?: ""
+                    }
                 }
 
                 val density = LocalDensity.current
@@ -312,9 +327,20 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                                             else playerTransitionState.animateTo(true)
                                         }
                                     },
-                                    onChapterClick = { epub3State.openContentDialog(0) },
+                                    onChapterClick = {
+                                        if (audioTracks.isNotEmpty()) showAudioTrackDialog = true
+                                        else epub3State.openContentDialog(0)
+                                    },
                                     isBookmarked = isBookmarked,
                                     onBookmarkToggle = { currentLocator?.let { epub3State.toggleBookmark(it) } },
+                                    audioTracks = audioTracks,
+                                    audioBookmarks = audioBookmarks,
+                                    isAudioBookmarked = isAudioBookmarked,
+                                    onAudioBookmarkToggle = {
+                                        folderController?.toggleAudioBookmark(
+                                            audioTracks.getOrNull(currentAudioTrackIndex)?.title ?: ""
+                                        )
+                                    },
                                     playbackSpeed = settings.playbackSpeed,
                                     onSpeedChange = { epub3State.updateSettings(settings.copy(playbackSpeed = it)) },
                                     sharedTransitionScope = this@SharedTransitionLayout,
@@ -417,6 +443,24 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                         onSearch = { epub3State.performSearch(it) },
                         onDismiss = { epub3State.showContentDialog.value = false },
                         initialTab = epub3State.initialContentTab
+                    )
+                }
+
+                // Audio track list dialog (folder audiobook mode)
+                if (showAudioTrackDialog && folderController != null) {
+                    AudioTrackListDialog(
+                        tracks = audioTracks,
+                        bookmarks = audioBookmarks,
+                        currentTrackIndex = currentAudioTrackIndex,
+                        onTrackClick = { index -> folderController.seekToTrack(index) },
+                        onBookmarkClick = { bookmark ->
+                            folderController.seekToTrackPosition(bookmark.trackIndex, bookmark.positionSeconds)
+                        },
+                        onDeleteBookmark = { bookmark ->
+                            folderController.deleteAudioBookmark(bookmark.id)
+                        },
+                        onDismiss = { showAudioTrackDialog = false },
+                        modifier = Modifier.align(Alignment.BottomCenter),
                     )
                 }
             }
