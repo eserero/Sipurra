@@ -38,11 +38,14 @@ import snd.komelia.ui.LocalRawStatusBarHeight
 import snd.komelia.ui.LocalReloadEvents
 import snd.komelia.ui.LocalTheme
 import snd.komelia.ui.LocalTransparentNavBarPadding
+import snd.komelia.ui.LocalUseFloatingNavigationBar
 import snd.komelia.ui.LocalUseNewLibraryUI2
+import snd.komelia.ui.LocalFloatingActionButton
 import snd.komelia.ui.LocalViewModelFactory
 import snd.komelia.ui.ReloadableScreen
 import snd.komelia.ui.topbar.NewTopAppBar
 import snd.komelia.ui.book.bookScreen
+import snd.komelia.ui.common.FloatingFAB
 import snd.komelia.ui.common.components.ErrorContent
 import snd.komelia.ui.home.edit.FilterEditScreen
 import snd.komelia.ui.platform.ScreenPullToRefreshBox
@@ -131,20 +134,39 @@ class HomeScreen(private val libraryId: KomgaLibraryId? = null) : ReloadableScre
 
                         }
 
-                        val extraBottomPadding = LocalTransparentNavBarPadding.current
-                        FloatingActionButton(
-                            onClick = { navigator.replaceAll(FilterEditScreen(vm.currentFilters.value)) },
-                            containerColor = accentColor ?: MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = if (accentColor != null) {
-                                if (accentColor.luminance() > 0.5f) Color.Black else Color.White
-                            } else MaterialTheme.colorScheme.onPrimaryContainer,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .then(if (extraBottomPadding == 0.dp) Modifier.windowInsetsPadding(WindowInsets.navigationBars) else Modifier)
-                                .padding(bottom = 16.dp + extraBottomPadding, end = 16.dp)
-                        ) {
-                            Icon(Icons.Rounded.Edit, null)
+                        val useFloatingNavigationBar = LocalUseFloatingNavigationBar.current
+                        val fab = LocalFloatingActionButton.current
+                        if (useFloatingNavigationBar) {
+                            DisposableEffect(Unit) {
+                                fab.value = this@HomeScreen to {
+                                    FloatingFAB(
+                                        icon = Icons.Rounded.Edit,
+                                        onClick = { navigator.replaceAll(FilterEditScreen(vm.currentFilters.value)) },
+                                        accentColor = accentColor,
+                                    )
+                                }
+                                onDispose {
+                                    if (fab.value?.first == this@HomeScreen) {
+                                        fab.value = null
+                                    }
+                                }
+                            }
+                        } else {
+                            val extraBottomPadding = LocalTransparentNavBarPadding.current
+                            FloatingActionButton(
+                                onClick = { navigator.replaceAll(FilterEditScreen(vm.currentFilters.value)) },
+                                containerColor = accentColor ?: MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = if (accentColor != null) {
+                                    if (accentColor.luminance() > 0.5f) Color.Black else Color.White
+                                } else MaterialTheme.colorScheme.onPrimaryContainer,
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .then(if (extraBottomPadding == 0.dp) Modifier.windowInsetsPadding(WindowInsets.navigationBars) else Modifier)
+                                    .padding(bottom = 16.dp + extraBottomPadding, end = 16.dp)
+                            ) {
+                                Icon(Icons.Rounded.Edit, null)
+                            }
                         }
                     }
                 }

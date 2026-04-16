@@ -90,6 +90,7 @@ import snd.komelia.ui.LocalAnimatedVisibilityScope
 import snd.komelia.ui.LocalHideParenthesesInNames
 import snd.komelia.ui.LocalSharedTransitionScope
 import snd.komelia.ui.LocalToggleImmersiveMorphingCover
+import snd.komelia.ui.LocalUseFloatingNavigationBar
 import snd.komelia.ui.LocalUseImmersiveMorphingCover
 import snd.komelia.ui.book.BookInfoColumn
 import snd.komelia.ui.common.images.ThumbnailImage
@@ -533,14 +534,8 @@ fun ImmersiveBookContent(
 
         // Fixed overlay: FAB (stays still while pager slides)
         val extraBottomPadding = LocalTransparentNavBarPadding.current
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .then(fabOverlayModifier)
-                .then(if (extraBottomPadding == 0.dp) Modifier.windowInsetsPadding(WindowInsets.navigationBars) else Modifier)
-                .padding(bottom = 16.dp + extraBottomPadding)
-        ) {
+        val useFloatingNavigationBar = LocalUseFloatingNavigationBar.current
+        if (useFloatingNavigationBar) {
             ImmersiveDetailFab(
                 onReadClick = { onReadBook(selectedBook, true) },
                 onReadIncognitoClick = { onReadBook(selectedBook, false) },
@@ -548,6 +543,23 @@ fun ImmersiveBookContent(
                 accentColor = accentColor,
                 showReadActions = true,
             )
+        } else {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .then(fabOverlayModifier)
+                    .then(if (extraBottomPadding == 0.dp) Modifier.windowInsetsPadding(WindowInsets.navigationBars) else Modifier)
+                    .padding(bottom = 16.dp + extraBottomPadding)
+            ) {
+                ImmersiveDetailFab(
+                    onReadClick = { onReadBook(selectedBook, true) },
+                    onReadIncognitoClick = { onReadBook(selectedBook, false) },
+                    onDownloadClick = { showDownloadConfirmationDialog = true },
+                    accentColor = accentColor,
+                    showReadActions = true,
+                )
+            }
         }
     }
 

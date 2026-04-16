@@ -85,6 +85,7 @@ import snd.komelia.ui.LocalRawNavBarHeight
 import snd.komelia.ui.LocalRawStatusBarHeight
 import snd.komelia.ui.LocalSharedTransitionScope
 import snd.komelia.ui.LocalTransparentNavBarPadding
+import snd.komelia.ui.LocalUseFloatingNavigationBar
 import snd.komelia.ui.LocalUseImmersiveMorphingCover
 import snd.komelia.ui.common.images.ThumbnailImage
 import kotlin.math.roundToInt
@@ -577,15 +578,20 @@ fun ImmersiveDetailScaffold(
 
         // Layer 4: FAB — in overlay at z=1, above everything
         val extraBottomPadding = LocalTransparentNavBarPadding.current
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .then(fabOverlayModifier)
-                .then(if (extraBottomPadding == 0.dp) Modifier.windowInsetsPadding(WindowInsets.navigationBars) else Modifier)
-                .padding(bottom = 16.dp + extraBottomPadding)
-        ) {
+        val useFloatingNavigationBar = LocalUseFloatingNavigationBar.current
+        if (useFloatingNavigationBar) {
             fabContent()
+        } else {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .then(fabOverlayModifier)
+                    .then(if (extraBottomPadding == 0.dp) Modifier.windowInsetsPadding(WindowInsets.navigationBars) else Modifier)
+                    .padding(bottom = 16.dp + extraBottomPadding)
+            ) {
+                fabContent()
+            }
         }
     }
 }

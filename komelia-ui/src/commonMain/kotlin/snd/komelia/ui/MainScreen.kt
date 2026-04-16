@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -30,6 +32,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
+
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Home
@@ -53,7 +57,10 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +74,8 @@ import androidx.compose.ui.input.key.KeyEventType.Companion.KeyUp
 import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
@@ -205,10 +214,12 @@ class MainScreen(
         val transparentBars = useNewLibraryUI && theme.transparentBars
         val useNewTopBar = useNewLibraryUI2 && useNewLibraryUI
         val hazeState = if (transparentBars || useNewTopBar) rememberHazeState() else null
+        val floatingActionButton = remember { mutableStateOf<Pair<Any, @Composable () -> Unit>?>(null) }
         CompositionLocalProvider(
             LocalRawStatusBarHeight provides rawStatusBarHeight,
             LocalRawNavBarHeight provides rawNavBarHeight,
             LocalHazeState provides hazeState,
+            LocalFloatingActionButton provides floatingActionButton,
         ) {
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.surface,
@@ -240,67 +251,119 @@ class MainScreen(
                 CompositionLocalProvider(
                     LocalTransparentNavBarPadding provides if (transparentBars || useFloatingNavigationBar) paddingValues.calculateBottomPadding() + rawNavBarHeight + (if (useFloatingNavigationBar) 80.dp else 0.dp) else 0.dp,
                 ) {
-                ModalNavigationDrawer(
-                    drawerState = vm.navBarState,
-                    drawerContent = { LibrariesNavBar(vm, navigator) },
-                    content = {
-                        Box(Modifier.fillMaxSize()) {
-                            Box(
-                                Modifier
-                                    .fillMaxSize()
-                                    .padding(
-                                        start = paddingValues.calculateStartPadding(layoutDirection),
-                                        end = paddingValues.calculateEndPadding(layoutDirection),
-                                        top = topPadding,
-                                        bottom = bottomPadding,
-                                    )
-                                    .then(
-                                        if (isModernNewTopBar)
-                                            Modifier.consumeWindowInsets(PaddingValues(bottom = paddingValues.calculateBottomPadding()))
-                                        else
-                                            Modifier.consumeWindowInsets(paddingValues)
-                                    )
-                                    .then(if (!isModernNewTopBar) Modifier.statusBarsPadding() else Modifier)
-                                    .then(if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier)
-                            ) {
-                                SharedTransitionLayout {
-                                    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
-                                        AnimatedContent(
-                                            targetState = navigator.lastItem,
-                                            transitionSpec = {
-                                                val isToImmersive = targetState is BookScreen || targetState is SeriesScreen || targetState is OneshotScreen
-                                                val isFromImmersive = initialState is BookScreen || initialState is SeriesScreen || initialState is OneshotScreen
-                                                when {
-                                                    isToImmersive   -> EnterTransition.None togetherWith fadeOut(tween(200))
-                                                    isFromImmersive -> fadeIn(tween(200)) togetherWith fadeOut(tween(450))
-                                                    else            -> fadeIn(tween(400)) togetherWith fadeOut(tween(250))
-                                                }
-                                            },
-                                            label = "nav",
-                                        ) { screen ->
-                                            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                                                navigator.saveableState("screen", screen) {
-                                                    screen.Content()
+                    ModalNavigationDrawer(
+                        drawerState = vm.navBarState,
+                        drawerContent = { LibrariesNavBar(vm, navigator) },
+                        content = {
+                            Box(Modifier.fillMaxSize()) {
+                                Box(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .padding(
+                                            start = paddingValues.calculateStartPadding(layoutDirection),
+                                            end = paddingValues.calculateEndPadding(layoutDirection),
+                                            top = topPadding,
+                                            bottom = bottomPadding,
+                                        )
+                                        .then(
+                                            if (isModernNewTopBar)
+                                                Modifier.consumeWindowInsets(PaddingValues(bottom = paddingValues.calculateBottomPadding()))
+                                            else
+                                                Modifier.consumeWindowInsets(paddingValues)
+                                        )
+                                        .then(if (!isModernNewTopBar) Modifier.statusBarsPadding() else Modifier)
+                                        .then(if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier)
+                                ) {
+                                    SharedTransitionLayout {
+                                        CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+                                            AnimatedContent(
+                                                targetState = navigator.lastItem,
+                                                transitionSpec = {
+                                                    val isToImmersive = targetState is BookScreen || targetState is SeriesScreen || targetState is OneshotScreen
+                                                    val isFromImmersive = initialState is BookScreen || initialState is SeriesScreen || initialState is OneshotScreen
+                                                    when {
+                                                        isToImmersive   -> EnterTransition.None togetherWith fadeOut(tween(200))
+                                                        isFromImmersive -> fadeIn(tween(200)) togetherWith fadeOut(tween(450))
+                                                        else            -> fadeIn(tween(400)) togetherWith fadeOut(tween(250))
+                                                    }
+                                                },
+                                                label = "nav",
+                                            ) { screen ->
+                                                CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                                    navigator.saveableState("screen", screen) {
+                                                        screen.Content()
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
-                            }
 
-                            if (useFloatingNavigationBar && (!isImmersiveScreen || showImmersiveNavBar)) {
-                                FloatingNavigationBar(
-                                    navigator = navigator,
-                                    vm = vm,
-                                    containerColor = if (theme.transparentBars)
-                                        theme.navBarContainerColor
-                                    else
-                                        LocalNavBarColor.current ?: MaterialTheme.colorScheme.surfaceVariant
-                                )
+                                if (useFloatingNavigationBar && (!isImmersiveScreen || showImmersiveNavBar)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .align(Alignment.BottomCenter)
+                                            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                                            .navigationBarsPadding()
+                                    ) {
+                                        androidx.compose.ui.layout.Layout(
+                                            content = {
+                                                Box(Modifier.layoutId("nav")) {
+                                                    FloatingNavigationBar(
+                                                        navigator = navigator,
+                                                        vm = vm,
+                                                        containerColor = if (theme.transparentBars)
+                                                            theme.navBarContainerColor
+                                                        else
+                                                            LocalNavBarColor.current ?: MaterialTheme.colorScheme.surfaceVariant
+                                                    )
+                                                }
+                                                val fab = LocalFloatingActionButton.current.value
+                                                if (fab != null) {
+                                                    Box(Modifier.layoutId("fab")) {
+                                                        fab.second()
+                                                    }
+                                                }
+                                            }
+                                        ) { measurables, constraints ->
+                                            val navPlaceable = measurables.first { it.layoutId == "nav" }.measure(constraints.copy(minWidth = 0))
+                                            val fabMeasurable = measurables.firstOrNull { it.layoutId == "fab" }
+                                            val fabPlaceable = fabMeasurable?.measure(constraints.copy(minWidth = 0))
+
+                                            val width = constraints.maxWidth
+                                            val height = maxOf(navPlaceable.height, fabPlaceable?.height ?: 0)
+
+                                            layout(width, height) {
+                                                val navPlaceableWidth = navPlaceable.width
+                                                val fabPlaceableWidth = fabPlaceable?.width ?: 0
+                                                val spacing = 8.dp.roundToPx()
+
+                                                var navX = (width - navPlaceableWidth) / 2
+                                                val navY = (height - navPlaceable.height) / 2
+
+                                                if (fabPlaceable != null) {
+                                                    val fabX = navX + navPlaceableWidth + spacing
+                                                    if (fabX + fabPlaceableWidth > width) {
+                                                        val overflow = (fabX + fabPlaceableWidth) - width
+                                                        navX = (navX - overflow).coerceAtLeast(0)
+                                                    }
+
+                                                    val finalFabX = navX + navPlaceableWidth + spacing
+                                                    val fabY = (height - fabPlaceable.height) / 2
+                                                    navPlaceable.placeRelative(navX, navY)
+                                                    fabPlaceable.placeRelative(finalFabX, fabY)
+                                                } else {
+                                                    navPlaceable.placeRelative(navX, navY)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
                             }
                         }
-                    }
-                )
+                    )
                 }
             }
         }
@@ -318,61 +381,54 @@ class MainScreen(
         val useHaze = hazeState != null && theme.transparentBars
         val hazeStyle = if (useHaze) HazeMaterials.regular(containerColor) else null
 
-        Box(
+        Surface(
+            color = if (useHaze) Color.Transparent else containerColor,
+            shape = CircleShape,
+            tonalElevation = 3.dp,
+            shadowElevation = 0.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
             modifier = Modifier
-                .fillMaxSize()
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                .navigationBarsPadding(),
-            contentAlignment = Alignment.BottomCenter
+                .height(56.dp)
+                .wrapContentWidth()
+                .clip(CircleShape)
+                .then(
+                    if (useHaze && hazeStyle != null)
+                        Modifier.hazeEffect(hazeState!!) { style = hazeStyle }
+                    else Modifier
+                )
         ) {
-            Surface(
-                color = if (useHaze) Color.Transparent else containerColor,
-                shape = CircleShape,
-                tonalElevation = 3.dp,
-                shadowElevation = 0.dp,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
-                modifier = Modifier
-                    .wrapContentSize()
-                    .clip(CircleShape)
-                    .then(
-                        if (useHaze && hazeStyle != null)
-                            Modifier.hazeEffect(hazeState!!) { style = hazeStyle }
-                        else Modifier
-                    )
+            Row(
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FloatingToolbarButton(
-                        icon = Icons.Rounded.LocalLibrary,
-                        onClick = vm::navigateToLibrary,
-                        isSelected = navigator.lastItem is LibraryScreen,
-                        accentColor = accentColor
-                    )
-                    FloatingToolbarButton(
-                        icon = Icons.Rounded.Home,
-                        onClick = { if (navigator.lastItem !is HomeScreen) navigator.replaceAll(HomeScreen()) },
-                        isSelected = navigator.lastItem is HomeScreen,
-                        accentColor = accentColor
-                    )
-                    FloatingToolbarButton(
-                        icon = Icons.Rounded.Search,
-                        onClick = { if (navigator.lastItem !is SearchScreen) navigator.push(SearchScreen(null)) },
-                        isSelected = navigator.lastItem is SearchScreen,
-                        accentColor = accentColor
-                    )
-                    FloatingToolbarButton(
-                        icon = Icons.Rounded.Settings,
-                        onClick = {
-                            if (navigator.lastItem !is MobileSettingsScreen && navigator.lastItem !is SettingsScreen)
-                                navigator.push(MobileSettingsScreen())
-                        },
-                        isSelected = navigator.lastItem is MobileSettingsScreen || navigator.lastItem is SettingsScreen,
-                        accentColor = accentColor
-                    )
-                }
+                FloatingToolbarButton(
+                    icon = Icons.Rounded.LocalLibrary,
+                    onClick = vm::navigateToLibrary,
+                    isSelected = navigator.lastItem is LibraryScreen,
+                    accentColor = accentColor
+                )
+                FloatingToolbarButton(
+                    icon = Icons.Rounded.Home,
+                    onClick = { if (navigator.lastItem !is HomeScreen) navigator.replaceAll(HomeScreen()) },
+                    isSelected = navigator.lastItem is HomeScreen,
+                    accentColor = accentColor
+                )
+                FloatingToolbarButton(
+                    icon = Icons.Rounded.Search,
+                    onClick = { if (navigator.lastItem !is SearchScreen) navigator.push(SearchScreen(null)) },
+                    isSelected = navigator.lastItem is SearchScreen,
+                    accentColor = accentColor
+                )
+                FloatingToolbarButton(
+                    icon = Icons.Rounded.Settings,
+                    onClick = {
+                        if (navigator.lastItem !is MobileSettingsScreen && navigator.lastItem !is SettingsScreen)
+                            navigator.push(MobileSettingsScreen())
+                    },
+                    isSelected = navigator.lastItem is MobileSettingsScreen || navigator.lastItem is SettingsScreen,
+                    accentColor = accentColor
+                )
             }
         }
     }
@@ -415,41 +471,41 @@ class MainScreen(
                 Modifier.hazeEffect(hazeState) { style = hazeStyle }
             else Modifier,
         ) {
-                NavigationBarItem(
-                    alwaysShowLabel = true,
-                    selected = navigator.lastItem is LibraryScreen,
-                    onClick = vm::navigateToLibrary,
-                    icon = { Icon(Icons.Rounded.LocalLibrary, null) },
-                    label = { Text("Libraries") },
-                    colors = itemColors
-                )
-                NavigationBarItem(
-                    alwaysShowLabel = true,
-                    selected = navigator.lastItem is HomeScreen,
-                    onClick = { if (navigator.lastItem !is HomeScreen) navigator.replaceAll(HomeScreen()) },
-                    icon = { Icon(Icons.Rounded.Home, null) },
-                    label = { Text("Home") },
-                    colors = itemColors
-                )
-                NavigationBarItem(
-                    alwaysShowLabel = true,
-                    selected = navigator.lastItem is SearchScreen,
-                    onClick = { if (navigator.lastItem !is SearchScreen) navigator.push(SearchScreen(null)) },
-                    icon = { Icon(Icons.Rounded.Search, null) },
-                    label = { Text("Search") },
-                    colors = itemColors
-                )
-                NavigationBarItem(
-                    alwaysShowLabel = true,
-                    selected = navigator.lastItem is MobileSettingsScreen || navigator.lastItem is SettingsScreen,
-                    onClick = {
-                        if (navigator.lastItem !is MobileSettingsScreen && navigator.lastItem !is SettingsScreen)
-                            navigator.push(MobileSettingsScreen())
-                    },
-                    icon = { Icon(Icons.Rounded.Settings, null) },
-                    label = { Text("Settings") },
-                    colors = itemColors
-                )
+            NavigationBarItem(
+                alwaysShowLabel = true,
+                selected = navigator.lastItem is LibraryScreen,
+                onClick = vm::navigateToLibrary,
+                icon = { Icon(Icons.Rounded.LocalLibrary, null) },
+                label = { Text("Libraries") },
+                colors = itemColors
+            )
+            NavigationBarItem(
+                alwaysShowLabel = true,
+                selected = navigator.lastItem is HomeScreen,
+                onClick = { if (navigator.lastItem !is HomeScreen) navigator.replaceAll(HomeScreen()) },
+                icon = { Icon(Icons.Rounded.Home, null) },
+                label = { Text("Home") },
+                colors = itemColors
+            )
+            NavigationBarItem(
+                alwaysShowLabel = true,
+                selected = navigator.lastItem is SearchScreen,
+                onClick = { if (navigator.lastItem !is SearchScreen) navigator.push(SearchScreen(null)) },
+                icon = { Icon(Icons.Rounded.Search, null) },
+                label = { Text("Search") },
+                colors = itemColors
+            )
+            NavigationBarItem(
+                alwaysShowLabel = true,
+                selected = navigator.lastItem is MobileSettingsScreen || navigator.lastItem is SettingsScreen,
+                onClick = {
+                    if (navigator.lastItem !is MobileSettingsScreen && navigator.lastItem !is SettingsScreen)
+                        navigator.push(MobileSettingsScreen())
+                },
+                icon = { Icon(Icons.Rounded.Settings, null) },
+                label = { Text("Settings") },
+                colors = itemColors
+            )
         }
     }
 

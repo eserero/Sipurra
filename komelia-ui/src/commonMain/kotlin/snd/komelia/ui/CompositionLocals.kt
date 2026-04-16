@@ -3,6 +3,8 @@ package snd.komelia.ui
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import dev.chrisbanes.haze.HazeState
@@ -64,6 +66,7 @@ val LocalLockScreenRotation = compositionLocalOf { false }
 val LocalOnLockScreenRotationChange = staticCompositionLocalOf<(Boolean) -> Unit> { {} }
 val LocalRawStatusBarHeight = staticCompositionLocalOf { 0.dp }
 val LocalRawNavBarHeight = staticCompositionLocalOf { 0.dp }
+val LocalFloatingActionButton = staticCompositionLocalOf<MutableState<Pair<Any, @Composable () -> Unit>?>> { error("Not provided") }
 // When transparent bars mode is active and content extends behind the nav bar,
 // scrollable content should add this as bottom padding so items remain reachable.
 val LocalTransparentNavBarPadding = compositionLocalOf { 0.dp }

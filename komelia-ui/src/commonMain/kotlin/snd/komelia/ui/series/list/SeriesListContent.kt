@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,8 +49,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.snd_r.komelia.ui.komelia_ui.generated.resources.Res
 import snd.komelia.ui.LocalAccentColor
+import snd.komelia.ui.LocalFloatingActionButton
 import snd.komelia.ui.LocalStrings
+import snd.komelia.ui.LocalTransparentNavBarPadding
+import snd.komelia.ui.LocalUseFloatingNavigationBar
 import snd.komelia.ui.LocalUseNewLibraryUI
+import snd.komelia.ui.common.FloatingFAB
+
 import snd.komelia.ui.LocalWindowWidth
 import snd.komelia.ui.common.itemlist.SeriesLazyCardGrid
 import snd.komelia.ui.common.menus.SeriesMenuActions
@@ -183,29 +189,51 @@ fun SeriesListContent(
 
         // Filter FAB
         val extraBottomPadding = LocalTransparentNavBarPadding.current
+        val useFloatingNavigationBar = LocalUseFloatingNavigationBar.current
+        val fab = LocalFloatingActionButton.current
         if (filterState != null) {
-            AnimatedVisibility(
-                visible = !showFilters && !editMode,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .then(if (extraBottomPadding == 0.dp) Modifier.windowInsetsPadding(WindowInsets.navigationBars) else Modifier)
-                    .padding(bottom = 16.dp + extraBottomPadding, end = 16.dp),
-            ) {
-                ExtendedFloatingActionButton(
-                    onClick = { showFilters = true },
-                    containerColor = fabContainerColor,
-                    contentColor = fabContentColor,
-                    icon = {
-                        Icon(
-                            Icons.Default.FilterList,
-                            null,
-                            tint = if (filterState.isChanged) Color(0xFFFFD600) else fabContentColor,
-                        )
-                    },
-                    text = { Text("Filter") },
-                )
+            if (useFloatingNavigationBar) {
+                if (!showFilters && !editMode) {
+                    DisposableEffect(filterState, filterState.isChanged) {
+                        fab.value = filterState to {
+                            FloatingFAB(
+                                icon = Icons.Default.FilterList,
+                                onClick = { showFilters = true },
+                                accentColor = accentColor,
+                                iconTint = if (filterState.isChanged) Color(0xFFFFD600) else null
+                            )
+                        }
+                        onDispose {
+                            if (fab.value?.first == filterState) {
+                                fab.value = null
+                            }
+                        }
+                    }
+                }
+            } else {
+                AnimatedVisibility(
+                    visible = !showFilters && !editMode,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .then(if (extraBottomPadding == 0.dp) Modifier.windowInsetsPadding(WindowInsets.navigationBars) else Modifier)
+                        .padding(bottom = 16.dp + extraBottomPadding, end = 16.dp),
+                ) {
+                    ExtendedFloatingActionButton(
+                        onClick = { showFilters = true },
+                        containerColor = fabContainerColor,
+                        contentColor = fabContentColor,
+                        icon = {
+                            Icon(
+                                Icons.Default.FilterList,
+                                null,
+                                tint = if (filterState.isChanged) Color(0xFFFFD600) else fabContentColor,
+                            )
+                        },
+                        text = { Text("Filter") },
+                    )
+                }
             }
         }
     }
