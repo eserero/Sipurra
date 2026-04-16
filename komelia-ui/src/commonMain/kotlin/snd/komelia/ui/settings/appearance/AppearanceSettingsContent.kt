@@ -101,6 +101,8 @@ fun AppearanceSettingsContent(
     onCardLayoutOverlayBackgroundChange: (Boolean) -> Unit,
     useNewLibraryUI2: Boolean,
     onUseNewLibraryUI2Change: (Boolean) -> Unit,
+    useFloatingNavigationBar: Boolean,
+    onUseFloatingNavigationBarChange: (Boolean) -> Unit,
     useImmersiveMorphingCover: Boolean,
     onUseImmersiveMorphingCoverChange: (Boolean) -> Unit,
     cardWidthScale: Float,
@@ -198,6 +200,17 @@ fun AppearanceSettingsContent(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
             )
+
+            if (useNewLibraryUI2) {
+                SwitchWithLabel(
+                    checked = useFloatingNavigationBar,
+                    onCheckedChange = onUseFloatingNavigationBarChange,
+                    label = { Text("Floating navigation bar") },
+                    supportingText = { Text("Replace the bottom navigation bar with a floating toolbar") },
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                )
+            }
 
             SwitchWithLabel(
                 checked = useImmersiveMorphingCover,

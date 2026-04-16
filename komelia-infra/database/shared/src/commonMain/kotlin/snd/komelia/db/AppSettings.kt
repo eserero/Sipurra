@@ -42,4 +42,5 @@ data class AppSettings(
     val cardSpacingBelow: Float = 0.0f,
     val cardShadowLevel: Float = 2.0f,
     val cardCornerRadius: Float = 8.0f,
+    val useFloatingNavigationBar: Boolean = false,
 )

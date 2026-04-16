@@ -50,6 +50,7 @@ val LocalImmersiveColorEnabled = compositionLocalOf { true }
 val LocalImmersiveColorAlpha = compositionLocalOf { 0.12f }
 val LocalShowImmersiveNavBar = compositionLocalOf { false }
 val LocalUseNewLibraryUI2 = compositionLocalOf { false }
+val LocalUseFloatingNavigationBar = compositionLocalOf { false }
 val LocalUseImmersiveMorphingCover = compositionLocalOf { false }
 val LocalToggleImmersiveMorphingCover = staticCompositionLocalOf<() -> Unit> { {} }
 val LocalCardWidthScale = compositionLocalOf { 1.0f }

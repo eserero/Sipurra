@@ -100,4 +100,7 @@ interface CommonSettingsRepository {
 
     fun getCardCornerRadius(): Flow<Float>
     suspend fun putCardCornerRadius(radius: Float)
+
+    fun getFloatingNavigationBar(): Flow<Boolean>
+    suspend fun putFloatingNavigationBar(enabled: Boolean)
 }

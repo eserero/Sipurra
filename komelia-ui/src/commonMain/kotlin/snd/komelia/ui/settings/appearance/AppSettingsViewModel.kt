@@ -38,6 +38,7 @@ class AppSettingsViewModel(
     var cardSpacingBelow by mutableStateOf(0.0f)
     var cardShadowLevel by mutableStateOf(2.0f)
     var cardCornerRadius by mutableStateOf(8.0f)
+    var useFloatingNavigationBar by mutableStateOf(false)
 
     suspend fun initialize() {
         if (state.value !is LoadState.Uninitialized) return
@@ -60,6 +61,7 @@ class AppSettingsViewModel(
         cardSpacingBelow = settingsRepository.getCardSpacingBelow().first()
         cardShadowLevel = settingsRepository.getCardShadowLevel().first()
         cardCornerRadius = settingsRepository.getCardCornerRadius().first()
+        useFloatingNavigationBar = settingsRepository.getFloatingNavigationBar().first()
 
         settingsRepository.putNavBarColor(null)
         mutableState.value = LoadState.Success(Unit)
@@ -73,6 +75,11 @@ class AppSettingsViewModel(
     fun onCardCornerRadiusChange(radius: Float) {
         this.cardCornerRadius = radius
         screenModelScope.launch { settingsRepository.putCardCornerRadius(radius) }
+    }
+
+    fun onUseFloatingNavigationBarChange(enabled: Boolean) {
+        this.useFloatingNavigationBar = enabled
+        screenModelScope.launch { settingsRepository.putFloatingNavigationBar(enabled) }
     }
 
     fun onCardWidthScaleChange(scale: Float) {

@@ -58,6 +58,7 @@ class ExposedSettingsRepository(database: Database) : ExposedRepository(database
                 it[cardSpacingBelow] = settings.cardSpacingBelow
                 it[cardShadowLevel] = settings.cardShadowLevel
                 it[cardCornerRadius] = settings.cardCornerRadius
+                it[useFloatingNavigationBar] = settings.useFloatingNavigationBar
             }
         }
     }
@@ -99,6 +100,7 @@ class ExposedSettingsRepository(database: Database) : ExposedRepository(database
             cardSpacingBelow = get(AppSettingsTable.cardSpacingBelow),
             cardShadowLevel = get(AppSettingsTable.cardShadowLevel),
             cardCornerRadius = get(AppSettingsTable.cardCornerRadius),
+            useFloatingNavigationBar = get(AppSettingsTable.useFloatingNavigationBar),
         )
     }
 }

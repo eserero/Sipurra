@@ -236,4 +236,10 @@ class SettingsRepositoryWrapper(
 
     override suspend fun putCardCornerRadius(radius: Float) =
         wrapper.transform { it.copy(cardCornerRadius = radius) }
+
+    override fun getFloatingNavigationBar(): Flow<Boolean> =
+        wrapper.state.map { it.useFloatingNavigationBar }.distinctUntilChanged()
+
+    override suspend fun putFloatingNavigationBar(enabled: Boolean) =
+        wrapper.transform { it.copy(useFloatingNavigationBar = enabled) }
 }

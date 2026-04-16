@@ -47,6 +47,7 @@ class AppMigrations : MigrationResourcesProvider() {
         "V38__card_shadow_and_corner_radius.sql",
         "V39__local_file_read_progress.sql",
         "V40__audio_folder.sql",
+        "V41__use_floating_navigation_bar.sql",
     )
 
     override suspend fun getMigration(name: String): ByteArray? {

@@ -91,6 +91,7 @@ fun MainView(
     var cardSpacingBelow by remember { mutableStateOf(0.0f) }
     var cardShadowLevel by remember { mutableStateOf(2.0f) }
     var cardCornerRadius by remember { mutableStateOf(8.0f) }
+    var useFloatingNavigationBar by remember { mutableStateOf(false) }
     var hideParenthesesInNames by remember { mutableStateOf(false) }
     var lockScreenRotation by remember { mutableStateOf(false) }
     var cardLayoutOverlayBackground by remember { mutableStateOf(true) }
@@ -166,6 +167,10 @@ fun MainView(
         dependencies?.appRepositories?.settingsRepository?.getCardCornerRadius()
             ?.collect { cardCornerRadius = it }
     }
+    LaunchedEffect(dependencies) {
+        dependencies?.appRepositories?.settingsRepository?.getFloatingNavigationBar()
+            ?.collect { useFloatingNavigationBar = it }
+    }
 
     MaterialTheme(colorScheme = theme.colorScheme) {
         ConfigurePlatformTheme(theme)
@@ -239,6 +244,7 @@ fun MainView(
                 LocalCardSpacingBelow provides cardSpacingBelow,
                 LocalCardShadowLevel provides cardShadowLevel,
                 LocalCardCornerRadius provides cardCornerRadius,
+                LocalUseFloatingNavigationBar provides useFloatingNavigationBar,
             ) {
                 MainContent(platformType, dependencies.komgaSharedState, dependencies.localFileApiProvider)
 

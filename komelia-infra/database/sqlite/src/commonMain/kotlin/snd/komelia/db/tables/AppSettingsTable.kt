@@ -42,6 +42,7 @@ object AppSettingsTable : Table("AppSettings") {
     val cardSpacingBelow = float("card_spacing_below").default(0.0f)
     val cardShadowLevel = float("card_shadow_level").default(2.0f)
     val cardCornerRadius = float("card_corner_radius").default(8.0f)
+    val useFloatingNavigationBar = bool("use_floating_navigation_bar").default(false)
 
     override val primaryKey = PrimaryKey(version)
 }
