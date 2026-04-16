@@ -14,16 +14,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Forward30
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.VolumeDown
@@ -34,16 +41,19 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,9 +77,14 @@ import snd.komelia.ui.common.components.AppSlider
 import snd.komelia.ui.common.components.AppSliderDefaults
 import snd.komelia.ui.common.components.accentFilterChipColors
 import snd.komelia.ui.common.images.ThumbnailImage
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import snd.komelia.ui.reader.epub.Epub3BookmarkToggleButton
-import snd.komelia.ui.reader.epub.Epub3PageNavigatorRow
+import snd.komelia.ui.reader.epub.Epub3LocationLabel
+import snd.komelia.ui.reader.epub.locatorToPositionIndex
 import snd.komga.client.book.KomgaBookId
+import kotlin.math.roundToInt
 
 private val emphasizedEasing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
 private val emphasizedAccelerateEasing = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
@@ -137,7 +152,7 @@ fun AudioFullScreenPlayer(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight(Alignment.Bottom)
+                    .fillMaxHeight()
                     .onGloballyPositioned { playerHeightPx = it.size.height }
                     .sharedBounds(
                         rememberSharedContentState(key = "audio-player-surface-${bookId.value}"),
@@ -192,6 +207,7 @@ fun AudioFullScreenPlayer(
                     }
                 Column(
                     modifier = Modifier
+                        .statusBarsPadding()
                         .navigationBarsPadding()
                         .padding(bottom = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -270,6 +286,7 @@ fun AudioFullScreenPlayer(
                             )
                             val effectiveIsBookmarked = if (audioTracks.isNotEmpty()) isAudioBookmarked else isBookmarked
                             val effectiveOnBookmarkToggle = if (audioTracks.isNotEmpty()) onAudioBookmarkToggle else onBookmarkToggle
+                            Spacer(modifier = Modifier.width(8.dp))
                             Epub3BookmarkToggleButton(
                                 isBookmarked = effectiveIsBookmarked,
                                 onClick = effectiveOnBookmarkToggle,
@@ -277,23 +294,35 @@ fun AudioFullScreenPlayer(
                             )
                         }
 
+                        // SMIL current page index — needed by slider (Task 6) AND inner controls
+                        val smilCurrentIndex = remember(currentLocator, positions) {
+                            if (positions.size > 1) locatorToPositionIndex(positions, currentLocator) else 0
+                        }
+
+                        // Hoisted drag state — used by both the slider and the time display below
+                        var sliderDraft by remember { mutableStateOf(elapsedSeconds.toFloat()) }
+                        var isInteracting by remember { mutableStateOf(false) }
+
                         if (audioTracks.isNotEmpty() && onSeekToTrackPosition != null) {
-                            // Folder-mode: seek within current track
-                            val prevTrackDuration = audioTracks.take(currentAudioTrackIndex).sumOf { it.durationSeconds }
-                            val currentTrackDuration = audioTracks.getOrNull(currentAudioTrackIndex)?.durationSeconds ?: 0.0
-                            val positionInTrack = (elapsedSeconds - prevTrackDuration).coerceIn(0.0, currentTrackDuration)
-
-                            var sliderDraft by remember(currentAudioTrackIndex) { mutableStateOf(positionInTrack.toFloat()) }
-                            var isInteracting by remember { mutableStateOf(false) }
-
+                            // Folder-mode: full-book seek slider
                             AppSlider(
-                                value = if (isInteracting) sliderDraft else positionInTrack.toFloat(),
+                                value = if (isInteracting) sliderDraft else elapsedSeconds.toFloat(),
                                 onValueChange = { isInteracting = true; sliderDraft = it },
                                 onValueChangeFinished = {
                                     isInteracting = false
-                                    onSeekToTrackPosition(currentAudioTrackIndex, sliderDraft.toDouble())
+                                    val target = sliderDraft.toDouble()
+                                        .coerceIn(0.0, totalDurationSeconds)
+                                    var cumulative = 0.0
+                                    for ((idx, track) in audioTracks.withIndex()) {
+                                        val trackEnd = cumulative + track.durationSeconds
+                                        if (trackEnd >= target || idx == audioTracks.lastIndex) {
+                                            onSeekToTrackPosition(idx, target - cumulative)
+                                            break
+                                        }
+                                        cumulative = trackEnd
+                                    }
                                 },
-                                valueRange = 0f..currentTrackDuration.toFloat().coerceAtLeast(1f),
+                                valueRange = 0f..totalDurationSeconds.toFloat().coerceAtLeast(1f),
                                 accentColor = accentColor,
                                 colors = AppSliderDefaults.colors(accentColor = accentColor),
                                 modifier = fadeModifier
@@ -302,21 +331,62 @@ fun AudioFullScreenPlayer(
                                     .padding(top = 16.dp),
                             )
                         } else if (positions.size > 1) {
-                            // SMIL mode: navigate epub reading position
-                            Epub3PageNavigatorRow(
-                                positions = positions,
-                                currentLocator = currentLocator,
-                                onNavigateToPosition = onNavigateToPosition,
+                            // SMIL mode slider — plain, no +/− buttons (they move to controls row)
+                            // smilCurrentIndex is declared above this block (Task 8 Step 2)
+                            val smilScope = rememberCoroutineScope()
+                            var smilEndJob by remember { mutableStateOf<Job?>(null) }
+                            var smilInteracting by remember { mutableStateOf(false) }
+                            var smilDraft by remember { mutableStateOf(smilCurrentIndex.toFloat()) }
+
+                            LaunchedEffect(smilCurrentIndex) {
+                                if (!smilInteracting) smilDraft = smilCurrentIndex.toFloat()
+                            }
+
+                            fun navigateSmil(newIndex: Int) {
+                                smilDraft = newIndex.toFloat()
+                                onNavigateToPosition(newIndex)
+                                smilInteracting = true
+                                smilEndJob?.cancel()
+                                smilEndJob = smilScope.launch {
+                                    delay(700)
+                                    smilInteracting = false
+                                }
+                            }
+
+                            Column(
                                 modifier = fadeModifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 32.dp)
                                     .padding(top = 16.dp),
-                            )
+                            ) {
+                                Epub3LocationLabel(
+                                    positions = positions,
+                                    currentLocator = currentLocator,
+                                    overrideIndex = smilDraft.roundToInt(),
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                                AppSlider(
+                                    value = smilDraft,
+                                    onValueChange = { smilInteracting = true; smilDraft = it },
+                                    onValueChangeFinished = { navigateSmil(smilDraft.roundToInt()) },
+                                    valueRange = 0f..(positions.size - 1).toFloat(),
+                                    steps = 0,
+                                    accentColor = accentColor,
+                                    colors = AppSliderDefaults.colors(accentColor = accentColor),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
                         }
 
-                        // Time display — shown whenever there is a known duration (both modes)
+                        // Time display — live during folder-mode drag; static otherwise
                         if (totalDurationSeconds > 0) {
-                            val remaining = (totalDurationSeconds - elapsedSeconds).coerceAtLeast(0.0)
+                            val displayedElapsed = if (isInteracting && audioTracks.isNotEmpty()) {
+                                sliderDraft.toDouble()
+                            } else {
+                                elapsedSeconds
+                            }
+                            val remaining = (totalDurationSeconds - displayedElapsed).coerceAtLeast(0.0)
                             Row(
                                 modifier = fadeModifier
                                     .fillMaxWidth()
@@ -325,7 +395,7 @@ fun AudioFullScreenPlayer(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = formatHMS(elapsedSeconds),
+                                    text = formatHMS(displayedElapsed),
                                     style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.weight(1f),
                                 )
@@ -344,6 +414,36 @@ fun AudioFullScreenPlayer(
                             }
                         }
 
+                        // Mode detection
+                        val isSMILMode = audioTracks.isEmpty() && positions.size > 1
+
+                        // Chapter start indices (used for SMIL outer buttons)
+                        val chapterStartIndices = remember(positions) {
+                            positions.mapIndexedNotNull { idx, loc ->
+                                if (idx == 0 || loc.href != positions[idx - 1].href) idx else null
+                            }
+                        }
+
+                        val onPrevChapter: () -> Unit = if (isSMILMode) {
+                            {
+                                val currentChapterStart =
+                                    chapterStartIndices.lastOrNull { it <= smilCurrentIndex } ?: 0
+                                val target = if (smilCurrentIndex > currentChapterStart) {
+                                    currentChapterStart
+                                } else {
+                                    chapterStartIndices.lastOrNull { it < currentChapterStart } ?: 0
+                                }
+                                onNavigateToPosition(target)
+                            }
+                        } else controller::seekToPrev
+
+                        val onNextChapter: () -> Unit = if (isSMILMode) {
+                            {
+                                val nextIdx = chapterStartIndices.firstOrNull { it > smilCurrentIndex }
+                                if (nextIdx != null) onNavigateToPosition(nextIdx)
+                            }
+                        } else controller::seekToNext
+
                         // Controls
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -352,11 +452,31 @@ fun AudioFullScreenPlayer(
                                 .fillMaxWidth()
                                 .padding(top = 8.dp),
                         ) {
-                            IconButton(onClick = controller::seekToPrev) {
-                                Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous segment")
+                            // Outer left: prev chapter (folder = prev track; SMIL = prev epub chapter)
+                            IconButton(onClick = onPrevChapter) {
+                                Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous chapter")
                             }
+                            // Inner left: folder = −20 s; SMIL = prev epub position
+                            if (isSMILMode) {
+                                IconButton(
+                                    onClick = {
+                                        onNavigateToPosition((smilCurrentIndex - 1).coerceAtLeast(0))
+                                    },
+                                    enabled = smilCurrentIndex > 0,
+                                ) {
+                                    Icon(Icons.Filled.Remove, contentDescription = "Previous page")
+                                }
+                            } else {
+                                IconButton(onClick = { controller.seekRelative(-10.0) }) {
+                                    Icon(Icons.Filled.Replay10, contentDescription = "Rewind 10 seconds")
+                                }
+                            }
+                            // Play / Pause
                             FilledIconButton(
                                 onClick = controller::togglePlayPause,
+                                colors = IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = accentColor ?: MaterialTheme.colorScheme.primaryContainer,
+                                ),
                                 modifier = Modifier.size(72.dp),
                             ) {
                                 Icon(
@@ -365,8 +485,26 @@ fun AudioFullScreenPlayer(
                                     modifier = Modifier.size(36.dp),
                                 )
                             }
-                            IconButton(onClick = controller::seekToNext) {
-                                Icon(Icons.Filled.SkipNext, contentDescription = "Next segment")
+                            // Inner right: folder = +30 s; SMIL = next epub position
+                            if (isSMILMode) {
+                                IconButton(
+                                    onClick = {
+                                        onNavigateToPosition(
+                                            (smilCurrentIndex + 1).coerceAtMost(positions.size - 1)
+                                        )
+                                    },
+                                    enabled = smilCurrentIndex < positions.size - 1,
+                                ) {
+                                    Icon(Icons.Filled.Add, contentDescription = "Next page")
+                                }
+                            } else {
+                                IconButton(onClick = { controller.seekRelative(30.0) }) {
+                                    Icon(Icons.Filled.Forward30, contentDescription = "Forward 30 seconds")
+                                }
+                            }
+                            // Outer right: next chapter (folder = next track; SMIL = next epub chapter)
+                            IconButton(onClick = onNextChapter) {
+                                Icon(Icons.Filled.SkipNext, contentDescription = "Next chapter")
                             }
                         }
 
@@ -375,7 +513,7 @@ fun AudioFullScreenPlayer(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = fadeModifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 48.dp)
+                                .padding(horizontal = 32.dp)
                                 .padding(top = 8.dp),
                         ) {
                             Icon(

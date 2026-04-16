@@ -15,4 +15,11 @@ interface EpubAudioController {
     fun setVolume(v: Float)
     fun applyAudioSettings(settings: Epub3NativeSettings)
     fun release()
+
+    /**
+     * Seeks relative to the current global playback position.
+     * Positive = forward, negative = backward. Crosses track boundaries.
+     * Default no-op — only meaningful for folder-mode audiobooks.
+     */
+    fun seekRelative(deltaSeconds: Double) {}
 }

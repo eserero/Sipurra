@@ -21,7 +21,6 @@ build/
 .github/
 .gemini/
 .claude/
-agent-os/
 .beans/
 .beans.yml
 CLAUDE.md

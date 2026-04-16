@@ -242,7 +242,25 @@ class AudiobookFolderController(
         if (index < 0 || index >= tracks.size) return
         val track = tracks[index]
         player.seekTo(track.relativeUri, positionSeconds, skipEmit = false)
+        // Immediately update StateFlows so the UI doesn't jump back when paused
+        val prevDuration = _tracks.value.take(index).sumOf { it.durationSeconds }
+        _elapsedSeconds.value = prevDuration + positionSeconds
+        _currentTrackIndex.value = index
         updateIsCurrentPositionBookmarked()
+    }
+
+    override fun seekRelative(deltaSeconds: Double) {
+        val targetElapsed = (_elapsedSeconds.value + deltaSeconds)
+            .coerceIn(0.0, _totalDurationSeconds.value)
+        var cumulative = 0.0
+        for ((index, track) in _tracks.value.withIndex()) {
+            val trackEnd = cumulative + track.durationSeconds
+            if (trackEnd >= targetElapsed || index == _tracks.value.lastIndex) {
+                seekToTrackPosition(index, targetElapsed - cumulative)
+                return
+            }
+            cumulative = trackEnd
+        }
     }
 
     fun toggleAudioBookmark(currentTrackTitle: String) {
