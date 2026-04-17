@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -85,6 +86,7 @@ fun ReaderContent(
     var showHelpDialog by remember { mutableStateOf(false) }
     var showSettingsMenu by remember { mutableStateOf(false) }
     var showImageContextMenu by remember { mutableStateOf(false) }
+    var showComicContentDialog by remember { mutableStateOf(false) }
     var contextMenuAnchorOffset by remember { mutableStateOf(Offset.Zero) }
     val onLongPress: (Offset) -> Unit = { offset ->
         contextMenuAnchorOffset = offset
@@ -193,7 +195,12 @@ fun ReaderContent(
                                 pagedReaderState = pagedReaderState,
                                 volumeKeysNavigation = volumeKeysNavigation,
                                 tapNavigationMode = tapNavigationMode,
-                                onLongPress = onLongPress
+                                onLongPress = onLongPress,
+                                annotations = commonReaderState.annotations.collectAsState().value,
+                                onAnnotationTap = { annotation ->
+                                    commonReaderState.editingComicAnnotation.value = annotation
+                                    commonReaderState.showAnnotationDialog.value = true
+                                },
                             )
                         }
 
@@ -246,6 +253,23 @@ fun ReaderContent(
                                 commonReaderState.saveCurrentPageToDownloads()
                             }
                         )
+                        DropdownMenuItem(
+                            text = { Text("Add annotation") },
+                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                            onClick = {
+                                showImageContextMenu = false
+                                val bounds = pagedReaderState.lastImageBounds.value
+                                if (bounds != null && bounds.width > 0 && bounds.height > 0) {
+                                    val x = ((contextMenuAnchorOffset.x - bounds.left) / bounds.width).coerceIn(0f, 1f)
+                                    val y = ((contextMenuAnchorOffset.y - bounds.top) / bounds.height).coerceIn(0f, 1f)
+                                    val page = pagedReaderState.getCurrentPageNumber()
+                                    commonReaderState.pendingAnnotationPage.value = page
+                                    commonReaderState.pendingAnnotationX.value = x
+                                    commonReaderState.pendingAnnotationY.value = y
+                                    commonReaderState.showAnnotationDialog.value = true
+                                }
+                            }
+                        )
                     }
                 }
 
@@ -283,6 +307,62 @@ fun ReaderContent(
                     flashWith = commonReaderState.flashWith.collectAsState().value,
                     flashDuration = commonReaderState.flashDuration.collectAsState().value
                 )
+
+                // Comic annotations list dialog
+                if (showComicContentDialog) {
+                    snd.komelia.ui.reader.image.ComicContentDialog(
+                        annotations = commonReaderState.annotations.collectAsState().value,
+                        onAnnotationTap = { annotation ->
+                            showComicContentDialog = false
+                            commonReaderState.editingComicAnnotation.value = annotation
+                            commonReaderState.showAnnotationDialog.value = true
+                        },
+                        onDeleteAnnotation = { commonReaderState.deleteComicAnnotation(it) },
+                        onDismiss = { showComicContentDialog = false },
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
+                }
+
+                // Comic annotation create/edit dialog
+                val showAnnotationDialogComic by commonReaderState.showAnnotationDialog.collectAsState()
+                val editingComicAnnotation by commonReaderState.editingComicAnnotation.collectAsState()
+                val lastColorComic by commonReaderState.lastHighlightColor.collectAsState()
+
+                if (showAnnotationDialogComic) {
+                    val isEditing = editingComicAnnotation != null
+                    val loc = editingComicAnnotation?.location as? snd.komelia.annotations.AnnotationLocation.ComicLocation
+                    val pendingPage = commonReaderState.pendingAnnotationPage.value
+                    val pendingX = commonReaderState.pendingAnnotationX.value
+                    val pendingY = commonReaderState.pendingAnnotationY.value
+                    val referenceText = if (isEditing && loc != null) {
+                        "Page ${loc.page + 1} · (${(loc.x * 100).toInt()}%, ${(loc.y * 100).toInt()}%)"
+                    } else {
+                        "Page ${pendingPage + 1} · (${(pendingX * 100).toInt()}%, ${(pendingY * 100).toInt()}%)"
+                    }
+                    snd.komelia.ui.reader.common.AnnotationDialog(
+                        referenceText = referenceText,
+                        existingAnnotation = editingComicAnnotation,
+                        initialColor = lastColorComic,
+                        onSave = { note, color ->
+                            if (isEditing) {
+                                editingComicAnnotation?.let { commonReaderState.updateComicAnnotation(it, note, color) }
+                            } else {
+                                commonReaderState.saveComicAnnotation(pendingPage, pendingX, pendingY, color, note)
+                            }
+                            commonReaderState.showAnnotationDialog.value = false
+                            commonReaderState.editingComicAnnotation.value = null
+                        },
+                        onDelete = {
+                            editingComicAnnotation?.let { commonReaderState.deleteComicAnnotation(it) }
+                            commonReaderState.showAnnotationDialog.value = false
+                            commonReaderState.editingComicAnnotation.value = null
+                        },
+                        onDismiss = {
+                            commonReaderState.showAnnotationDialog.value = false
+                            commonReaderState.editingComicAnnotation.value = null
+                        },
+                    )
+                }
             }
         }
     }

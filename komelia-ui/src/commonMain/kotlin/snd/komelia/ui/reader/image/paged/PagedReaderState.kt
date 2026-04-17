@@ -2,6 +2,7 @@ package snd.komelia.ui.reader.image.paged
 
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.toSize
@@ -88,6 +89,7 @@ class PagedReaderState(
 
     val pageSpreads = MutableStateFlow<List<List<PageMetadata>>>(emptyList())
     val currentSpreadIndex = MutableStateFlow(0)
+    val lastImageBounds = MutableStateFlow<Rect?>(null)
     val currentSpread: MutableStateFlow<PageSpread> = MutableStateFlow(PageSpread(emptyList()))
     val transitionPage: MutableStateFlow<TransitionPage?> = MutableStateFlow(null)
 
@@ -615,6 +617,12 @@ class PagedReaderState(
     fun onAdaptiveBackgroundChange(enabled: Boolean) {
         this.adaptiveBackground.value = enabled
         stateScope.launch { settingsRepository.putPagedReaderAdaptiveBackground(enabled) }
+    }
+
+    fun getCurrentPageNumber(): Int {
+        val spreads = pageSpreads.value
+        val idx = currentSpreadIndex.value
+        return spreads.getOrNull(idx)?.firstOrNull()?.pageNumber ?: 0
     }
 
     private suspend fun calculateScreenScale(

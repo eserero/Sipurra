@@ -60,6 +60,7 @@ class ReaderViewModel(
     currentBookId: MutableStateFlow<KomgaBookId?>,
     bookSiblingsContext: BookSiblingsContext,
     colorCorrectionRepository: BookColorCorrectionRepository,
+    bookAnnotationRepository: snd.komelia.annotations.BookAnnotationRepository,
     private val onnxRuntime: OnnxRuntime?,
     private val panelDetector: KomeliaPanelDetector?,
     private val upscaler: KomeliaUpscaler?,
@@ -104,6 +105,7 @@ class ReaderViewModel(
         stateScope = screenModelScope,
         bookSiblingsContext = bookSiblingsContext,
         colorCorrectionRepository = colorCorrectionRepository,
+        bookAnnotationRepository = bookAnnotationRepository,
         pageChangeFlow = pageChangeFlow,
     )
 

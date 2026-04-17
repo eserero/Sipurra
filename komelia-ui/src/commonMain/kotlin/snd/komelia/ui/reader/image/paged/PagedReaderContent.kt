@@ -72,6 +72,8 @@ fun BoxScope.PagedReaderContent(
     volumeKeysNavigation: Boolean,
     tapNavigationMode: ReaderTapNavigationMode,
     onLongPress: (Offset) -> Unit = {},
+    annotations: List<snd.komelia.annotations.BookAnnotation> = emptyList(),
+    onAnnotationTap: (snd.komelia.annotations.BookAnnotation) -> Unit = {},
 ) {
     if (showHelpDialog) {
         PagedReaderHelpDialog(onDismissRequest = { onShowHelpDialogChange(false) })
@@ -220,6 +222,9 @@ fun BoxScope.PagedReaderContent(
                                     Rect(Offset(left, top), imageSize.toSize())
                                 }
                             }
+                            LaunchedEffect(imageBounds) {
+                                pagedReaderState.lastImageBounds.value = imageBounds
+                            }
 
                             AdaptiveBackground(
                                 edgeSampling = edgeSampling,
@@ -229,6 +234,14 @@ fun BoxScope.PagedReaderContent(
                                     SINGLE_PAGE -> pages.firstOrNull()?.let { SinglePageLayout(it) }
                                     DOUBLE_PAGES, DOUBLE_PAGES_NO_COVER -> DoublePageLayout(pages, readingDirection)
                                 }
+                                // Annotation pins overlay
+                                val pageNumber = spreadMetadata.firstOrNull()?.pageNumber ?: -1
+                                val pageAnnotations = annotationsForPage(annotations, pageNumber)
+                                snd.komelia.ui.reader.image.ComicAnnotationOverlay(
+                                    annotations = pageAnnotations,
+                                    imageBounds = imageBounds,
+                                    onAnnotationTap = onAnnotationTap,
+                                )
                             }
                         }
                 }
@@ -237,6 +250,15 @@ fun BoxScope.PagedReaderContent(
     }
 }
 
+
+private fun annotationsForPage(
+    annotations: List<snd.komelia.annotations.BookAnnotation>,
+    pageNumber: Int,
+): List<snd.komelia.annotations.BookAnnotation> {
+    return annotations.filter { annotation ->
+        (annotation.location as? snd.komelia.annotations.AnnotationLocation.ComicLocation)?.page == pageNumber
+    }
+}
 
 @Composable
 private fun TransitionPage(page: TransitionPage) {

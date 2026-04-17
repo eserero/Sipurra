@@ -13,6 +13,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import snd.komelia.AppNotification
@@ -63,6 +65,7 @@ class ReaderState(
     private val stateScope: CoroutineScope,
     private val bookSiblingsContext: BookSiblingsContext,
     private val colorCorrectionRepository: BookColorCorrectionRepository,
+    private val bookAnnotationRepository: snd.komelia.annotations.BookAnnotationRepository,
     val pageChangeFlow: SharedFlow<Unit>,
 ) {
     private val previewLoadScope = CoroutineScope(Dispatchers.Default.limitedParallelism(1) + SupervisorJob())
@@ -113,6 +116,14 @@ class ReaderState(
     val volumeKeysNavigation = MutableStateFlow(false)
     val keepReaderScreenOn = MutableStateFlow(false)
     val pixelDensity = MutableStateFlow<Density?>(null)
+
+    val annotations = MutableStateFlow<List<snd.komelia.annotations.BookAnnotation>>(emptyList())
+    val showAnnotationDialog = MutableStateFlow(false)
+    val editingComicAnnotation = MutableStateFlow<snd.komelia.annotations.BookAnnotation?>(null)
+    val pendingAnnotationPage = MutableStateFlow(0)
+    val pendingAnnotationX = MutableStateFlow(0f)
+    val pendingAnnotationY = MutableStateFlow(0f)
+    val lastHighlightColor = MutableStateFlow(0xFFFFEB3B.toInt())
 
     suspend fun initialize(bookId: KomgaBookId) {
         upsamplingMode.value = readerSettingsRepository.getUpsamplingMode().first()
@@ -178,6 +189,13 @@ class ReaderState(
             if (throwable.isNetworkError()) serverUnavailableDialogVisible.value = true
         }
 
+        stateScope.launch {
+            currentBookId.filterNotNull().collectLatest { bookId ->
+                bookAnnotationRepository.getAnnotations(bookId).collect { list ->
+                    annotations.value = list
+                }
+            }
+        }
     }
 
     private suspend fun loadBookPages(bookId: KomgaBookId): List<PageMetadata> {
@@ -360,6 +378,35 @@ class ReaderState(
                 appNotifications.add(AppNotification.Success("Page $pageNumber saved to Downloads"))
             }
         }
+    }
+
+    fun saveComicAnnotation(page: Int, x: Float, y: Float, color: Int, note: String?) {
+        val bookId = currentBookId.value ?: return
+        val annotation = snd.komelia.annotations.BookAnnotation(
+            id = java.util.UUID.randomUUID().toString(),
+            bookId = bookId,
+            location = snd.komelia.annotations.AnnotationLocation.ComicLocation(page, x, y),
+            highlightColor = color,
+            note = note,
+            createdAt = System.currentTimeMillis(),
+        )
+        stateScope.launch {
+            bookAnnotationRepository.saveAnnotation(annotation)
+            lastHighlightColor.value = color
+        }
+    }
+
+    fun updateComicAnnotation(existing: snd.komelia.annotations.BookAnnotation, note: String?, color: Int) {
+        val updated = existing.copy(highlightColor = color, note = note)
+        stateScope.launch {
+            bookAnnotationRepository.deleteAnnotation(existing.id)
+            bookAnnotationRepository.saveAnnotation(updated)
+            lastHighlightColor.value = color
+        }
+    }
+
+    fun deleteComicAnnotation(annotation: snd.komelia.annotations.BookAnnotation) {
+        stateScope.launch { bookAnnotationRepository.deleteAnnotation(annotation.id) }
     }
 
     fun dismissServerUnavailableDialog() {

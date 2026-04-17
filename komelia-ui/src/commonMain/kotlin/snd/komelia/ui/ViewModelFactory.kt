@@ -263,6 +263,7 @@ class ViewModelFactory(
             readerImageFactory = dependencies.readerImageFactory,
             currentBookId = imageReaderCurrentBook,
             colorCorrectionRepository = appRepositories.bookColorCorrectionRepository,
+            bookAnnotationRepository = appRepositories.bookAnnotationRepository,
             onnxRuntime = dependencies.onnxRuntime,
             panelDetector = dependencies.panelDetector,
             upscaler = dependencies.upscaler,
