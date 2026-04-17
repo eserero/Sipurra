@@ -43,4 +43,6 @@ data class AppSettings(
     val cardShadowLevel: Float = 2.0f,
     val cardCornerRadius: Float = 8.0f,
     val useFloatingNavigationBar: Boolean = false,
+    /** Null means use default yellow (0xFFFFEB3B.toInt()). */
+    val lastHighlightColor: Int? = null,
 )
