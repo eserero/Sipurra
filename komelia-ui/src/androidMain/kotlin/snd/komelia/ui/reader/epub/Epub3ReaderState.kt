@@ -500,6 +500,12 @@ class Epub3ReaderState(
                     "currentLocator=${currentLocator.value?.href}"
                 }
                 savedLocator = locator
+                // Keep EpubView.props.locator in sync with the current reading position.
+                // emitCurrentLocator() uses props?.locator as a reference to decide whether
+                // to suppress false locator emissions during WebView reflow (orientation change).
+                // Without this, props.locator stays at the initial/server-fetched locator forever,
+                // causing isPropLocatorOnPage=false on every reflow and corrupting savedLocator.
+                view.props = view.props?.copy(locator = locator)
                 currentLocator.value = locator
                 (mediaOverlayController.value as? MediaOverlayController)?.handleUserLocatorChange(locator)
                 if (!markReadProgress) return

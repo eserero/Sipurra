@@ -137,6 +137,36 @@ class EpubView(
 
     private var changingResource = false
 
+    // Used to restore reading position after an orientation-change WebView reflow.
+    private var preResizeLocator: Locator? = null
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        // Skip the initial layout pass (view hasn't been displayed yet).
+        if (oldw == 0 && oldh == 0) return
+        // Skip if nothing actually changed.
+        if (w == oldw && h == oldh) return
+        // No locator or navigator yet — nothing to restore.
+        val locator = props?.locator ?: return
+        if (navigator == null) return
+
+        // When the device is rotated, the EpubView is resized.  Readium's paginated
+        // renderer uses CSS columns whose width is tied to the viewport, so the
+        // column layout is completely rebuilt and the WebView's horizontal scroll
+        // is reset to 0 — making Readium emit progression=0.0 (beginning of chapter).
+        //
+        // Fix: capture the reading position NOW (before the reflow corrupts it) and
+        // call go() from the next message-loop slot.  go() queues a JS scroll command
+        // inside the WebView, which executes *after* the new column layout is ready,
+        // landing the user at the correct position in the reflowed content.
+        preResizeLocator = locator
+        post {
+            val restore = preResizeLocator ?: return@post
+            preResizeLocator = null
+            go(restore)
+        }
+    }
+
     var pendingProps: Props = Props(
         bookUuid = null,
         locator = null,
