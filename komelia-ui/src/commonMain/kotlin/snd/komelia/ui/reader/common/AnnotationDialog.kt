@@ -48,7 +48,7 @@ fun AnnotationDialog(
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartialExpansion = true)
+    val sheetState = rememberModalBottomSheetState()
     val coroutineScope = rememberCoroutineScope()
 
     var note by remember { mutableStateOf(existingAnnotation?.note ?: "") }

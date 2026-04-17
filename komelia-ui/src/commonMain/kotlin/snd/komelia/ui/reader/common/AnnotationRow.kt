@@ -74,8 +74,9 @@ fun AnnotationRow(
             )
 
             // For EPUB: show the highlighted text snippet
-            if (annotation.location is AnnotationLocation.EpubLocation) {
-                val snippet = annotation.location.selectedText
+            val epubLocation = annotation.location as? AnnotationLocation.EpubLocation
+            if (epubLocation != null) {
+                val snippet = epubLocation.selectedText
                 if (!snippet.isNullOrBlank()) {
                     Text(
                         text = snippet,

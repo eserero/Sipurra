@@ -49,6 +49,7 @@ class AppMigrations : MigrationResourcesProvider() {
         "V40__audio_folder.sql",
         "V41__use_floating_navigation_bar.sql",
         "V42__epub3_respect_publisher_colors.sql",
+        "V43__book_annotations.sql",
     )
 
     override suspend fun getMigration(name: String): ByteArray? {
