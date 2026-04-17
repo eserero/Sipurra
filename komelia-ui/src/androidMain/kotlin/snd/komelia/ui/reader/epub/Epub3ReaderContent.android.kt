@@ -444,9 +444,91 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                             epub3State.showContentDialog.value = false
                         },
                         onDeleteBookmark = { epub3State.deleteBookmark(it) },
+                        annotations = epub3State.annotations.collectAsState().value,
+                        onAnnotationTap = { annotation ->
+                            epub3State.editingAnnotation.value = annotation
+                            epub3State.showContentDialog.value = false
+                            epub3State.showAnnotationDialog.value = true
+                            val loc = annotation.location as? snd.komelia.annotations.AnnotationLocation.EpubLocation
+                            loc?.let {
+                                runCatching {
+                                    org.readium.r2.shared.publication.Locator.fromJSON(org.json.JSONObject(it.locatorJson))
+                                }.getOrNull()?.let { locator -> epub3State.navigateToLocator(locator) }
+                            }
+                        },
+                        onDeleteAnnotation = { epub3State.deleteAnnotation(it) },
                         onSearch = { epub3State.performSearch(it) },
                         onDismiss = { epub3State.showContentDialog.value = false },
                         initialTab = epub3State.initialContentTab
+                    )
+                }
+
+                // Annotation context menu (shown after text selection)
+                val showContextMenu by epub3State.showAnnotationContextMenu.collectAsState()
+                val pendingLocator by epub3State.pendingSelectionLocator.collectAsState()
+                val lastColor by epub3State.lastHighlightColor.collectAsState()
+
+                if (showContextMenu) {
+                    snd.komelia.ui.reader.epub.AnnotationContextMenu(
+                        selectedText = pendingLocator?.text?.highlight,
+                        selectedColor = lastColor,
+                        onColorSelected = { epub3State.lastHighlightColor.value = it },
+                        onCopy = { epub3State.showAnnotationContextMenu.value = false },
+                        onHighlight = {
+                            pendingLocator?.let { locator ->
+                                epub3State.saveAnnotation(
+                                    locator = locator,
+                                    selectedText = locator.text?.highlight,
+                                    color = epub3State.lastHighlightColor.value,
+                                    note = null,
+                                )
+                            }
+                            epub3State.showAnnotationContextMenu.value = false
+                        },
+                        onNote = {
+                            epub3State.showAnnotationContextMenu.value = false
+                            epub3State.showAnnotationDialog.value = true
+                        },
+                        onDismiss = { epub3State.showAnnotationContextMenu.value = false },
+                    )
+                }
+
+                val showAnnotationDialog by epub3State.showAnnotationDialog.collectAsState()
+                val editingAnnotation by epub3State.editingAnnotation.collectAsState()
+
+                if (showAnnotationDialog) {
+                    val isEditing = editingAnnotation != null
+                    val referenceText = if (isEditing) {
+                        (editingAnnotation!!.location as? snd.komelia.annotations.AnnotationLocation.EpubLocation)
+                            ?.selectedText ?: ""
+                    } else {
+                        pendingLocator?.text?.highlight ?: ""
+                    }
+                    snd.komelia.ui.reader.common.AnnotationDialog(
+                        referenceText = referenceText,
+                        existingAnnotation = editingAnnotation,
+                        initialColor = lastColor,
+                        onSave = { note, color ->
+                            if (isEditing) {
+                                epub3State.updateAnnotation(editingAnnotation!!, note, color)
+                            } else {
+                                pendingLocator?.let { locator ->
+                                    epub3State.saveAnnotation(locator, locator.text?.highlight, color, note)
+                                }
+                            }
+                            epub3State.showAnnotationDialog.value = false
+                            epub3State.editingAnnotation.value = null
+                            epub3State.pendingSelectionLocator.value = null
+                        },
+                        onDelete = {
+                            editingAnnotation?.let { epub3State.deleteAnnotation(it) }
+                            epub3State.showAnnotationDialog.value = false
+                            epub3State.editingAnnotation.value = null
+                        },
+                        onDismiss = {
+                            epub3State.showAnnotationDialog.value = false
+                            epub3State.editingAnnotation.value = null
+                        },
                     )
                 }
 

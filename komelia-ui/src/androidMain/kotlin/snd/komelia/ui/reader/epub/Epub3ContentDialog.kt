@@ -97,6 +97,9 @@ fun Epub3ContentDialog(
     onNavigateLink: (Link) -> Unit,
     onNavigateLocator: (Locator) -> Unit,
     onDeleteBookmark: (EpubBookmark) -> Unit,
+    annotations: List<snd.komelia.annotations.BookAnnotation>,
+    onAnnotationTap: (snd.komelia.annotations.BookAnnotation) -> Unit,
+    onDeleteAnnotation: (snd.komelia.annotations.BookAnnotation) -> Unit,
     onSearch: (String) -> Unit,
     onDismiss: () -> Unit,
     initialTab: Int = 0,
@@ -104,7 +107,7 @@ fun Epub3ContentDialog(
 ) {
     var dragOffsetY by remember { mutableStateOf(0f) }
     val maxHeight = (LocalConfiguration.current.screenHeightDp * 2f / 3f).dp
-    val pagerState = rememberPagerState(initialPage = initialTab, pageCount = { 3 })
+    val pagerState = rememberPagerState(initialPage = initialTab, pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
     val theme = snd.komelia.ui.LocalTheme.current
     val surfaceColor = if (theme.type == snd.komelia.ui.Theme.ThemeType.DARK) Color(43, 43, 43)
@@ -161,6 +164,11 @@ fun Epub3ContentDialog(
                 Tab(
                     selected = pagerState.currentPage == 2,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(2) } },
+                    text = { Text("Annotations") },
+                )
+                Tab(
+                    selected = pagerState.currentPage == 3,
+                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(3) } },
                     text = { Text("Search") },
                 )
             }
@@ -173,7 +181,8 @@ fun Epub3ContentDialog(
                 when (page) {
                     0 -> ContentsTab(toc, currentHref, onNavigateLink)
                     1 -> BookmarksTab(bookmarks, positions, onNavigateLocator, onDeleteBookmark)
-                    2 -> SearchTab(searchQuery, searchResults, positions, isSearching, onSearch, onNavigateLocator)
+                    2 -> AnnotationsTab(annotations, positions, onAnnotationTap, onDeleteAnnotation)
+                    3 -> SearchTab(searchQuery, searchResults, positions, isSearching, onSearch, onNavigateLocator)
                 }
             }
         }
@@ -469,6 +478,61 @@ private fun SearchTab(
                     )
                     SearchResultRow(index, locator, positions, onNavigate)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AnnotationsTab(
+    annotations: List<snd.komelia.annotations.BookAnnotation>,
+    positions: List<Locator>,
+    onTap: (snd.komelia.annotations.BookAnnotation) -> Unit,
+    onDelete: (snd.komelia.annotations.BookAnnotation) -> Unit,
+) {
+    if (annotations.isEmpty()) {
+        Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+            Text(
+                text = "No annotations yet",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    } else {
+        val dividerColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+        val sorted = remember(annotations) {
+            annotations.sortedBy { annotation ->
+                (annotation.location as? snd.komelia.annotations.AnnotationLocation.EpubLocation)
+                    ?.let { loc ->
+                        runCatching {
+                            Locator.fromJSON(JSONObject(loc.locatorJson))
+                        }.getOrNull()?.locations?.totalProgression
+                    } ?: 0.0
+            }
+        }
+        LazyColumn {
+            itemsIndexed(sorted) { index, annotation ->
+                if (index > 0) HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = dividerColor
+                )
+                val location = annotation.location as? snd.komelia.annotations.AnnotationLocation.EpubLocation
+                val locator = remember(location?.locatorJson) {
+                    location?.let { runCatching { Locator.fromJSON(JSONObject(it.locatorJson)) }.getOrNull() }
+                }
+                val positionIndex = if (locator != null) locatorToPositionIndex(positions, locator) else -1
+                val locationLabel = buildString {
+                    append(locator?.title ?: "Unknown chapter")
+                    if (positions.isNotEmpty() && positionIndex >= 0) {
+                        append(" · Location ${positionIndex + 1} of ${positions.size}")
+                    }
+                }
+                snd.komelia.ui.reader.common.AnnotationRow(
+                    annotation = annotation,
+                    locationLabel = locationLabel,
+                    onTap = { onTap(annotation) },
+                    onDelete = { onDelete(annotation) },
+                )
             }
         }
     }

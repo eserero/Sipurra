@@ -57,6 +57,10 @@ import snd.komelia.bookmarks.EpubBookmark
 import snd.komelia.bookmarks.EpubBookmarkRepository
 import org.json.JSONObject
 import java.util.UUID
+import snd.komelia.annotations.AnnotationLocation
+import snd.komelia.annotations.BookAnnotation
+import snd.komelia.annotations.BookAnnotationRepository
+import com.storyteller.reader.Highlight
 
 import org.readium.r2.shared.publication.services.search.search
 import org.readium.r2.shared.util.Try
@@ -79,6 +83,8 @@ class Epub3ReaderState(
     private val bookSiblingsContext: BookSiblingsContext,
     private val audioPositionRepository: AudioPositionRepository,
     private val audioBookmarkRepository: AudioBookmarkRepository,
+    private val bookAnnotationRepository: BookAnnotationRepository,
+    private val settingsRepository: snd.komelia.settings.CommonSettingsRepository,
     override val onExit: (KomeliaBook) -> Unit,
 ) : EpubReaderState {
 
@@ -109,6 +115,12 @@ class Epub3ReaderState(
     val searchResults = MutableStateFlow<List<Locator>>(emptyList())
     val isSearching = MutableStateFlow(false)
     val bookmarks = MutableStateFlow<List<EpubBookmark>>(emptyList())
+    val annotations = MutableStateFlow<List<BookAnnotation>>(emptyList())
+    val lastHighlightColor = MutableStateFlow(0xFFFFEB3B.toInt())
+    val showAnnotationContextMenu = MutableStateFlow(false)
+    val showAnnotationDialog = MutableStateFlow(false)
+    val pendingSelectionLocator = MutableStateFlow<Locator?>(null)
+    val editingAnnotation = MutableStateFlow<BookAnnotation?>(null)
     val tableOfContents = MutableStateFlow<List<Link>>(emptyList())
     val settings = MutableStateFlow(Epub3NativeSettings())
     val userFonts = MutableStateFlow<List<UserFont>>(emptyList())
@@ -236,6 +248,41 @@ class Epub3ReaderState(
     fun deleteBookmark(bookmark: EpubBookmark) {
         coroutineScope.launch {
             epubBookmarkRepository.deleteBookmark(bookmark.id)
+        }
+    }
+
+    fun saveAnnotation(locator: Locator, selectedText: String?, color: Int, note: String?) {
+        val annotation = BookAnnotation(
+            id = UUID.randomUUID().toString(),
+            bookId = bookId.value,
+            location = AnnotationLocation.EpubLocation(
+                locatorJson = locator.toJSON().toString(),
+                selectedText = selectedText,
+            ),
+            highlightColor = color,
+            note = note,
+            createdAt = Clock.System.now().toEpochMilliseconds(),
+        )
+        coroutineScope.launch {
+            bookAnnotationRepository.saveAnnotation(annotation)
+            settingsRepository.putLastHighlightColor(color)
+            lastHighlightColor.value = color
+        }
+    }
+
+    fun updateAnnotation(existing: BookAnnotation, note: String?, color: Int) {
+        val updated = existing.copy(highlightColor = color, note = note)
+        coroutineScope.launch {
+            bookAnnotationRepository.deleteAnnotation(existing.id)
+            bookAnnotationRepository.saveAnnotation(updated)
+            settingsRepository.putLastHighlightColor(color)
+            lastHighlightColor.value = color
+        }
+    }
+
+    fun deleteAnnotation(annotation: BookAnnotation) {
+        coroutineScope.launch {
+            bookAnnotationRepository.deleteAnnotation(annotation.id)
         }
     }
 
@@ -432,6 +479,16 @@ class Epub3ReaderState(
                     bookmarks.value = it
                 }
             }
+            coroutineScope.launch {
+                bookAnnotationRepository.getAnnotations(bookId.value).collect { list ->
+                    annotations.value = list
+                }
+            }
+            coroutineScope.launch {
+                settingsRepository.getLastHighlightColor().collect { color ->
+                    lastHighlightColor.value = color
+                }
+            }
 
             if (clips.isNotEmpty()) {
                 coroutineScope.launch {
@@ -545,10 +602,44 @@ class Epub3ReaderState(
                 // F2: double-tap → seek audio to that paragraph and play
                 (mediaOverlayController.value as? MediaOverlayController)?.handleDoubleTap(locator)
             }
+
+            override fun onSelection(locator: Locator, x: Int, y: Int) {
+                pendingSelectionLocator.value = locator
+                showAnnotationContextMenu.value = true
+            }
+
+            override fun onSelectionCleared() {
+                showAnnotationContextMenu.value = false
+                pendingSelectionLocator.value = null
+            }
+
+            override fun onHighlightTap(decorationId: String, x: Int, y: Int) {
+                val annotation = annotations.value.find { it.id == decorationId }
+                if (annotation != null) {
+                    editingAnnotation.value = annotation
+                    showAnnotationDialog.value = true
+                }
+            }
         }
         view.pendingProps.bookUuid = bookUuid
         view.pendingProps.locator = savedLocator
         view.finalizeProps()
+        coroutineScope.launch {
+            annotations.collect { list ->
+                val highlights = list
+                    .filter { it.location is AnnotationLocation.EpubLocation && it.highlightColor != null }
+                    .mapNotNull { annotation ->
+                        val loc = annotation.location as AnnotationLocation.EpubLocation
+                        val locator = runCatching {
+                            org.readium.r2.shared.publication.Locator.fromJSON(org.json.JSONObject(loc.locatorJson))
+                        }.getOrNull()
+                        locator?.let { Highlight(annotation.id, annotation.highlightColor!!, it) }
+                    }
+                epubView?.let { v ->
+                    v.props = v.props?.copy(highlights = highlights)
+                }
+            }
+        }
         this.epubView = view
         currentLocator.value = savedLocator
         applySettingsToView(settings.value)
