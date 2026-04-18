@@ -60,6 +60,7 @@ fun BoxScope.SettingsOverlay(
     onColorCorrectionClick: () -> Unit,
     onBackPress: () -> Unit,
     ohShowHelpDialogChange: (Boolean) -> Unit,
+    onNotesClick: () -> Unit = {},
 ) {
     if (!show) return
     val useNewUI2 = LocalUseNewLibraryUI2.current
@@ -124,6 +125,7 @@ fun BoxScope.SettingsOverlay(
 
             ncnnSettingsState = ncnnSettingsState,
             onBackPress = onBackPress,
+            onNotesClick = onNotesClick,
         )
     } else {
         SettingsSideMenuOverlay(

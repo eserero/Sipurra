@@ -151,26 +151,21 @@ fun Epub3ContentDialog(
                 selectedTabIndex = pagerState.currentPage,
                 containerColor = Color.Transparent,
             ) {
-                Tab(
-                    selected = pagerState.currentPage == 0,
-                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
-                    text = { Text("Contents") },
-                )
-                Tab(
-                    selected = pagerState.currentPage == 1,
-                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
-                    text = { Text("Bookmarks") },
-                )
-                Tab(
-                    selected = pagerState.currentPage == 2,
-                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(2) } },
-                    text = { Text("Annotations") },
-                )
-                Tab(
-                    selected = pagerState.currentPage == 3,
-                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(3) } },
-                    text = { Text("Search") },
-                )
+                // Use content slot (not text=) so we can reduce horizontal padding from
+                // the default 16 dp to 6 dp — enough room for "Bookmarks" to stay on one line.
+                listOf("Contents", "Bookmarks", "Notes", "Search").forEachIndexed { index, label ->
+                    Tab(
+                        selected = pagerState.currentPage == index,
+                        onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
+                    ) {
+                        Text(
+                            text = label,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                        )
+                    }
+                }
             }
 
             HorizontalPager(

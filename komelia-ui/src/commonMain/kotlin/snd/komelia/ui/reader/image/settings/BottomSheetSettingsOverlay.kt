@@ -37,6 +37,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Tune
@@ -154,6 +155,7 @@ fun BottomSheetSettingsOverlay(
     commonReaderState: ReaderState,
     ncnnSettingsState: NcnnSettingsState,
     onBackPress: () -> Unit,
+    onNotesClick: () -> Unit = {},
 ) {
 
     val windowWidth = LocalWindowWidth.current
@@ -271,7 +273,8 @@ fun BottomSheetSettingsOverlay(
                     onReaderTypeChange = onReaderTypeChange,
                     panelsReaderState = panelsReaderState,
                     ncnnSettingsState = ncnnSettingsState,
-                    onSettingsClick = { showSettingsDialog = true }
+                    onSettingsClick = { showSettingsDialog = true },
+                    onNotesClick = onNotesClick,
                 )
             }
         }
@@ -922,6 +925,7 @@ fun ImageReaderControlsCardNewUI(
     panelsReaderState: PanelsReaderState?,
     ncnnSettingsState: NcnnSettingsState,
     onSettingsClick: () -> Unit,
+    onNotesClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val accentColor = LocalAccentColor.current
@@ -998,6 +1002,13 @@ fun ImageReaderControlsCardNewUI(
                             .padding(horizontal = 4.dp)
                     )
                 }
+
+                ReaderModeIconButton(
+                    selected = false,
+                    onClick = onNotesClick,
+                    icon = Icons.Rounded.EditNote,
+                    contentDescription = "Notes",
+                )
 
                 IconButton(onClick = onSettingsClick) {
                     Icon(

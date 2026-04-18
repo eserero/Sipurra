@@ -99,7 +99,7 @@ fun ComicContentDialog(
                 Tab(
                     selected = pagerState.currentPage == 0,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
-                    text = { Text("Annotations") },
+                    text = { Text("Notes") },
                 )
             }
 

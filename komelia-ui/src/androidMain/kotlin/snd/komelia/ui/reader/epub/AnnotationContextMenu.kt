@@ -1,37 +1,49 @@
 package snd.komelia.ui.reader.epub
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BorderColor
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
+import snd.komelia.ui.LocalTheme
+import snd.komelia.ui.Theme
 import snd.komelia.ui.reader.common.AnnotationColorSwatches
 
 /**
- * Floating popup shown when the user selects text in the EPUB reader.
+ * Popup context menu shown when the user selects text in the EPUB reader.
  *
- * @param selectedText The text the user has selected (may be null if unavailable).
- * @param selectedColor The currently selected highlight color.
- * @param onColorSelected Updates the selected color.
- * @param onCopy Copy selectedText to clipboard and dismiss.
- * @param onHighlight Save highlight immediately with current color (no note).
- * @param onNote Open AnnotationDialog for adding a note.
- * @param onDismiss Dismiss the menu.
+ * Uses [DropdownMenu] so it appears above/below [position] automatically, matching
+ * standard system menu behaviour.  [position] should be in **pixels** relative to
+ * the window (convert dp values from the WebView with LocalDensity before passing).
+ *
+ * @param selectedText The currently selected text (copied on "Copy").
+ * @param position Window-relative pixel coordinates of the selection anchor point.
+ * @param selectedColor The currently active highlight colour (shown in the swatches row).
+ * @param onColorSelected Called when the user picks a different highlight colour.
+ * @param onCopy Copy [selectedText] to clipboard and dismiss.
+ * @param onHighlight Save a highlight with the current colour immediately (no note).
+ * @param onNote Open the annotation dialog for adding a note.
+ * @param onDismiss Dismiss the menu without any action.
  */
 @Composable
 fun AnnotationContextMenu(
     selectedText: String?,
+    position: IntOffset,
     selectedColor: Int,
     onColorSelected: (Int) -> Unit,
     onCopy: () -> Unit,
@@ -40,33 +52,48 @@ fun AnnotationContextMenu(
     onDismiss: () -> Unit,
 ) {
     val clipboard = LocalClipboardManager.current
+    val theme = LocalTheme.current
+    val surfaceColor = if (theme.type == Theme.ThemeType.DARK) Color(43, 43, 43)
+    else MaterialTheme.colorScheme.surface
 
-    Popup(
-        onDismissRequest = onDismiss,
-        properties = PopupProperties(focusable = false),
-    ) {
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            tonalElevation = 4.dp,
-            shadowElevation = 4.dp,
+    // Zero-size anchor box placed at the selection coordinates.
+    // DropdownMenu positions itself above or below this anchor automatically.
+    Box(modifier = Modifier.offset { position }) {
+        DropdownMenu(
+            expanded = true,
+            onDismissRequest = onDismiss,
+            containerColor = surfaceColor,
         ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+            // Colour-swatch row at the top
+            Box(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                 AnnotationColorSwatches(
                     selectedColor = selectedColor,
                     onColorSelected = onColorSelected,
                 )
-                Spacer(Modifier.height(8.dp))
-                Row {
-                    TextButton(onClick = {
-                        if (!selectedText.isNullOrBlank()) {
-                            clipboard.setText(AnnotatedString(selectedText))
-                        }
-                        onCopy()
-                    }) { Text("Copy") }
-                    TextButton(onClick = onHighlight) { Text("Highlight") }
-                    TextButton(onClick = onNote) { Text("Note") }
-                }
             }
+
+            HorizontalDivider()
+
+            DropdownMenuItem(
+                text = { Text("Copy") },
+                leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
+                onClick = {
+                    if (!selectedText.isNullOrBlank()) {
+                        clipboard.setText(AnnotatedString(selectedText))
+                    }
+                    onCopy()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Highlight") },
+                leadingIcon = { Icon(Icons.Default.BorderColor, contentDescription = null) },
+                onClick = onHighlight,
+            )
+            DropdownMenuItem(
+                text = { Text("Note") },
+                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                onClick = onNote,
+            )
         }
     }
 }

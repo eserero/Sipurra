@@ -23,10 +23,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import snd.komelia.annotations.BookAnnotation
+import snd.komelia.ui.LocalTheme
+import snd.komelia.ui.Theme
 
 /**
  * Shared annotation dialog used for create and edit in both EPUB3 and comic readers.
@@ -54,9 +57,14 @@ fun AnnotationDialog(
     var note by remember { mutableStateOf(existingAnnotation?.note ?: "") }
     var selectedColor by remember { mutableIntStateOf(existingAnnotation?.highlightColor ?: initialColor) }
 
+    val theme = LocalTheme.current
+    val surfaceColor = if (theme.type == Theme.ThemeType.DARK) Color(43, 43, 43)
+    else MaterialTheme.colorScheme.background
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        containerColor = surfaceColor,
     ) {
         Column(
             modifier = Modifier

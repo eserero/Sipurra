@@ -120,6 +120,8 @@ class Epub3ReaderState(
     val showAnnotationContextMenu = MutableStateFlow(false)
     val showAnnotationDialog = MutableStateFlow(false)
     val pendingSelectionLocator = MutableStateFlow<Locator?>(null)
+    val pendingSelectionX = MutableStateFlow(0)
+    val pendingSelectionY = MutableStateFlow(0)
     val editingAnnotation = MutableStateFlow<BookAnnotation?>(null)
     val tableOfContents = MutableStateFlow<List<Link>>(emptyList())
     val settings = MutableStateFlow(Epub3NativeSettings())
@@ -605,6 +607,8 @@ class Epub3ReaderState(
 
             override fun onSelection(locator: Locator, x: Int, y: Int) {
                 pendingSelectionLocator.value = locator
+                pendingSelectionX.value = x
+                pendingSelectionY.value = y
                 showAnnotationContextMenu.value = true
             }
 
@@ -637,6 +641,7 @@ class Epub3ReaderState(
                     }
                 epubView?.let { v ->
                     v.props = v.props?.copy(highlights = highlights)
+                    v.decorateHighlights()
                 }
             }
         }

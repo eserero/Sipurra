@@ -53,7 +53,7 @@ Sipurra is a fork of [Komelia](https://github.com/Snd-R/Komelia) focused on impr
 *   **Save Current Image**: long-press quick-save to Downloads
 *   **Double Tap to Zoom**: ability to configure double-tap to zoom for panel and page modes (make tap navigation a bit slower)
 *   **Additional Navigation Options**: tap left to back and right to forward, tap right to forward and left to back, tap top side to back and lower side to forward, tap lower side to back and top to forward.
-*   **Always On**: setting to prevent the screen to turn off when in the reader. (in the image reader setting page)
+*   **Keep Screen Awake**: setting to prevent the screen to turn off when in the reader. (in the image reader setting page)
 
 **Adaptive Backgrounds**
 | Light Theme | Dark Theme | Controls Hidden |
@@ -80,6 +80,7 @@ Sipurra is a fork of [Komelia](https://github.com/Snd-R/Komelia) focused on impr
 *   **New setting screen**: Theme and appearance selection, margins, fonts and audio settings. 
 *   **Better Navigation**: Ability to swipe to turn pages (swipe left/right to move about, scroll based reading etc.)
 *   **Bookmark and Search**: new implementation of chapter, bookmarking and text search
+*   **Keep Screen Awake**: setting to prevent the screen to turn off when in the reader. (in the image reader setting page - both use the same settings)
 
 
 **Controls and Audio Player**

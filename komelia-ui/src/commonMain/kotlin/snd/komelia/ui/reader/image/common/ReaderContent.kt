@@ -254,7 +254,7 @@ fun ReaderContent(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Add annotation") },
+                            text = { Text("Note") },
                             leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                             onClick = {
                                 showImageContextMenu = false
@@ -286,6 +286,7 @@ fun ReaderContent(
                     onColorCorrectionClick = onColorCorrectionClick,
                     onBackPress = onExit,
                     ohShowHelpDialogChange = { showHelpDialog = it },
+                    onNotesClick = { showComicContentDialog = true },
                 )
 
                 if (showSettingsMenu && useNewUI2) {
@@ -314,6 +315,14 @@ fun ReaderContent(
                         annotations = commonReaderState.annotations.collectAsState().value,
                         onAnnotationTap = { annotation ->
                             showComicContentDialog = false
+                            val loc = annotation.location as? snd.komelia.annotations.AnnotationLocation.ComicLocation
+                            if (loc != null) {
+                                when (commonReaderState.readerType.value) {
+                                    PAGED -> pagedReaderState.onPageChange(loc.page)
+                                    CONTINUOUS -> coroutineScope.launch { continuousReaderState.scrollToBookPage(loc.page + 1) }
+                                    PANELS -> panelsReaderState?.onPageChange(loc.page)
+                                }
+                            }
                             commonReaderState.editingComicAnnotation.value = annotation
                             commonReaderState.showAnnotationDialog.value = true
                         },

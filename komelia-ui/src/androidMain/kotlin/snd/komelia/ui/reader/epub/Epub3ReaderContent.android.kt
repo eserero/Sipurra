@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
@@ -467,10 +468,19 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                 val showContextMenu by epub3State.showAnnotationContextMenu.collectAsState()
                 val pendingLocator by epub3State.pendingSelectionLocator.collectAsState()
                 val lastColor by epub3State.lastHighlightColor.collectAsState()
+                val selX by epub3State.pendingSelectionX.collectAsState()
+                val selY by epub3State.pendingSelectionY.collectAsState()
 
                 if (showContextMenu) {
+                    // selX/selY are in dp (from WebView selection rect ÷ density).
+                    // Convert to pixels for the IntOffset anchor used by DropdownMenu.
+                    val density = LocalDensity.current
+                    val selXPx = with(density) { selX.dp.roundToPx() }
+                    val selYPx = with(density) { selY.dp.roundToPx() }
+
                     snd.komelia.ui.reader.epub.AnnotationContextMenu(
                         selectedText = pendingLocator?.text?.highlight,
+                        position = IntOffset(selXPx, selYPx),
                         selectedColor = lastColor,
                         onColorSelected = { epub3State.lastHighlightColor.value = it },
                         onCopy = { epub3State.showAnnotationContextMenu.value = false },
