@@ -617,7 +617,10 @@ class ReaderState(
             locator = R2Locator(
                 href = "p$page",
                 type = "image/jpeg",
-                locations = R2Location(progression = page.toFloat() / (booksState.value?.currentBookPages?.size ?: 1)),
+                locations = R2Location(
+                    position = page,
+                    progression = page.toFloat() / (booksState.value?.currentBookPages?.size ?: 1)
+                ),
                 koboSpan = encoded
             )
         )

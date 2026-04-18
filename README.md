@@ -6,6 +6,7 @@ Sipurra is a fork of [Komelia](https://github.com/Snd-R/Komelia) focused on impr
 *  New epub3 reader supporting immersive Audio + Text reading (based on storyteller)
 *  Audio books playback
 *  Many new features in the comic reader (AI upscaling, additional navigation options, improved panel mode and more)
+*  Bookmarks and Annotation support for books and audiobooks, Annotation and highlighting for books and comics. Fully Synchronized between devices.
 *  Much more - read below to find out :-)
 
 ### New UX and Themes
