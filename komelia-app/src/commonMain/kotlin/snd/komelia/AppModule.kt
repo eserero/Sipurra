@@ -69,11 +69,14 @@ import snd.komga.client.sse.KomgaEvent
 import snd.komga.client.user.KomgaUser
 import kotlin.time.measureTimedValue
 
+import snd.komelia.sync.ReaderSyncService
+
 private val logger = KotlinLogging.logger { }
 
 abstract class AppModule {
     protected val initScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     protected val appNotifications = AppNotifications()
+    protected val readerSyncService = ReaderSyncService()
 
     suspend fun initDependencies(): DependencyContainer {
         beforeInit()
@@ -212,6 +215,7 @@ abstract class AppModule {
         return DependencyContainer(
             appStrings = MutableStateFlow(EnStrings),
             appRepositories = appRepositories,
+            readerSyncService = readerSyncService,
 
             komgaApi = komgaApi,
             isOffline = isOffline,

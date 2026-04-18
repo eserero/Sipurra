@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import snd.komelia.AppNotifications
 import snd.komelia.AppWindowState
+import snd.komelia.ManagedKomgaEvents
 import snd.komelia.fonts.UserFontsRepository
 import snd.komelia.komga.api.KomgaBookApi
 import snd.komelia.komga.api.KomgaReadListApi
@@ -21,6 +22,7 @@ import snd.komelia.settings.model.EpubReaderType
 import snd.komelia.settings.model.EpubReaderType.EPUB3_READER
 import snd.komelia.settings.model.EpubReaderType.KOMGA_EPUB
 import snd.komelia.settings.model.EpubReaderType.TTSU_EPUB
+import snd.komelia.sync.ReaderSyncService
 import snd.komelia.ui.BookSiblingsContext
 import snd.komelia.ui.LoadState
 import snd.komelia.ui.platform.PlatformType
@@ -40,6 +42,8 @@ class EpubReaderViewModel(
     private val audioPositionRepository: snd.komelia.audiobook.AudioPositionRepository,
     private val audioBookmarkRepository: snd.komelia.audiobook.AudioBookmarkRepository,
     private val bookAnnotationRepository: snd.komelia.annotations.BookAnnotationRepository,
+    private val readerSyncService: ReaderSyncService,
+    private val komgaEvents: ManagedKomgaEvents,
     private val fontsRepository: UserFontsRepository,
     private val notifications: AppNotifications,
     private val windowState: AppWindowState,
@@ -130,6 +134,8 @@ class EpubReaderViewModel(
                             audioPositionRepository = audioPositionRepository,
                             audioBookmarkRepository = audioBookmarkRepository,
                             bookAnnotationRepository = bookAnnotationRepository,
+                            readerSyncService = readerSyncService,
+                            komgaEvents = komgaEvents,
                             fontsRepository = fontsRepository,
                             notifications = notifications,
                             windowState = windowState,

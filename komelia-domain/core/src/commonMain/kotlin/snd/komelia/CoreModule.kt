@@ -12,10 +12,13 @@ import snd.komelia.settings.ImageReaderSettingsRepository
 import snd.komelia.settings.KomfSettingsRepository
 import snd.komelia.settings.SecretsRepository
 
+import snd.komelia.sync.ReaderSyncService
+
 class CoreModule(
     val appRepositories: AppRepositories,
     private val offlineModule: OfflineModule
 ) {
+    val readerSyncService = ReaderSyncService()
 }
 
 data class AppRepositories(

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.takeWhile
 import snd.komelia.AppNotifications
+import snd.komelia.ManagedKomgaEvents
 import snd.komelia.color.repository.BookColorCorrectionRepository
 import snd.komelia.image.BookImageLoader
 import snd.komelia.image.KomeliaPanelDetector
@@ -60,7 +61,11 @@ class ReaderViewModel(
     currentBookId: MutableStateFlow<KomgaBookId?>,
     bookSiblingsContext: BookSiblingsContext,
     colorCorrectionRepository: BookColorCorrectionRepository,
-    bookAnnotationRepository: snd.komelia.annotations.BookAnnotationRepository,
+    private val bookAnnotationRepository: snd.komelia.annotations.BookAnnotationRepository,
+    private val epubBookmarkRepository: snd.komelia.bookmarks.EpubBookmarkRepository,
+    private val audioBookmarkRepository: snd.komelia.audiobook.AudioBookmarkRepository,
+    private val readerSyncService: snd.komelia.sync.ReaderSyncService,
+    private val komgaEvents: ManagedKomgaEvents,
     private val onnxRuntime: OnnxRuntime?,
     private val panelDetector: KomeliaPanelDetector?,
     private val upscaler: KomeliaUpscaler?,
@@ -106,6 +111,10 @@ class ReaderViewModel(
         bookSiblingsContext = bookSiblingsContext,
         colorCorrectionRepository = colorCorrectionRepository,
         bookAnnotationRepository = bookAnnotationRepository,
+        epubBookmarkRepository = epubBookmarkRepository,
+        audioBookmarkRepository = audioBookmarkRepository,
+        readerSyncService = readerSyncService,
+        komgaEvents = komgaEvents,
         pageChangeFlow = pageChangeFlow,
     )
 

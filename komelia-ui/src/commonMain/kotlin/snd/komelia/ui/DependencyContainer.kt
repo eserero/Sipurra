@@ -24,9 +24,12 @@ import snd.komelia.updates.OnnxModelDownloader
 import snd.komelia.updates.OnnxRuntimeInstaller
 import snd.komf.client.KomfClientFactory
 
+import snd.komelia.sync.ReaderSyncService
+
 data class DependencyContainer(
     val appStrings: StateFlow<AppStrings>,
     val appRepositories: AppRepositories,
+    val readerSyncService: ReaderSyncService,
     val komgaApi: StateFlow<KomgaApi>,
 
     val isOffline: StateFlow<Boolean>,

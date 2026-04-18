@@ -38,6 +38,7 @@ class AudiobookFolderController(
     private val extractedDir: File,
     private val audioPositionRepository: AudioPositionRepository,
     private val audioBookmarkRepository: AudioBookmarkRepository,
+    private val onBookmarkChange: () -> Unit = {},
 ) : EpubAudioController {
 
     private val _isPlaying = MutableStateFlow(false)
@@ -272,6 +273,7 @@ class AudiobookFolderController(
         if (existingBookmark != null) {
             coroutineScope.launch {
                 audioBookmarkRepository.deleteBookmark(existingBookmark.id)
+                onBookmarkChange()
             }
         } else {
             coroutineScope.launch {
@@ -285,6 +287,7 @@ class AudiobookFolderController(
                         createdAt = System.currentTimeMillis(),
                     )
                 )
+                onBookmarkChange()
             }
         }
     }
@@ -292,6 +295,7 @@ class AudiobookFolderController(
     fun deleteAudioBookmark(id: String) {
         coroutineScope.launch {
             audioBookmarkRepository.deleteBookmark(id)
+            onBookmarkChange()
         }
     }
 

@@ -16,9 +16,27 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import snd.komelia.AppNotification
 import snd.komelia.AppNotifications
+import snd.komelia.ManagedKomgaEvents
+import snd.komelia.sync.CompactAnnotation
+import snd.komelia.sync.CompactAudioBookmark
+import snd.komelia.sync.CompactBookmark
+import snd.komelia.sync.ReaderSyncService
+import snd.komelia.sync.SyncBlob
+import snd.komga.client.book.R2Device
+import snd.komga.client.book.R2Location
+import snd.komga.client.book.R2Locator
+import snd.komga.client.book.R2Progression
+import snd.komga.client.sse.KomgaEvent
+import kotlin.time.Clock
+import snd.komelia.annotations.AnnotationLocation
+import snd.komelia.annotations.BookAnnotation
+import snd.komelia.bookmarks.EpubBookmark
+import snd.komelia.audiobook.AudioBookmark
 import snd.komelia.ui.platform.imageExtension
 import snd.komelia.ui.platform.sanitizeFilename
 import snd.komelia.ui.platform.saveImageToDownloads
@@ -66,8 +84,13 @@ class ReaderState(
     private val bookSiblingsContext: BookSiblingsContext,
     private val colorCorrectionRepository: BookColorCorrectionRepository,
     private val bookAnnotationRepository: snd.komelia.annotations.BookAnnotationRepository,
+    private val epubBookmarkRepository: snd.komelia.bookmarks.EpubBookmarkRepository,
+    private val audioBookmarkRepository: snd.komelia.audiobook.AudioBookmarkRepository,
+    private val readerSyncService: ReaderSyncService,
+    private val komgaEvents: ManagedKomgaEvents,
     val pageChangeFlow: SharedFlow<Unit>,
 ) {
+    private val currentSyncBlob = MutableStateFlow<String?>(null)
     private val previewLoadScope = CoroutineScope(Dispatchers.Default.limitedParallelism(1) + SupervisorJob())
     private val progressUpdateChannel = Channel<Int>(Channel.CONFLATED)
 
@@ -89,13 +112,7 @@ class ReaderState(
             for (page in progressUpdateChannel) {
                 readProgressPage.value = page
                 if (markReadProgress) {
-                    appNotifications.runCatchingToNotifications {
-                        val currentBook = booksState.value?.currentBook ?: return@runCatchingToNotifications
-                        bookApi.markReadProgress(
-                            currentBook.id,
-                            KomgaBookReadProgressUpdateRequest(page)
-                        )
-                    }
+                    updateCacheAndPush()
                 }
             }
         }
@@ -126,6 +143,12 @@ class ReaderState(
     val lastHighlightColor = MutableStateFlow(0xFFFFEB3B.toInt())
 
     suspend fun initialize(bookId: KomgaBookId) {
+        komgaEvents.events.onEach { event ->
+            if (event is KomgaEvent.ReadProgressChanged && event.bookId == (booksState.value?.currentBook?.id ?: bookId)) {
+                initialSync()
+            }
+        }.launchIn(stateScope)
+
         upsamplingMode.value = readerSettingsRepository.getUpsamplingMode().first()
         downsamplingKernel.value = readerSettingsRepository.getDownsamplingKernel().first()
         linearLightDownsampling.value = readerSettingsRepository.getLinearLightDownsampling().first()
@@ -148,7 +171,6 @@ class ReaderState(
             val newBook = bookApi.getOne(bookId)
 
             val bookPages = loadBookPages(newBook.id)
-
             val prevBook = getPreviousBook(bookId)
             val prevBookPages = if (prevBook != null) loadBookPages(prevBook.id) else emptyList()
             val nextBook = getNextBook(bookId)
@@ -183,6 +205,7 @@ class ReaderState(
                 readerType.value = readerSettingsRepository.getReaderType().first()
             }
 
+            initialSync()
             state.value = LoadState.Success(Unit)
         }.onFailure { throwable ->
             state.value = LoadState.Error(throwable)
@@ -393,6 +416,7 @@ class ReaderState(
         stateScope.launch {
             bookAnnotationRepository.saveAnnotation(annotation)
             lastHighlightColor.value = color
+            updateCacheAndPush()
         }
     }
 
@@ -402,11 +426,15 @@ class ReaderState(
             bookAnnotationRepository.deleteAnnotation(existing.id)
             bookAnnotationRepository.saveAnnotation(updated)
             lastHighlightColor.value = color
+            updateCacheAndPush()
         }
     }
 
     fun deleteComicAnnotation(annotation: snd.komelia.annotations.BookAnnotation) {
-        stateScope.launch { bookAnnotationRepository.deleteAnnotation(annotation.id) }
+        stateScope.launch {
+            bookAnnotationRepository.deleteAnnotation(annotation.id)
+            updateCacheAndPush()
+        }
     }
 
     fun dismissServerUnavailableDialog() {
@@ -417,7 +445,165 @@ class ReaderState(
         currentBookId.value = null
         previewLoadScope.cancel()
     }
+
+    private suspend fun initialSync() {
+        val currentBook = booksState.value?.currentBook ?: return
+        val r2Prog = bookApi.getReadiumProgression(currentBook.id)
+        val remoteSyncBlob = readerSyncService.decode(r2Prog?.locator?.koboSpan)
+        val localBookmarks = epubBookmarkRepository.getBookmarks(currentBook.id).first()
+        val localAnnotations = bookAnnotationRepository.getAnnotations(currentBook.id).first()
+        val localAudioBookmarks = audioBookmarkRepository.getBookmarks(currentBook.id).first()
+
+        val currentLocalBlob = readerSyncService.decode(currentSyncBlob.value)
+        val localLastSyncTime = currentLocalBlob?.lastModified ?: 0L
+
+        val localSyncBlob = SyncBlob(
+            bookmarks = localBookmarks.map {
+                CompactBookmark(it.id, it.locatorJson, it.createdAt)
+            },
+            annotations = localAnnotations.map {
+                CompactAnnotation(
+                    id = it.id,
+                    type = if (it.location is AnnotationLocation.EpubLocation) 0 else 1,
+                    loc = when (val loc = it.location) {
+                        is AnnotationLocation.EpubLocation -> loc.locatorJson
+                        is AnnotationLocation.ComicLocation -> "${loc.page},${loc.x},${loc.y}"
+                    },
+                    color = it.highlightColor,
+                    note = it.note,
+                    createdAt = it.createdAt
+                )
+            },
+            audioBookmarks = localAudioBookmarks.map {
+                CompactAudioBookmark(it.id, it.trackIndex, it.positionSeconds, it.createdAt)
+            },
+            lastModified = localLastSyncTime
+        )
+
+        val merged = if (remoteSyncBlob != null) {
+            readerSyncService.merge(localSyncBlob, remoteSyncBlob, localLastSyncTime)
+        } else localSyncBlob
+
+        // Update local repositories with merged data
+        merged.bookmarks.forEach { compact ->
+            if (localBookmarks.none { it.id == compact.id }) {
+                epubBookmarkRepository.saveBookmark(
+                    EpubBookmark(
+                        id = compact.id,
+                        bookId = currentBook.id,
+                        locatorJson = compact.locatorJson,
+                        createdAt = compact.createdAt
+                    )
+                )
+            }
+        }
+        merged.annotations.forEach { compact ->
+            if (localAnnotations.none { it.id == compact.id }) {
+                val location = if (compact.type == 0) {
+                    AnnotationLocation.EpubLocation(compact.loc, null)
+                } else {
+                    val parts = compact.loc.split(",")
+                    AnnotationLocation.ComicLocation(
+                        parts[0].toInt(),
+                        parts[1].toFloat(),
+                        parts[2].toFloat()
+                    )
+                }
+                bookAnnotationRepository.saveAnnotation(
+                    BookAnnotation(
+                        id = compact.id,
+                        bookId = currentBook.id,
+                        location = location,
+                        highlightColor = compact.color,
+                        note = compact.note,
+                        createdAt = compact.createdAt
+                    )
+                )
+            }
+        }
+        merged.audioBookmarks.forEach { compact ->
+            if (localAudioBookmarks.none { it.id == compact.id }) {
+                audioBookmarkRepository.saveBookmark(
+                    AudioBookmark(
+                        id = compact.id,
+                        bookId = currentBook.id,
+                        trackIndex = compact.track,
+                        positionSeconds = compact.pos,
+                        trackTitle = "",
+                        createdAt = compact.createdAt
+                    )
+                )
+            }
+        }
+
+        // Handle local deletions
+        localBookmarks.forEach { local ->
+            if (merged.bookmarks.none { it.id == local.id }) {
+                epubBookmarkRepository.deleteBookmark(local.id)
+            }
+        }
+        localAnnotations.forEach { local ->
+            if (merged.annotations.none { it.id == local.id }) {
+                bookAnnotationRepository.deleteAnnotation(local.id)
+            }
+        }
+        localAudioBookmarks.forEach { local ->
+            if (merged.audioBookmarks.none { it.id == local.id }) {
+                audioBookmarkRepository.deleteBookmark(local.id)
+            }
+        }
+
+        currentSyncBlob.value = readerSyncService.encode(merged)
+    }
+
+    private suspend fun updateCacheAndPush() {
+        val currentBook = booksState.value?.currentBook ?: return
+        val bookmarks = epubBookmarkRepository.getBookmarks(currentBook.id).first()
+        val annotations = bookAnnotationRepository.getAnnotations(currentBook.id).first()
+        val audioBookmarks = audioBookmarkRepository.getBookmarks(currentBook.id).first()
+
+        val syncBlob = SyncBlob(
+            bookmarks = bookmarks.map {
+                CompactBookmark(it.id, it.locatorJson, it.createdAt)
+            },
+            annotations = annotations.map {
+                CompactAnnotation(
+                    id = it.id,
+                    type = if (it.location is AnnotationLocation.EpubLocation) 0 else 1,
+                    loc = when (val loc = it.location) {
+                        is AnnotationLocation.EpubLocation -> loc.locatorJson
+                        is AnnotationLocation.ComicLocation -> "${loc.page},${loc.x},${loc.y}"
+                    },
+                    color = it.highlightColor,
+                    note = it.note,
+                    createdAt = it.createdAt
+                )
+            },
+            audioBookmarks = audioBookmarks.map {
+                CompactAudioBookmark(it.id, it.trackIndex, it.positionSeconds, it.createdAt)
+            },
+            lastModified = Clock.System.now().toEpochMilliseconds()
+        )
+        val encoded = readerSyncService.encode(syncBlob)
+        currentSyncBlob.value = encoded
+
+        if (!markReadProgress) return
+        val page = readProgressPage.value
+        val r2Prog = R2Progression(
+            modified = Clock.System.now(),
+            device = R2Device("komelia-android", "Komelia"),
+            locator = R2Locator(
+                href = "p$page",
+                type = "image/jpeg",
+                locations = R2Location(progression = page.toFloat() / (booksState.value?.currentBookPages?.size ?: 1)),
+                koboSpan = encoded
+            )
+        )
+        runCatching { bookApi.updateReadiumProgression(currentBook.id, r2Prog) }
+            .onFailure { appNotifications.runCatchingToNotifications { throw it } }
+    }
 }
+
 
 private fun Throwable.isNetworkError(): Boolean =
     this is ConnectTimeoutException || this is HttpRequestTimeoutException
