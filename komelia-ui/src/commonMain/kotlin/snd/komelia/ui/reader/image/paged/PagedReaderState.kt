@@ -321,8 +321,10 @@ class PagedReaderState(
     }
 
     fun jumpToPage(page: Int) {
+        val spreads = pageSpreads.value
+        if (page !in spreads.indices) return
         pageChangeFlow.tryEmit(Unit)
-        val pageNumber = pageSpreads.value[page].last().pageNumber
+        val pageNumber = spreads[page].last().pageNumber
         readerState.onProgressChange(pageNumber)
         currentSpreadIndex.value = page
         pageNavigationEvents.tryEmit(PageNavigationEvent.Immediate(page))
@@ -332,8 +334,11 @@ class PagedReaderState(
     }
 
     private fun loadPage(spreadIndex: Int) {
+        val spreads = pageSpreads.value
+        if (spreadIndex !in spreads.indices) return
+
         if (spreadIndex != currentSpreadIndex.value) {
-            val pageNumber = pageSpreads.value[spreadIndex].last().pageNumber
+            val pageNumber = spreads[spreadIndex].last().pageNumber
             readerState.onProgressChange(pageNumber)
             currentSpreadIndex.value = spreadIndex
             pageNavigationEvents.tryEmit(PageNavigationEvent.Animated(spreadIndex))

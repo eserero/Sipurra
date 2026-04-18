@@ -301,8 +301,10 @@ class ContinuousReaderState(
     }
 
     suspend fun scrollToBookPage(pageNumber: Int) {
+        val intervals = pageIntervals.value
+        if (intervals.isEmpty()) return
         val currentIntervalIndex = currentIntervalIndex.value
-        val currentInterval = pageIntervals.value[currentIntervalIndex]
+        val currentInterval = intervals[currentIntervalIndex]
 
         val fullBookPages = currentBookPages.first()
         val hasMissingPages = currentInterval.pages.size != fullBookPages.size
@@ -315,7 +317,6 @@ class ContinuousReaderState(
             }
         }
 
-        val intervals = pageIntervals.value
         val bookStartIndex = intervals.subList(0, currentIntervalIndex)
             .fold(0) { acc, value -> acc + value.pages.size } - 1
 

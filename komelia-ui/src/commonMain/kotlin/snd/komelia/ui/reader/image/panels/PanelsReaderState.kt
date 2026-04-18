@@ -402,6 +402,7 @@ class PanelsReaderState(
     }
 
     fun jumpToPage(page: Int) {
+        if (page !in pageMetadata.value.indices) return
         pageChangeFlow.tryEmit(Unit)
         val pageNumber = page + 1
         readerState.onProgressChange(pageNumber)
@@ -411,13 +412,14 @@ class PanelsReaderState(
     }
 
     fun onPageChange(page: Int, startAtLast: Boolean = false) {
-        if (currentPageIndex.value.page == page) return
+        if (page !in pageMetadata.value.indices || currentPageIndex.value.page == page) return
         pageChangeFlow.tryEmit(Unit)
         pageNavigationEvents.tryEmit(PageNavigationEvent.Animated(page))
         launchPageLoad(page, startAtLast, isAnimated = true)
     }
 
     private fun launchPageLoad(pageIndex: Int, startAtLast: Boolean = false, isAnimated: Boolean = false) {
+        if (pageIndex !in pageMetadata.value.indices) return
         if (pageIndex != currentPageIndex.value.page) {
             val pageNumber = pageIndex + 1
             readerState.onProgressChange(pageNumber)

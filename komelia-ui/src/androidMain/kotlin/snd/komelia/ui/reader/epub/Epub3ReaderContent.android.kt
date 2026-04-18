@@ -505,6 +505,18 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
 
                 val showAnnotationDialog by epub3State.showAnnotationDialog.collectAsState()
                 val editingAnnotation by epub3State.editingAnnotation.collectAsState()
+                val annotations by epub3State.annotations.collectAsState()
+                val sortedAnnotations = remember(annotations) {
+                    annotations.sortedBy { annotation ->
+                        (annotation.location as? snd.komelia.annotations.AnnotationLocation.EpubLocation)
+                            ?.let { loc ->
+                                runCatching {
+                                    org.readium.r2.shared.publication.Locator.fromJSON(org.json.JSONObject(loc.locatorJson))
+                                }.getOrNull()?.locations?.totalProgression
+                            } ?: 0.0
+                    }
+                }
+                val currentIndex = sortedAnnotations.indexOf(editingAnnotation)
 
                 if (showAnnotationDialog) {
                     val isEditing = editingAnnotation != null
@@ -539,6 +551,36 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                             epub3State.showAnnotationDialog.value = false
                             epub3State.editingAnnotation.value = null
                         },
+                        onPrevious = {
+                            if (currentIndex > 0) {
+                                val prev = sortedAnnotations[currentIndex - 1]
+                                epub3State.editingAnnotation.value = prev
+                                val loc = prev.location as? snd.komelia.annotations.AnnotationLocation.EpubLocation
+                                loc?.let {
+                                    runCatching {
+                                        org.readium.r2.shared.publication.Locator.fromJSON(org.json.JSONObject(it.locatorJson))
+                                    }.getOrNull()?.let { locator -> epub3State.navigateToLocator(locator) }
+                                }
+                            }
+                        },
+                        onNext = {
+                            if (currentIndex < sortedAnnotations.size - 1) {
+                                val next = sortedAnnotations[currentIndex + 1]
+                                epub3State.editingAnnotation.value = next
+                                val loc = next.location as? snd.komelia.annotations.AnnotationLocation.EpubLocation
+                                loc?.let {
+                                    runCatching {
+                                        org.readium.r2.shared.publication.Locator.fromJSON(org.json.JSONObject(it.locatorJson))
+                                    }.getOrNull()?.let { locator -> epub3State.navigateToLocator(locator) }
+                                }
+                            }
+                        },
+                        onShowList = {
+                            epub3State.initialContentTab = 2 // Annotations tab
+                            epub3State.showContentDialog.value = true
+                        },
+                        hasPrevious = currentIndex > 0,
+                        hasNext = currentIndex != -1 && currentIndex < sortedAnnotations.size - 1,
                     )
                 }
 

@@ -162,7 +162,7 @@ fun Epub3ControlsCardNewUI(
                     .padding(horizontal = 8.dp)
             )
 
-            IconButton(onClick = { state.openContentDialog(2) }) {
+            IconButton(onClick = { state.openContentDialog(3) }) {
                 Icon(Icons.Default.Search, contentDescription = "Search", tint = accentColor ?: MaterialTheme.colorScheme.primary)
             }
 
@@ -299,7 +299,7 @@ fun Epub3ControlsCard(
                     Icon(Icons.Default.Tune, contentDescription = "Reader settings", tint = accentColor ?: MaterialTheme.colorScheme.primary)
                 }
                 
-                IconButton(onClick = { state.openContentDialog(2) }) {
+                IconButton(onClick = { state.openContentDialog(3) }) {
                     Icon(Icons.Default.Search, contentDescription = "Search", tint = accentColor ?: MaterialTheme.colorScheme.primary)
                 }
                 

@@ -1,5 +1,6 @@
 package snd.komelia.ui.reader.common
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,7 +9,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -22,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
@@ -50,12 +59,19 @@ fun AnnotationDialog(
     onSave: (note: String?, color: Int) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
+    onPrevious: (() -> Unit)? = null,
+    onNext: (() -> Unit)? = null,
+    onShowList: (() -> Unit)? = null,
+    hasPrevious: Boolean = false,
+    hasNext: Boolean = false,
 ) {
     val sheetState = rememberModalBottomSheetState()
     val coroutineScope = rememberCoroutineScope()
 
-    var note by remember { mutableStateOf(existingAnnotation?.note ?: "") }
-    var selectedColor by remember { mutableIntStateOf(existingAnnotation?.highlightColor ?: initialColor) }
+    var note by remember(existingAnnotation) { mutableStateOf(existingAnnotation?.note ?: "") }
+    var selectedColor by remember(existingAnnotation) {
+        mutableIntStateOf(existingAnnotation?.highlightColor ?: initialColor)
+    }
 
     val theme = LocalTheme.current
     val surfaceColor = if (theme.type == Theme.ThemeType.DARK) Color(43, 43, 43)
@@ -82,12 +98,28 @@ fun AnnotationDialog(
                     .padding(bottom = 12.dp),
             )
 
-            // Color swatches
-            AnnotationColorSwatches(
-                selectedColor = selectedColor,
-                onColorSelected = { selectedColor = it },
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
+            // Color swatches and delete button
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AnnotationColorSwatches(
+                    selectedColor = selectedColor,
+                    onColorSelected = { selectedColor = it },
+                )
+
+                if (existingAnnotation != null) {
+                    IconButton(onClick = {
+                        coroutineScope.launch {
+                            sheetState.hide()
+                            onDelete()
+                        }
+                    }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
+                    }
+                }
+            }
 
             // Note text field
             OutlinedTextField(
@@ -102,14 +134,33 @@ fun AnnotationDialog(
             Spacer(Modifier.height(12.dp))
 
             // Action row
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 if (existingAnnotation != null) {
-                    TextButton(onClick = {
+                    IconButton(
+                        onClick = { onPrevious?.invoke() },
+                        enabled = hasPrevious,
+                    ) {
+                        Icon(Icons.Default.ChevronLeft, contentDescription = "Previous")
+                    }
+
+                    IconButton(onClick = {
                         coroutineScope.launch {
                             sheetState.hide()
-                            onDelete()
+                            onShowList?.invoke()
                         }
-                    }) { Text("Delete") }
+                    }) {
+                        Icon(Icons.Default.List, contentDescription = "List")
+                    }
+
+                    IconButton(
+                        onClick = { onNext?.invoke() },
+                        enabled = hasNext,
+                    ) {
+                        Icon(Icons.Default.ChevronRight, contentDescription = "Next")
+                    }
                 }
                 Spacer(Modifier.weight(1f))
                 TextButton(onClick = {

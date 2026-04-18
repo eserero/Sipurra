@@ -336,6 +336,17 @@ fun ReaderContent(
                 val showAnnotationDialogComic by commonReaderState.showAnnotationDialog.collectAsState()
                 val editingComicAnnotation by commonReaderState.editingComicAnnotation.collectAsState()
                 val lastColorComic by commonReaderState.lastHighlightColor.collectAsState()
+                val annotationsComic by commonReaderState.annotations.collectAsState()
+                val sortedAnnotationsComic = remember(annotationsComic) {
+                    annotationsComic.sortedWith(
+                        compareBy(
+                            { (it.location as? snd.komelia.annotations.AnnotationLocation.ComicLocation)?.page ?: 0 },
+                            { (it.location as? snd.komelia.annotations.AnnotationLocation.ComicLocation)?.y ?: 0f },
+                            { (it.location as? snd.komelia.annotations.AnnotationLocation.ComicLocation)?.x ?: 0f },
+                        )
+                    )
+                }
+                val currentIndexComic = sortedAnnotationsComic.indexOf(editingComicAnnotation)
 
                 if (showAnnotationDialogComic) {
                     val isEditing = editingComicAnnotation != null
@@ -370,6 +381,53 @@ fun ReaderContent(
                             commonReaderState.showAnnotationDialog.value = false
                             commonReaderState.editingComicAnnotation.value = null
                         },
+                        onPrevious = {
+                            if (currentIndexComic > 0) {
+                                val prev = sortedAnnotationsComic[currentIndexComic - 1]
+                                commonReaderState.editingComicAnnotation.value = prev
+                                (prev.location as? snd.komelia.annotations.AnnotationLocation.ComicLocation)?.let { loc ->
+                                    commonReaderState.onProgressChange(loc.page + 1)
+                                    coroutineScope.launch {
+                                        when (commonReaderState.readerType.value) {
+                                            PAGED -> {
+                                                pagedReaderState.pageSpreads.value.indexOfFirst { spread ->
+                                                    spread.any { it.pageNumber == loc.page + 1 }
+                                                }.takeIf { it != -1 }?.let { pagedReaderState.onPageChange(it) }
+                                            }
+
+                                            CONTINUOUS -> continuousReaderState.scrollToBookPage(loc.page + 1)
+                                            PANELS -> panelsReaderState?.jumpToPage(loc.page)
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        onNext = {
+                            if (currentIndexComic < sortedAnnotationsComic.size - 1) {
+                                val next = sortedAnnotationsComic[currentIndexComic + 1]
+                                commonReaderState.editingComicAnnotation.value = next
+                                (next.location as? snd.komelia.annotations.AnnotationLocation.ComicLocation)?.let { loc ->
+                                    commonReaderState.onProgressChange(loc.page + 1)
+                                    coroutineScope.launch {
+                                        when (commonReaderState.readerType.value) {
+                                            PAGED -> {
+                                                pagedReaderState.pageSpreads.value.indexOfFirst { spread ->
+                                                    spread.any { it.pageNumber == loc.page + 1 }
+                                                }.takeIf { it != -1 }?.let { pagedReaderState.onPageChange(it) }
+                                            }
+
+                                            CONTINUOUS -> continuousReaderState.scrollToBookPage(loc.page + 1)
+                                            PANELS -> panelsReaderState?.jumpToPage(loc.page)
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        onShowList = {
+                            showComicContentDialog = true
+                        },
+                        hasPrevious = currentIndexComic > 0,
+                        hasNext = currentIndexComic != -1 && currentIndexComic < sortedAnnotationsComic.size - 1,
                     )
                 }
             }
