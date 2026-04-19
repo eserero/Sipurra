@@ -629,7 +629,7 @@ class Epub3ReaderState(
 
         komgaEvents.events.onEach { event ->
             if (event is KomgaEvent.ReadProgressChanged && event.bookId == bookId.value) {
-                initialSync()
+                runCatching { initialSync() }
             }
         }.launchIn(coroutineScope)
 

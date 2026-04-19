@@ -148,7 +148,7 @@ class ReaderState(
     suspend fun initialize(bookId: KomgaBookId) {
         komgaEvents.events.onEach { event ->
             if (event is KomgaEvent.ReadProgressChanged && event.bookId == (booksState.value?.currentBook?.id ?: bookId)) {
-                initialSync()
+                runCatching { initialSync() }
             }
         }.launchIn(stateScope)
 
