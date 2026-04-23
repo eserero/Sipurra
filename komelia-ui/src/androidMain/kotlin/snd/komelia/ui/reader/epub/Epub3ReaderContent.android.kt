@@ -30,6 +30,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.SnackbarHostState
+import androidx.core.content.ContextCompat
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -40,6 +47,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.flow.flowOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -159,6 +167,47 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                 val audioChapters by (folderController?.chapters ?: MutableStateFlow(emptyList<AudioChapterEntry>())).collectAsState()
                 val currentChapterIndex by (folderController?.currentChapterIndex ?: MutableStateFlow(0)).collectAsState()
                 var showAudioTrackDialog by remember { mutableStateOf(false) }
+
+                val transcriptSegments by (folderController?.liveTranscriptSegments ?: flowOf(emptyList()))
+                    .collectAsState(initial = emptyList())
+                val transcriptState by (folderController?.transcriptState ?: flowOf(null))
+                    .collectAsState(initial = null)
+                var isTranscribing by remember { mutableStateOf(false) }
+                val transcriptSnackbarState = remember { SnackbarHostState() }
+
+                val recordAudioLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+                ) { granted ->
+                    if (granted) {
+                        isTranscribing = true
+                        controller?.startTranscription()
+                    } else {
+                        coroutineScope.launch {
+                            transcriptSnackbarState.showSnackbar("Microphone permission is required for live transcription")
+                        }
+                    }
+                }
+
+                val onTranscriptToggle: () -> Unit = {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                        coroutineScope.launch {
+                            transcriptSnackbarState.showSnackbar("Live transcription requires Android 12 or later")
+                        }
+                    } else if (isTranscribing) {
+                        isTranscribing = false
+                        controller?.stopTranscription()
+                    } else {
+                        val hasPermission = ContextCompat.checkSelfPermission(
+                            activity, Manifest.permission.RECORD_AUDIO
+                        ) == PackageManager.PERMISSION_GRANTED
+                        if (hasPermission) {
+                            isTranscribing = true
+                            controller?.startTranscription()
+                        } else {
+                            recordAudioLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    }
+                }
 
                 val dateTimeText by produceState("") {
                     while (true) {
@@ -353,6 +402,10 @@ actual fun Epub3ReaderContent(state: EpubReaderState) {
                                     },
                                     playbackSpeed = settings.playbackSpeed,
                                     onSpeedChange = { epub3State.updateSettings(settings.copy(playbackSpeed = it)) },
+                                    transcriptState = transcriptState,
+                                    transcriptSegments = transcriptSegments,
+                                    onTranscriptToggle = onTranscriptToggle,
+                                    isTranscribing = isTranscribing,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = this,
                                     modifier = Modifier.fillMaxSize().align(Alignment.BottomCenter),

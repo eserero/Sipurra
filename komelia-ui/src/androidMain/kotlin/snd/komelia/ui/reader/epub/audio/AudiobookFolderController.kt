@@ -24,6 +24,10 @@ import snd.komelia.audiobook.AudioFolderTrack
 import snd.komelia.audiobook.AudioPosition
 import snd.komelia.audiobook.AudioPositionRepository
 import snd.komelia.settings.model.Epub3NativeSettings
+import snd.komelia.transcription.AudioTranscriptTrack
+import snd.komelia.transcription.LiveTranscriptEngine
+import snd.komelia.transcription.TranscriptEngineState
+import snd.komelia.transcription.TranscriptSegment
 import snd.komga.client.book.KomgaBookId
 import wseemann.media.FFmpegMediaMetadataRetriever
 import java.io.File
@@ -77,6 +81,13 @@ class AudiobookFolderController(
 
     private var loadedTracks: List<Track> = emptyList()
     private var elapsedTimeJob: Job? = null
+
+    private var transcriptEngine: LiveTranscriptEngine? = null
+    private val _transcriptState = MutableStateFlow<TranscriptEngineState>(TranscriptEngineState.Idle)
+    private val _liveTranscriptSegments = MutableStateFlow<List<TranscriptSegment>>(emptyList())
+
+    override val transcriptState: kotlinx.coroutines.flow.StateFlow<TranscriptEngineState> get() = _transcriptState
+    override val liveTranscriptSegments: kotlinx.coroutines.flow.StateFlow<List<TranscriptSegment>> get() = _liveTranscriptSegments
 
     private val player: AudiobookPlayer = AudiobookPlayer(
         context = context,
@@ -318,10 +329,50 @@ class AudiobookFolderController(
     }
 
     override fun release() {
+        stopTranscription()
         savePosition()
         elapsedTimeJob?.cancel()
         elapsedTimeJob = null
         player.unload()
+    }
+
+    override fun startTranscription() {
+        val engine = LiveTranscriptEngine(
+            context = context,
+            tracks = buildTranscriptTracks(),
+            getPlaybackMs = { (_elapsedSeconds.value * 1000).toLong() },
+            scope = coroutineScope,
+        )
+        transcriptEngine = engine
+
+        coroutineScope.launch {
+            engine.state.collect { _transcriptState.value = it }
+        }
+        coroutineScope.launch {
+            engine.visibleSegments.collect { _liveTranscriptSegments.value = it }
+        }
+
+        engine.start()
+    }
+
+    override fun stopTranscription() {
+        transcriptEngine?.stop()
+        transcriptEngine = null
+    }
+
+    override fun onTranscriptSeek(newPositionMs: Long) {
+        transcriptEngine?.onPlaybackSeeked(newPositionMs)
+    }
+
+    private fun buildTranscriptTracks(): List<AudioTranscriptTrack> {
+        return loadedTracks.mapIndexed { idx, track ->
+            val offsetMs = _tracks.value.take(idx).sumOf { it.durationSeconds * 1000 }.toLong()
+            AudioTranscriptTrack(
+                uri = track.uri,
+                bookOffsetMs = offsetMs,
+                durationMs = track.duration.toLong(),
+            )
+        }
     }
 
     fun seekToTrack(index: Int) {
@@ -342,6 +393,7 @@ class AudiobookFolderController(
         _elapsedSeconds.value = prevDuration + positionSeconds
         _currentTrackIndex.value = index
         updateIsCurrentPositionBookmarked()
+        onTranscriptSeek((_elapsedSeconds.value * 1000).toLong())
     }
 
     fun seekToChapter(chapterIndex: Int) {

@@ -2,6 +2,8 @@ package snd.komelia.ui.reader.epub.audio
 
 import kotlinx.coroutines.flow.StateFlow
 import snd.komelia.settings.model.Epub3NativeSettings
+import snd.komelia.transcription.TranscriptEngineState
+import snd.komelia.transcription.TranscriptSegment
 
 interface EpubAudioController {
     val isPlaying: StateFlow<Boolean>
@@ -24,4 +26,10 @@ interface EpubAudioController {
     fun seekRelative(deltaSeconds: Double) {}
 
     suspend fun getAudioMetadata(): AudioMetadataInfo? = null
+
+    val transcriptState: StateFlow<TranscriptEngineState>? get() = null
+    val liveTranscriptSegments: StateFlow<List<TranscriptSegment>>? get() = null
+    fun startTranscription() {}
+    fun stopTranscription() {}
+    fun onTranscriptSeek(newPositionMs: Long) {}
 }

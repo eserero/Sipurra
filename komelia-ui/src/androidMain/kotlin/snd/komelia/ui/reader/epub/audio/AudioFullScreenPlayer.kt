@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +27,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ClosedCaption
+import androidx.compose.material.icons.filled.ClosedCaptionOff
 import androidx.compose.material.icons.filled.Forward30
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Pause
@@ -36,17 +39,30 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
+import snd.komelia.transcription.TranscriptEngineState
+import snd.komelia.transcription.TranscriptSegment
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -90,6 +106,113 @@ import kotlin.math.roundToInt
 private val emphasizedEasing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
 private val emphasizedAccelerateEasing = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
 
+@Composable
+private fun TranscriptPanel(
+    segments: List<TranscriptSegment>,
+    state: TranscriptEngineState?,
+    playbackMs: Long,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        val stateLabel = when (state) {
+            null -> "state: null (not started)"
+            TranscriptEngineState.Idle -> "state: Idle"
+            is TranscriptEngineState.Active -> "state: Active — ${state.diagnostics.ifEmpty { "starting…" }}"
+            TranscriptEngineState.UnsupportedDevice -> "state: UnsupportedDevice"
+            is TranscriptEngineState.Downloading -> "state: Downloading (${state.progress?.let { "${(it * 100).toInt()}%" } ?: "…"})"
+            is TranscriptEngineState.Error -> "state: Error"
+        }
+
+        when {
+            state is TranscriptEngineState.UnsupportedDevice ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "Speech model not available on this device.\nRequires Android 12+ with Google speech model.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(stateLabel, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.4f))
+                }
+
+            state is TranscriptEngineState.Downloading ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    val progress = state.progress
+                    if (progress != null) {
+                        CircularProgressIndicator(progress = { progress })
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Downloading model… ${(progress * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Downloading transcription model…", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+
+            state is TranscriptEngineState.Error ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = state.message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(stateLabel, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.4f))
+                }
+
+            segments.isEmpty() ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "Listening…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(stateLabel, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.4f))
+                }
+
+            else -> {
+                val sorted = segments.sortedByDescending { it.startMs }
+                val listState = rememberLazyListState()
+
+                LaunchedEffect(sorted.size) {
+                    listState.scrollToItem(0)
+                }
+
+                LazyColumn(
+                    state = listState,
+                    reverseLayout = true,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(sorted, key = { it.id }) { seg ->
+                        val alpha = when {
+                            !seg.isFinal -> 0.55f
+                            seg.startMs <= playbackMs -> 1f
+                            else -> {
+                                val aheadMs = (seg.startMs - playbackMs).coerceAtMost(7_000L)
+                                1f - (aheadMs / 7_000f) * 0.75f
+                            }
+                        }
+                        Text(
+                            text = seg.text,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White.copy(alpha = alpha),
+                            modifier = Modifier.padding(vertical = 4.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 private fun formatHMS(seconds: Double): String {
     val total = seconds.toLong().coerceAtLeast(0)
     val h = total / 3600
@@ -125,6 +248,10 @@ fun AudioFullScreenPlayer(
     onSeekToTrackPosition: ((trackIndex: Int, positionSeconds: Double) -> Unit)? = null,
     playbackSpeed: Double,
     onSpeedChange: (Double) -> Unit,
+    transcriptState: TranscriptEngineState? = null,
+    transcriptSegments: List<TranscriptSegment> = emptyList(),
+    onTranscriptToggle: () -> Unit = {},
+    isTranscribing: Boolean = false,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier,
@@ -235,28 +362,57 @@ fun AudioFullScreenPlayer(
                             BottomSheetDefaults.DragHandle()
                         }
 
-                        // Cover image — sharedBounds morphs the small pill thumbnail to large square
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            shadowElevation = 8.dp,
+                        // Cover / Transcript panel — AnimatedContent switches between the two
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 48.dp)
-                                .aspectRatio(1f)
-                                .sharedBounds(
-                                    rememberSharedContentState(key = "audio-cover-${bookId.value}"),
-                                    animatedVisibilityScope = animatedVisibilityScope,
-                                    enter = fadeIn(tween(400, easing = emphasizedEasing)),
-                                    exit = fadeOut(tween(300, easing = emphasizedAccelerateEasing)),
-                                    boundsTransform = { _, _ -> tween(500, easing = emphasizedEasing) },
-                                ),
+                                .aspectRatio(1f),
                         ) {
-                            ThumbnailImage(
-                                data = coverRequest,
-                                cacheKey = bookId.value,
-                                contentScale = ContentScale.Crop,
+                            AnimatedContent(
+                                targetState = isTranscribing,
+                                transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(200)) },
                                 modifier = Modifier.fillMaxSize(),
-                            )
+                                label = "cover-transcript",
+                            ) { showTranscript ->
+                                if (showTranscript) {
+                                    TranscriptPanel(
+                                        segments = transcriptSegments,
+                                        state = transcriptState,
+                                        playbackMs = (elapsedSeconds * 1000).toLong(),
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                } else {
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        shadowElevation = 8.dp,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .sharedBounds(
+                                                rememberSharedContentState(key = "audio-cover-${bookId.value}"),
+                                                animatedVisibilityScope = animatedVisibilityScope,
+                                                enter = fadeIn(tween(400, easing = emphasizedEasing)),
+                                                exit = fadeOut(tween(300, easing = emphasizedAccelerateEasing)),
+                                                boundsTransform = { _, _ -> tween(500, easing = emphasizedEasing) },
+                                            ),
+                                    ) {
+                                        ThumbnailImage(
+                                            data = coverRequest,
+                                            cacheKey = bookId.value,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize(),
+                                        )
+                                    }
+                                }
+                            }
+                            if (!isTranscribing) {
+                                IconButton(
+                                    onClick = { showMetadataDialog = true },
+                                    modifier = Modifier.align(Alignment.TopEnd),
+                                ) {
+                                    Icon(Icons.Default.Info, contentDescription = "Metadata")
+                                }
+                            }
                         }
 
                         // Book title
@@ -273,13 +429,25 @@ fun AudioFullScreenPlayer(
                                 .padding(top = 16.dp, bottom = 4.dp),
                         )
 
-                        // Chapter title — tap to open TOC; bookmark button to the right
+                        // Chapter title — tap to open TOC; transcribe on left, bookmark on right
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = fadeModifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 48.dp),
                         ) {
+                            if (audioTracks.isNotEmpty()) {
+                                IconButton(onClick = onTranscriptToggle) {
+                                    Icon(
+                                        imageVector = if (isTranscribing) Icons.Default.ClosedCaption
+                                                      else Icons.Default.ClosedCaptionOff,
+                                        contentDescription = "Toggle transcript",
+                                        tint = if (isTranscribing) accentColor ?: LocalContentColor.current
+                                               else LocalContentColor.current,
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
                             SuggestionChip(
                                 onClick = onChapterClick,
                                 label = {
@@ -573,16 +741,6 @@ fun AudioFullScreenPlayer(
                             }
                         }
 
-                        Box(
-                            modifier = fadeModifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 48.dp),
-                            contentAlignment = Alignment.CenterEnd
-                        ) {
-                            IconButton(onClick = { showMetadataDialog = true }) {
-                                Icon(Icons.Default.Info, contentDescription = "Metadata")
-                            }
-                        }
                     }
                 }
                 } // Box
