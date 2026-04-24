@@ -662,9 +662,21 @@ class Epub3ReaderState(
 
             logger.debug { "[epub3-init] opening publication" }
             startStep("Opening")
-            withContext(Dispatchers.IO) {
-                BookService.openPublication(bookUuid, extractedDir.toURI().toURL(), clips = null)
+            val openResult = runCatching {
+                withContext(Dispatchers.IO) {
+                    BookService.openPublication(bookUuid, extractedDir.toURI().toURL(), clips = null)
+                }
             }
+
+            if (openResult.isFailure) {
+                logger.warn { "[epub3-init] failed to open publication, attempting to clear cache and retry" }
+                val retryDir = prepareEpubDirectory(forceRefresh = true)
+                this.extractedDir = retryDir
+                withContext(Dispatchers.IO) {
+                    BookService.openPublication(bookUuid, retryDir.toURI().toURL(), clips = null)
+                }
+            }
+
             completeLastStep()
             logger.debug { "[epub3-init] publication opened" }
             tableOfContents.value = BookService.getPublication(bookUuid)?.tableOfContents ?: emptyList()
@@ -923,12 +935,17 @@ class Epub3ReaderState(
      * Downloads the EPUB zip (if not already cached) and extracts it to
      * `context.cacheDir/epub3/<bookUuid>/`.
      */
-    private suspend fun prepareEpubDirectory(): File {
+    private suspend fun prepareEpubDirectory(forceRefresh: Boolean = false): File {
         val extractedDir = File(context.cacheDir, "epub3/$bookUuid").also { it.mkdirs() }
-        if (!extractedDir.list().isNullOrEmpty()) {
+        val containerXml = File(extractedDir, "META-INF/container.xml")
+
+        if (containerXml.exists() && !forceRefresh) {
             startStep("Loading from cache")
             completeLastStep()
         } else {
+            withContext(Dispatchers.IO) {
+                extractedDir.listFiles()?.forEach { it.deleteRecursively() }
+            }
             val localPath = bookApi.getBookLocalFilePath(bookId.value)
             if (localPath != null) {
                 // Offline: extract directly from already-local file — zero heap allocation
