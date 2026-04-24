@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.OfflinePin
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.Card
@@ -203,19 +204,11 @@ private fun SeriesImageBadges(
     Column(modifier = Modifier.fillMaxSize()) {
         Row {
             if (isDownloaded) {
-                val neonGreen = Color(0xFF39FF14)
-                Box(
-                    modifier = Modifier
-                        .padding(1.dp)
-                        .size(24.dp)
-                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.8f), CircleShape)
-                        .border(1.dp, Color.Black, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
+                IndicatorBadge {
                     Icon(
-                        imageVector = Icons.Filled.Check,
+                        imageVector = Icons.Filled.Download,
                         contentDescription = null,
-                        tint = neonGreen,
+                        tint = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -227,14 +220,11 @@ private fun SeriesImageBadges(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.TopEnd
         ) {
-            Box(
-                modifier = Modifier.size(30.dp).background(MaterialTheme.colorScheme.tertiary),
-                contentAlignment = Alignment.Center
-            ) {
+            IndicatorBadge {
                 Text(
                     "${series.booksUnreadCount}",
-                    color = MaterialTheme.colorScheme.onTertiary,
-                    style = MaterialTheme.typography.labelLarge
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.sp)
                 )
             }
         }

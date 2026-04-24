@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.OfflinePin
@@ -45,8 +47,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -182,34 +186,45 @@ private fun BookImageBadges(
         Row {
             if (book.downloaded) {
                 val isOutOfSync = book.isLocalFileOutdated || book.remoteFileUnavailable
-                val neonGreen = Color(0xFF39FF14)
                 val neonRed = Color(0xFFFF3131)
-                val color = if (isOutOfSync) neonRed else neonGreen
+                val color = if (isOutOfSync) neonRed else MaterialTheme.colorScheme.tertiary
 
-                Box(
-                    modifier = Modifier
-                        .padding(1.dp)
-                        .size(24.dp)
-                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.8f), CircleShape)
-                        .border(1.dp, Color.Black, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
+                IndicatorBadge {
                     Icon(
-                        imageVector = Icons.Filled.Check,
+                        imageVector = Icons.Filled.Download,
                         contentDescription = null,
                         tint = color,
                         modifier = Modifier.size(16.dp)
                     )
                 }
             }
-
-            Spacer(Modifier.weight(1f))
-            if (book.readProgress == null) BookUnreadTick()
         }
 
         Spacer(modifier = Modifier.weight(1f))
     }
     BookDownloadCardOverlay(book)
+
+    if (book.readProgress?.completed == true) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = BiasAlignment(0.8f, -1f)
+        ) {
+            Box(modifier = Modifier.offset(y = (-5).dp)) {
+                Icon(
+                    imageVector = Icons.Filled.Bookmark,
+                    contentDescription = null,
+                    tint = Color.Black.copy(alpha = 0.3f),
+                    modifier = Modifier.size(24.dp).offset(x = 1.dp, y = 1.dp)
+                )
+                Icon(
+                    imageVector = Icons.Filled.Bookmark,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -242,24 +257,6 @@ private fun BookDownloadCardOverlay(book: KomeliaBook) {
         null -> {}
     }
 
-}
-
-@Composable
-private fun BookUnreadTick() {
-    val color = MaterialTheme.colorScheme.tertiary
-    Canvas(modifier = Modifier.size(30.dp)) {
-        val trianglePath = Path().apply {
-            moveTo(0f, 0f)
-            lineTo(x = size.width, y = size.height)
-            lineTo(x = size.width, y = size.height)
-            lineTo(x = size.width, y = 0f)
-        }
-
-        drawPath(
-            color = color,
-            path = trianglePath
-        )
-    }
 }
 
 @Composable

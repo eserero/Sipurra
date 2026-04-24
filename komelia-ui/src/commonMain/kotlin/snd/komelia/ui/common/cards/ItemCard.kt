@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DragHandle
@@ -401,4 +403,20 @@ fun LazyGridItemScope.DraggableImageCard(
 
         }
     } else content()
+}
+
+@Composable
+fun IndicatorBadge(
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit
+) {
+    Box(
+        modifier = modifier
+            .padding(1.dp)
+            .defaultMinSize(minWidth = 24.dp, minHeight = 24.dp)
+            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.8f), CircleShape)
+            .border(1.dp, MaterialTheme.colorScheme.background, CircleShape),
+        contentAlignment = Alignment.Center,
+        content = content
+    )
 }
