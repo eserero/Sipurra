@@ -105,4 +105,7 @@ interface ImageReaderSettingsRepository {
 
     fun getPanelDetectionUrl(): Flow<String>
     suspend fun putPanelDetectionUrl(url: String)
+
+    fun getImageCacheSizeLimitMb(): Flow<Long>
+    suspend fun putImageCacheSizeLimitMb(size: Long)
 }

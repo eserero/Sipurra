@@ -648,7 +648,10 @@ class ViewModelFactory(
     }
 
     fun getEpubReaderSettingsViewModel(): EpubReaderSettingsViewModel {
-        return EpubReaderSettingsViewModel(appRepositories.epubReaderSettingsRepository)
+        return EpubReaderSettingsViewModel(
+            settingsRepository = appRepositories.epubReaderSettingsRepository,
+            onEpubCacheClear = dependencies.onEpubCacheClear,
+        )
     }
 
     fun getCurvesViewModel(

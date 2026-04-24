@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.io.files.Path
@@ -234,6 +235,7 @@ abstract class AppModule {
                 imageDecoder = createImageDecoder(),
                 offlineBookRepository = offlineRepositories.bookRepository,
                 offlineBookApi = offlineModule.komgaApi.bookApi,
+                cacheSizeLimitMb = appRepositories.imageReaderSettingsRepository.getImageCacheSizeLimitMb().first(),
                 localFileApiProvider = localFileApiProvider,
             ),
             readerImageFactory = readerImageFactory,
@@ -246,11 +248,14 @@ abstract class AppModule {
             panelDetector = panelDetector,
             offlineDependencies = offlineModule,
             onBookChange = createOnBookChange(),
+            onEpubCacheClear = createOnEpubCacheClear(),
             localFileApiProvider = localFileApiProvider,
         )
     }
 
     protected open fun createOnBookChange(): () -> Unit = {}
+
+    protected open fun createOnEpubCacheClear(): () -> Unit = {}
 
     protected open fun createLocalFileApiProvider(): LocalFileApiProvider? = null
 
@@ -320,11 +325,13 @@ abstract class AppModule {
         imageDecoder: KomeliaImageDecoder,
         offlineBookRepository: OfflineBookRepository,
         offlineBookApi: KomgaBookApi,
+        cacheSizeLimitMb: Long,
         localFileApiProvider: LocalFileApiProvider? = null,
     ): BookImageLoader {
         val diskCache = getReaderCacheDirectory()?.let { kotlinxPath ->
             DiskCache.Builder()
                 .directory(kotlinxPath.toString().toPath())
+                .maxSizeBytes(cacheSizeLimitMb * 1024 * 1024)
                 .build()
         }
         return BookImageLoader(

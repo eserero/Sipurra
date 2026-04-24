@@ -77,6 +77,7 @@ class ExposedImageReaderSettingsRepository(database: Database) : ExposedReposito
                         tapNavigationMode = it[ImageReaderSettingsTable.tapNavigationMode]
                             .let { mode -> ReaderTapNavigationMode.valueOf(mode) },
                         panelDetectionUrl = it[ImageReaderSettingsTable.panelDetectionUrl],
+                        imageCacheSizeLimitMb = it[ImageReaderSettingsTable.imageCacheSizeLimitMb],
                     )
                 }
         }
@@ -126,6 +127,7 @@ class ExposedImageReaderSettingsRepository(database: Database) : ExposedReposito
                 it[panelReaderAdaptiveBackground] = settings.panelReaderAdaptiveBackground
                 it[tapNavigationMode] = settings.tapNavigationMode.name
                 it[panelDetectionUrl] = settings.panelDetectionUrl
+                it[imageCacheSizeLimitMb] = settings.imageCacheSizeLimitMb
             }
         }
     }

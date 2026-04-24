@@ -25,6 +25,9 @@ class ImageReaderSettingsScreen : Screen {
                 keepReaderScreenOn = vm.keepReaderScreenOn.collectAsState().value,
                 onKeepReaderScreenOnChange = vm::onKeepReaderScreenOnChange,
 
+                imageCacheSizeLimitMb = vm.imageCacheSizeLimitMb.collectAsState().value,
+                onImageCacheSizeLimitMbChange = vm::onImageCacheSizeLimitMbChange,
+
                 onCacheClear = vm::onClearImageCache,
                 onnxRuntimeSettingsState = vm.onnxRuntimeSettingsState,
                 ncnnSettingsState = vm.ncnnSettingsState,

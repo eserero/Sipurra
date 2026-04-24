@@ -52,6 +52,7 @@ class AppMigrations : MigrationResourcesProvider() {
         "V43__book_annotations.sql",
         "V44__annotation_updated_at.sql",
         "V45__audio_chapter_cache.sql",
+        "V46__cache_management_settings.sql",
     )
 
     override suspend fun getMigration(name: String): ByteArray? {

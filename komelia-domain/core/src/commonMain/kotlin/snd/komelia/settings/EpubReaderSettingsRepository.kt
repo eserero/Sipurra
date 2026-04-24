@@ -18,4 +18,7 @@ interface EpubReaderSettingsRepository {
 
     suspend fun getEpub3NativeSettings(): Epub3NativeSettings
     suspend fun putEpub3NativeSettings(settings: Epub3NativeSettings)
+
+    fun getEpubCacheSizeLimitMb(): Flow<Long>
+    suspend fun putEpubCacheSizeLimitMb(size: Long)
 }

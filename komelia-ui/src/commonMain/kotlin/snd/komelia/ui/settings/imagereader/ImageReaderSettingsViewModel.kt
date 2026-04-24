@@ -61,6 +61,7 @@ class ImageReaderSettingsViewModel(
     val loadThumbnailsPreview = MutableStateFlow(false)
     val volumeKeysNavigation = MutableStateFlow(false)
     val keepReaderScreenOn = MutableStateFlow(false)
+    val imageCacheSizeLimitMb = MutableStateFlow(1024L)
     val availableUpsamplingModes = availableUpsamplingModes()
     val availableDownsamplingKernels = availableReduceKernels()
 
@@ -73,6 +74,7 @@ class ImageReaderSettingsViewModel(
         loadThumbnailsPreview.value = settingsRepository.getLoadThumbnailPreviews().first()
         volumeKeysNavigation.value = settingsRepository.getVolumeKeysNavigation().first()
         keepReaderScreenOn.value = commonSettingsRepository.getKeepReaderScreenOn().first()
+        imageCacheSizeLimitMb.value = settingsRepository.getImageCacheSizeLimitMb().first()
         onnxRuntimeSettingsState.initialize()
         ncnnSettingsState.initialize()
     }
@@ -105,6 +107,11 @@ class ImageReaderSettingsViewModel(
     fun onKeepReaderScreenOnChange(enabled: Boolean) {
         keepReaderScreenOn.value = enabled
         screenModelScope.launch { commonSettingsRepository.putKeepReaderScreenOn(enabled) }
+    }
+
+    fun onImageCacheSizeLimitMbChange(size: Long) {
+        imageCacheSizeLimitMb.value = size
+        screenModelScope.launch { settingsRepository.putImageCacheSizeLimitMb(size) }
     }
 
     fun onClearImageCache() {

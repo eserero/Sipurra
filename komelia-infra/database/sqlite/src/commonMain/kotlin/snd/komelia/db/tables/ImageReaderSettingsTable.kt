@@ -51,6 +51,7 @@ object ImageReaderSettingsTable : Table("ImageReaderSettings") {
     val pagedReaderAdaptiveBackground = bool("paged_reader_adaptive_background").default(true)
     val panelReaderAdaptiveBackground = bool("panel_reader_adaptive_background").default(true)
     val tapNavigationMode = text("tap_navigation_mode").default("LEFT_RIGHT")
+    val imageCacheSizeLimitMb = long("image_cache_size_limit_mb").default(1024L)
 
     override val primaryKey = PrimaryKey(bookId)
 }

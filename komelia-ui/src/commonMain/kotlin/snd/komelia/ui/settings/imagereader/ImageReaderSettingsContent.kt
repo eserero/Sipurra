@@ -27,6 +27,9 @@ fun ImageReaderSettingsContent(
     keepReaderScreenOn: Boolean,
     onKeepReaderScreenOnChange: (Boolean) -> Unit,
 
+    imageCacheSizeLimitMb: Long,
+    onImageCacheSizeLimitMbChange: (Long) -> Unit,
+
     onCacheClear: () -> Unit,
     onnxRuntimeSettingsState: OnnxRuntimeSettingsState,
     ncnnSettingsState: NcnnSettingsState,
@@ -66,6 +69,29 @@ fun ImageReaderSettingsContent(
                 ButtonDefaults.filledTonalButtonColors(containerColor = it, contentColor = contentColor)
             } ?: ButtonDefaults.filledTonalButtonColors()
         ) { Text("Clear image cache") }
+
+        Column {
+            Text(
+                "Max Image Cache Size: ${"%.1f".format(imageCacheSizeLimitMb.toDouble() / 1024)} GB",
+                style = MaterialTheme.typography.labelLarge
+            )
+            Slider(
+                value = imageCacheSizeLimitMb.toFloat(),
+                onValueChange = { onImageCacheSizeLimitMbChange(it.toLong()) },
+                valueRange = 500f..5000f,
+                steps = 44, // (5000 - 500) / 100 - 1 = 44 steps for 100MB intervals
+                colors = accentColor?.let {
+                    SliderDefaults.colors(
+                        thumbColor = it,
+                        activeTrackColor = it,
+                    )
+                } ?: SliderDefaults.colors()
+            )
+            Text(
+                "Requires app restart to take effect",
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
 
         if (isOnnxRuntimeSupported()) {
             HorizontalDivider(Modifier.padding(vertical = 10.dp))

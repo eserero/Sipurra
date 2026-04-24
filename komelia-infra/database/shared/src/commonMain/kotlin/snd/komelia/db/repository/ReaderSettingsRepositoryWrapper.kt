@@ -261,4 +261,12 @@ class ReaderSettingsRepositoryWrapper(
     override suspend fun putPanelDetectionUrl(url: String) {
         wrapper.transform { it.copy(panelDetectionUrl = url) }
     }
+
+    override fun getImageCacheSizeLimitMb(): Flow<Long> {
+        return wrapper.mapState { it.imageCacheSizeLimitMb }
+    }
+
+    override suspend fun putImageCacheSizeLimitMb(size: Long) {
+        wrapper.transform { it.copy(imageCacheSizeLimitMb = size) }
+    }
 }

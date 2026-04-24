@@ -44,4 +44,12 @@ class EpubReaderSettingsRepositoryWrapper(
     override suspend fun putEpub3NativeSettings(settings: Epub3NativeSettings) {
         return wrapper.transform { it.copy(epub3NativeSettings = settings) }
     }
+
+    override fun getEpubCacheSizeLimitMb(): Flow<Long> {
+        return wrapper.mapState { it.epubCacheSizeLimitMb }
+    }
+
+    override suspend fun putEpubCacheSizeLimitMb(size: Long) {
+        wrapper.transform { it.copy(epubCacheSizeLimitMb = size) }
+    }
 }

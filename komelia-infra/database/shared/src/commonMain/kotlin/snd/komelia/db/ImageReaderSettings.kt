@@ -51,6 +51,7 @@ data class ImageReaderSettings(
     val panelReaderAdaptiveBackground: Boolean = true,
     val tapNavigationMode: ReaderTapNavigationMode = ReaderTapNavigationMode.LEFT_RIGHT,
     val panelDetectionUrl: String = PANEL_DETECTION_DEFAULT_GITHUB_URL,
+    val imageCacheSizeLimitMb: Long = 1024L,
 ) {
     companion object {
         const val PANEL_DETECTION_DEFAULT_ORIGINAL_URL =

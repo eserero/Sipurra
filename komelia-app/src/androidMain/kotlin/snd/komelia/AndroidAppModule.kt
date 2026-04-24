@@ -297,6 +297,10 @@ class AndroidAppModule(
 
     override fun createOnBookChange(): () -> Unit = { AndroidNcnnUpscaler.cancelPendingRequests() }
 
+    override fun createOnEpubCacheClear(): () -> Unit = {
+        context.cacheDir.resolve("epub3").deleteRecursively()
+    }
+
     override fun createWindowState() = AndroidWindowState(mainActivity)
 
     override fun createCoilContext() = context

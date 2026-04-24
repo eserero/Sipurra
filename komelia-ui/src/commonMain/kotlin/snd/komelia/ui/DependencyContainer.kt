@@ -57,6 +57,7 @@ data class DependencyContainer(
 
     val offlineDependencies: OfflineDependencies,
     val onBookChange: () -> Unit = {},
+    val onEpubCacheClear: () -> Unit = {},
     val localFileApiProvider: LocalFileApiProvider? = null,
 )
 

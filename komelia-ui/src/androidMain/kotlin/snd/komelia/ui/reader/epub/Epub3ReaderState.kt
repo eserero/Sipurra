@@ -936,7 +936,13 @@ class Epub3ReaderState(
      * `context.cacheDir/epub3/<bookUuid>/`.
      */
     private suspend fun prepareEpubDirectory(forceRefresh: Boolean = false): File {
+        val epubCacheLimitMb = epubSettingsRepository.getEpubCacheSizeLimitMb().first()
+        withContext(Dispatchers.IO) {
+            trimEpubCache(epubCacheLimitMb * 1024 * 1024, context.cacheDir)
+        }
+
         val extractedDir = File(context.cacheDir, "epub3/$bookUuid").also { it.mkdirs() }
+        extractedDir.setLastModified(System.currentTimeMillis())
         val containerXml = File(extractedDir, "META-INF/container.xml")
 
         if (containerXml.exists() && !forceRefresh) {
@@ -979,5 +985,27 @@ class Epub3ReaderState(
             }
         }
         return extractedDir
+    }
+
+    private fun trimEpubCache(limitBytes: Long, cacheDir: File) {
+        val epub3Dir = File(cacheDir, "epub3")
+        if (!epub3Dir.exists()) return
+
+        val bookDirs = epub3Dir.listFiles { file -> file.isDirectory } ?: return
+
+        // Calculate total size
+        val dirSizes = bookDirs.associateWith { dir ->
+            dir.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
+        }
+        var totalSize = dirSizes.values.sum()
+
+        if (totalSize <= limitBytes) return
+
+        val sortedDirs = bookDirs.sortedBy { it.lastModified() }
+        for (dir in sortedDirs) {
+            dir.deleteRecursively()
+            totalSize -= dirSizes[dir] ?: 0L
+            if (totalSize <= limitBytes) break
+        }
     }
 }
