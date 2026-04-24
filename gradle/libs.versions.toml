@@ -40,6 +40,7 @@ kotlinx-io = "0.8.2"
 ktor = "3.3.3"
 ksoup = "0.2.5"
 jbr-api = "1.9.0"
+junrar = "7.4.1"
 logback = "1.5.22"
 logback-android = "3.0.0"
 markdown = "0.7.3"
@@ -111,6 +112,7 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
 ksoup-kotlinx = { module = "com.fleeksoft.ksoup:ksoup-kotlinx", version.ref = "ksoup" }
 jbr-api = { module = "org.jetbrains.runtime:jbr-api", version.ref = "jbr-api" }
+junrar = { module = "com.github.junrar:junrar", version.ref = "junrar" }
 logback-core = { module = "ch.qos.logback:logback-core", version.ref = "logback" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 logback-android = { module = "com.github.tony19:logback-android", version.ref = "logback-android" }

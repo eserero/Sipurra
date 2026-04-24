@@ -51,6 +51,11 @@
                 <data android:mimeType="application/x-cbz" />
                 <data android:mimeType="application/x-zip-compressed" />
                 <data android:mimeType="application/vnd.comicbook+zip" />
+                <data android:mimeType="application/vnd.rar" />
+                <data android:mimeType="application/x-rar-compressed" />
+                <data android:mimeType="application/rar" />
+                <data android:mimeType="application/vnd.comicbook-rar" />
+                <data android:mimeType="application/pdf" />
             </intent-filter>
 
             <!-- Match by file extension (for file:// URIs regardless of MIME type) -->
@@ -61,6 +66,9 @@
                 <data android:mimeType="*/*" />
                 <data android:pathPattern=".*\\.cbz" />
                 <data android:pathPattern=".*\\.epub" />
+                <data android:pathPattern=".*\\.cbr" />
+                <data android:pathPattern=".*\\.rar" />
+                <data android:pathPattern=".*\\.pdf" />
             </intent-filter>
 
         </activity>

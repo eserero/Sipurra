@@ -69,6 +69,7 @@ kotlin {
             implementation(libs.filekit.core)
             implementation(libs.filekit.dialogs)
             implementation(projects.komeliaInfra.onnxruntime.jvm)
+            implementation(libs.junrar)
         }
         jvmMain.dependencies {
             implementation(libs.jbr.api)
