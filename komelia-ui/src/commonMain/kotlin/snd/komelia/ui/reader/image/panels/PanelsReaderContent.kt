@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -83,6 +84,9 @@ fun BoxScope.PanelsReaderContent(
     val currentContainerSize = screenScaleState.areaSize.collectAsState().value
     val tapToZoom = panelsReaderState.tapToZoom.collectAsState().value
     val adaptiveBackground = panelsReaderState.adaptiveBackground.collectAsState().value
+
+    val ocrResults by panelsReaderState.readerState.ocrResults.collectAsState()
+    val ocrPageId by panelsReaderState.readerState.ocrPageId.collectAsState()
 
     val pagerState = rememberPagerState(
         initialPage = currentPageIndex.page,
@@ -183,7 +187,15 @@ fun BoxScope.PanelsReaderContent(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                ReaderImageContent(pageState.value?.imageResult)
+                                val panelsPage = pageState.value
+                                val ocr = if (panelsPage != null && ocrPageId == panelsPage.metadata.toPageId()) ocrResults else emptyList()
+                                ReaderImageContent(
+                                    imageResult = panelsPage?.imageResult,
+                                    ocrResults = ocr,
+                                    onSelectionChanged = { results: List<snd.komelia.image.OcrElementBox> ->
+                                        panelsReaderState.readerState.ocrResults.value = results
+                                    }
+                                )
                             }
                         }
                     }

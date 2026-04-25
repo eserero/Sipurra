@@ -43,6 +43,9 @@ import snd.komelia.ui.platform.imageExtension
 import snd.komelia.ui.platform.sanitizeFilename
 import snd.komelia.ui.platform.saveImageToDownloads
 import snd.komelia.color.repository.BookColorCorrectionRepository
+import snd.komelia.image.OcrElementBox
+import snd.komelia.image.OcrService
+import snd.komelia.image.ReaderImage
 import snd.komelia.image.ReaderImage.PageId
 import snd.komelia.image.ReduceKernel
 import snd.komelia.image.UpsamplingMode
@@ -119,6 +122,11 @@ class ReaderState(
                 }
             }
         }
+
+        pageChangeFlow.onEach {
+            ocrResults.value = emptyList()
+            ocrPageId.value = null
+        }.launchIn(stateScope)
     }
 
     val upsamplingMode = MutableStateFlow(UpsamplingMode.NEAREST)
@@ -131,6 +139,11 @@ class ReaderState(
     val flashDuration = MutableStateFlow(100L)
     val flashEveryNPages = MutableStateFlow(1)
     val flashWith = MutableStateFlow(ReaderFlashColor.BLACK)
+
+    val ocrResults = MutableStateFlow<List<OcrElementBox>>(emptyList())
+    val ocrPageId = MutableStateFlow<PageId?>(null)
+    val isOcrLoading = MutableStateFlow(false)
+    private val ocrService = OcrService()
 
     val tapNavigationMode = MutableStateFlow(ReaderTapNavigationMode.LEFT_RIGHT)
     val volumeKeysNavigation = MutableStateFlow(false)
@@ -383,6 +396,20 @@ class ReaderState(
     fun onLinearLightDownsamplingChange(linear: Boolean) {
         linearLightDownsampling.value = linear
         stateScope.launch { readerSettingsRepository.putLinearLightDownsampling(linear) }
+    }
+
+    fun scanCurrentPageForText(image: ReaderImage) {
+        stateScope.launch {
+            ocrPageId.value = image.pageId
+            isOcrLoading.value = true
+            try {
+                ocrResults.value = ocrService.recognizeText(image)
+            } catch (e: Exception) {
+                appNotifications.add(AppNotification.Error("OCR failed: ${e.message}"))
+            } finally {
+                isOcrLoading.value = false
+            }
+        }
     }
 
     fun onColorCorrectionDisable() {

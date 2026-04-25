@@ -40,6 +40,7 @@ import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.ViewStream
 import androidx.compose.material3.CircularProgressIndicator
@@ -94,6 +95,8 @@ import snd.komelia.settings.model.ReaderType.CONTINUOUS
 import snd.komelia.settings.model.ReaderType.PAGED
 import snd.komelia.settings.model.ReaderType.PANELS
 import snd.komelia.ui.LocalAccentColor
+import snd.komelia.ui.LocalPlatform
+import snd.komelia.ui.platform.PlatformType.MOBILE
 import snd.komelia.ui.LocalStrings
 import snd.komelia.ui.LocalUseNewLibraryUI2
 import snd.komelia.ui.LocalWindowWidth
@@ -273,8 +276,17 @@ fun BottomSheetSettingsOverlay(
                     onReaderTypeChange = onReaderTypeChange,
                     panelsReaderState = panelsReaderState,
                     ncnnSettingsState = ncnnSettingsState,
+                    isOcrLoading = commonReaderState.isOcrLoading.collectAsState().value,
                     onSettingsClick = { showSettingsDialog = true },
                     onNotesClick = onNotesClick,
+                    onScanTextClick = {
+                        val currentImage = when (readerType) {
+                            PAGED -> pagedReaderState.currentSpread.value.pages.firstOrNull()?.imageResult?.image
+                            CONTINUOUS -> null // TODO
+                            PANELS -> panelsReaderState?.currentPage?.value?.imageResult?.image
+                        }
+                        currentImage?.let { commonReaderState.scanCurrentPageForText(it) }
+                    }
                 )
             }
         }
@@ -924,8 +936,10 @@ fun ImageReaderControlsCardNewUI(
     onReaderTypeChange: (ReaderType) -> Unit,
     panelsReaderState: PanelsReaderState?,
     ncnnSettingsState: NcnnSettingsState,
+    isOcrLoading: Boolean,
     onSettingsClick: () -> Unit,
     onNotesClick: () -> Unit = {},
+    onScanTextClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val accentColor = LocalAccentColor.current
@@ -1009,6 +1023,21 @@ fun ImageReaderControlsCardNewUI(
                     icon = Icons.Rounded.EditNote,
                     contentDescription = "Notes",
                 )
+
+                if (LocalPlatform.current == MOBILE) {
+                    if (isOcrLoading) {
+                        Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(Modifier.size(24.dp))
+                        }
+                    } else {
+                        ReaderModeIconButton(
+                            selected = false,
+                            onClick = onScanTextClick,
+                            icon = Icons.Rounded.TextFields,
+                            contentDescription = "Scan Text",
+                        )
+                    }
+                }
 
                 IconButton(onClick = onSettingsClick) {
                     Icon(

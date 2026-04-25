@@ -68,7 +68,7 @@ class PanelsReaderState(
     private val cleanupScope: CoroutineScope,
     private val settingsRepository: ImageReaderSettingsRepository,
     private val appNotifications: AppNotifications,
-    private val readerState: ReaderState,
+    val readerState: ReaderState,
     private val imageLoader: BookImageLoader,
     private val appStrings: Flow<AppStrings>,
     private val pageChangeFlow: MutableSharedFlow<Unit>,

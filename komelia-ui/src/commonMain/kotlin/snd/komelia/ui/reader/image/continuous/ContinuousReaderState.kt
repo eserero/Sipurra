@@ -68,7 +68,7 @@ private val logger = KotlinLogging.logger("ContinuousReaderState")
 
 class ContinuousReaderState(
     private val cleanupScope: CoroutineScope,
-    private val readerState: ReaderState,
+    val readerState: ReaderState,
     private val imageLoader: BookImageLoader,
     private val settingsRepository: ImageReaderSettingsRepository,
     private val notifications: AppNotifications,

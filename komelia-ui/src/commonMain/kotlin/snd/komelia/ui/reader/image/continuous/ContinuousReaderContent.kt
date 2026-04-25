@@ -358,6 +358,9 @@ private fun ContinuousReaderImage(
     page: PageMetadata,
     modifier: Modifier
 ) {
+    val ocrResults by state.readerState.ocrResults.collectAsState()
+    val ocrPageId by state.readerState.ocrPageId.collectAsState()
+
     val coroutineScope = rememberCoroutineScope()
     var imageResult by remember { mutableStateOf<ReaderImageResult?>(null) }
     DisposableEffect(Unit) {
@@ -374,6 +377,13 @@ private fun ContinuousReaderImage(
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
-    ) { ReaderImageContent(imageResult) }
+    ) {
+        val ocr = if (ocrPageId == page.toPageId()) ocrResults else emptyList()
+        ReaderImageContent(
+            imageResult = imageResult,
+            ocrResults = ocr,
+            onSelectionChanged = { results -> state.readerState.ocrResults.value = results }
+        )
+    }
 }
 

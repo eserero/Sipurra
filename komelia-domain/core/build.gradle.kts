@@ -66,6 +66,8 @@ kotlin {
         androidMain.dependencies {
             api(libs.androidx.datastore)
             implementation(libs.androidx.appcompat)
+            implementation(libs.mlkit.text.recognition)
+            implementation(libs.kotlinx.coroutines.play.services)
             implementation(libs.commons.compress)
             api(libs.ktor.client.okhttp)
             api(libs.logback.android)

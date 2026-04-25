@@ -22,13 +22,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.DpSize
+import snd.komelia.image.OcrElementBox
 import snd.komelia.image.ReaderImage
 import snd.komelia.image.ReaderImageResult
 
 @Composable
-fun ReaderImageContent(imageResult: ReaderImageResult?) {
+fun ReaderImageContent(
+    imageResult: ReaderImageResult?,
+    ocrResults: List<OcrElementBox> = emptyList(),
+    onSelectionChanged: (List<OcrElementBox>) -> Unit = {}
+) {
     when (imageResult) {
-        is ReaderImageResult.Success -> ImageContent(imageResult.image)
+        is ReaderImageResult.Success -> ImageContent(
+            image = imageResult.image,
+            ocrResults = ocrResults,
+            onSelectionChanged = onSelectionChanged
+        )
         is ReaderImageResult.Error -> Text(
             "${imageResult.throwable::class.simpleName}: ${imageResult.throwable.message}",
             color = MaterialTheme.colorScheme.error
@@ -48,7 +57,11 @@ fun ReaderImageContent(imageResult: ReaderImageResult?) {
 }
 
 @Composable
-private fun ImageContent(image: ReaderImage) {
+private fun ImageContent(
+    image: ReaderImage,
+    ocrResults: List<OcrElementBox>,
+    onSelectionChanged: (List<OcrElementBox>) -> Unit
+) {
     // reimplement collectAsState and call remember with image key,
     // this avoids unnecessary recomposition and flickering caused by attempt to render old value on image change
     // without remember key, old painter value is remembered until new value is collected from flow
@@ -92,9 +105,23 @@ private fun ImageContent(image: ReaderImage) {
         }
 
     } else {
-        Image(
-            painter = painter,
-            contentDescription = null,
-        )
+        Box(contentAlignment = Alignment.Center) {
+            Image(
+                painter = painter,
+                contentDescription = null,
+            )
+
+            if (ocrResults.isNotEmpty()) {
+                val originalSize = image.originalSize.collectAsState().value
+                if (originalSize != null) {
+                    TextSelectionOverlay(
+                        modifier = Modifier.matchParentSize(),
+                        ocrResults = ocrResults,
+                        intrinsicImageSize = originalSize,
+                        onSelectionChanged = onSelectionChanged
+                    )
+                }
+            }
+        }
     }
 }
