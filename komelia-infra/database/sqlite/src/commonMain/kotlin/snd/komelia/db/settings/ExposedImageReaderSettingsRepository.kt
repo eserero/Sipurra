@@ -17,6 +17,8 @@ import snd.komelia.settings.model.ContinuousReadingDirection
 import snd.komelia.settings.model.LayoutScaleType
 import snd.komelia.settings.model.NcnnEngine
 import snd.komelia.settings.model.NcnnUpscalerSettings
+import snd.komelia.settings.model.OcrLanguage
+import snd.komelia.settings.model.OcrSettings
 import snd.komelia.settings.model.PageDisplayLayout
 import snd.komelia.settings.model.PagedReadingDirection
 import snd.komelia.settings.model.PanelsFullPageDisplayMode
@@ -46,6 +48,10 @@ class ExposedImageReaderSettingsRepository(database: Database) : ExposedReposito
                             upscaleOnLoad = it[ImageReaderSettingsTable.ncnnUpscaleOnLoad],
                             upscaleThreshold = it[ImageReaderSettingsTable.ncnnUpscaleThreshold],
                             ncnnUpscalerUrl = it[ImageReaderSettingsTable.ncnnUpscalerUrl],
+                        ),
+                        ocrSettings = OcrSettings(
+                            enabled = it[ImageReaderSettingsTable.ocrEnabled],
+                            selectedLanguage = OcrLanguage.valueOf(it[ImageReaderSettingsTable.ocrLanguage]),
                         ),
                         pagedScaleType = LayoutScaleType.valueOf(it[ImageReaderSettingsTable.pagedScaleType]),
                         pagedReadingDirection = PagedReadingDirection.valueOf(it[ImageReaderSettingsTable.pagedReadingDirection]),
@@ -99,6 +105,9 @@ class ExposedImageReaderSettingsRepository(database: Database) : ExposedReposito
                 it[ncnnUpscaleOnLoad] = settings.ncnnUpscalerSettings.upscaleOnLoad
                 it[ncnnUpscaleThreshold] = settings.ncnnUpscalerSettings.upscaleThreshold
                 it[ncnnUpscalerUrl] = settings.ncnnUpscalerSettings.ncnnUpscalerUrl
+
+                it[ocrEnabled] = settings.ocrSettings.enabled
+                it[ocrLanguage] = settings.ocrSettings.selectedLanguage.name
 
                 it[pagedScaleType] = settings.pagedScaleType.name
                 it[pagedReadingDirection] = settings.pagedReadingDirection.name

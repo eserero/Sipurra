@@ -53,5 +53,8 @@ object ImageReaderSettingsTable : Table("ImageReaderSettings") {
     val tapNavigationMode = text("tap_navigation_mode").default("LEFT_RIGHT")
     val imageCacheSizeLimitMb = long("image_cache_size_limit_mb").default(1024L)
 
+    val ocrEnabled = bool("ocr_enabled").default(false)
+    val ocrLanguage = text("ocr_language").default("LATIN")
+
     override val primaryKey = PrimaryKey(bookId)
 }

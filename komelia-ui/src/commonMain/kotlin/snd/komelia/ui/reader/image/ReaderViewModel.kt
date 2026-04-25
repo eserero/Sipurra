@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.takeWhile
@@ -29,6 +31,7 @@ import snd.komelia.komga.api.KomgaSeriesApi
 import snd.komelia.onnxruntime.OnnxRuntime
 import snd.komelia.settings.CommonSettingsRepository
 import snd.komelia.settings.ImageReaderSettingsRepository
+import snd.komelia.settings.model.OcrSettings
 import snd.komelia.settings.model.ReaderType.CONTINUOUS
 import snd.komelia.settings.model.ReaderType.PAGED
 import snd.komelia.settings.model.ReaderType.PANELS
@@ -158,6 +161,25 @@ class ReaderViewModel(
         pageChangeFlow = pageChangeFlow,
         screenScaleState = screenScaleState,
     )
+
+    init {
+        combine(
+            pageChangeFlow,
+            readerState.ocrSettings,
+            readerState.readerType
+        ) { _, ocrSettings, readerType -> ocrSettings to readerType }
+            .debounce(200)
+            .onEach { (ocrSettings, readerType) ->
+                if (ocrSettings.enabled) {
+                    val currentImage = when (readerType) {
+                        PAGED -> pagedReaderState.currentSpread.value.pages.firstOrNull()?.imageResult?.image
+                        CONTINUOUS -> null // TODO
+                        PANELS -> panelsReaderState?.currentPage?.value?.imageResult?.image
+                    }
+                    currentImage?.let { readerState.scanCurrentPageForText(it) }
+                }
+            }.launchIn(screenModelScope)
+    }
 
     suspend fun initialize(bookId: KomgaBookId) {
         val currentState = readerState.state.value

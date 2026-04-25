@@ -52,6 +52,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -87,6 +88,8 @@ import snd.komelia.settings.model.ContinuousReadingDirection
 import snd.komelia.settings.model.LayoutScaleType
 import snd.komelia.settings.model.ReaderTapNavigationMode
 import snd.komelia.settings.model.PageDisplayLayout
+import snd.komelia.settings.model.OcrLanguage
+import snd.komelia.settings.model.OcrSettings
 import snd.komelia.settings.model.PagedReadingDirection
 import snd.komelia.settings.model.PanelsFullPageDisplayMode
 import snd.komelia.settings.model.ReaderFlashColor
@@ -276,6 +279,8 @@ fun BottomSheetSettingsOverlay(
                     onReaderTypeChange = onReaderTypeChange,
                     panelsReaderState = panelsReaderState,
                     ncnnSettingsState = ncnnSettingsState,
+                    ocrSettings = commonReaderState.ocrSettings.collectAsState().value,
+                    onOcrSettingsChange = commonReaderState::onOcrSettingsChange,
                     isOcrLoading = commonReaderState.isOcrLoading.collectAsState().value,
                     onSettingsClick = { showSettingsDialog = true },
                     onNotesClick = onNotesClick,
@@ -300,16 +305,18 @@ fun BottomSheetSettingsOverlay(
         val surfaceColor = if (theme.type == snd.komelia.ui.Theme.ThemeType.DARK) Color(43, 43, 43)
         else MaterialTheme.colorScheme.surface
 
+        val ocrSettings by commonReaderState.ocrSettings.collectAsState()
         if (showSettingsDialog) {
             ModalBottomSheet(
                 onDismissRequest = { showSettingsDialog = false },
                 sheetState = sheetState,
                 containerColor = surfaceColor,
             ) {
-                val pagerState = rememberPagerState(initialPage = 0, pageCount = { 3 })
-                SecondaryTabRow(
+                val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
+                SecondaryScrollableTabRow(
                     selectedTabIndex = pagerState.currentPage,
                     containerColor = Color.Transparent,
+                    edgePadding = 0.dp,
                 ) {
                     Tab(
                         selected = pagerState.currentPage == 0,
@@ -331,6 +338,13 @@ fun BottomSheetSettingsOverlay(
                         modifier = Modifier.heightIn(min = 40.dp).cursorForHand(),
                     ) {
                         Text("Image settings")
+                    }
+                    Tab(
+                        selected = pagerState.currentPage == 3,
+                        onClick = { coroutineScope.launch { pagerState.animateScrollToPage(3) } },
+                        modifier = Modifier.heightIn(min = 40.dp).cursorForHand(),
+                    ) {
+                        Text("OCR")
                     }
                 }
                 val focusManager = LocalFocusManager.current
@@ -403,6 +417,11 @@ fun BottomSheetSettingsOverlay(
                                 flashDuration = flashDuration,
                                 onFlashDurationChange = onFlashDurationChange,
                                 ncnnSettingsState = ncnnSettingsState,
+                            )
+
+                            3 -> OcrModeSettings(
+                                ocrSettings = ocrSettings,
+                                onOcrSettingsChange = commonReaderState::onOcrSettingsChange
                             )
                         }
                     }
@@ -936,6 +955,8 @@ fun ImageReaderControlsCardNewUI(
     onReaderTypeChange: (ReaderType) -> Unit,
     panelsReaderState: PanelsReaderState?,
     ncnnSettingsState: NcnnSettingsState,
+    ocrSettings: OcrSettings,
+    onOcrSettingsChange: (OcrSettings) -> Unit,
     isOcrLoading: Boolean,
     onSettingsClick: () -> Unit,
     onNotesClick: () -> Unit = {},
@@ -971,81 +992,76 @@ fun ImageReaderControlsCardNewUI(
                 .fillMaxWidth()
                 .padding(top = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
+            ReaderModeIconButton(
+                selected = readerType == PAGED,
+                onClick = { onReaderTypeChange(PAGED) },
+                icon = Icons.AutoMirrored.Rounded.MenuBook,
+                contentDescription = "Paged",
+            )
+            ReaderModeIconButton(
+                selected = readerType == CONTINUOUS,
+                onClick = { onReaderTypeChange(CONTINUOUS) },
+                icon = Icons.Rounded.ViewStream,
+                contentDescription = "Continuous",
+            )
+            if (panelsReaderState != null) {
                 ReaderModeIconButton(
-                    selected = readerType == PAGED,
-                    onClick = { onReaderTypeChange(PAGED) },
-                    icon = Icons.AutoMirrored.Rounded.MenuBook,
-                    contentDescription = "Paged",
+                    selected = readerType == PANELS,
+                    onClick = { onReaderTypeChange(PANELS) },
+                    icon = Icons.Rounded.GridView,
+                    contentDescription = "Panels",
                 )
+            }
+
+            VerticalDivider(
+                modifier = Modifier
+                    .height(24.dp)
+            )
+
+            if (showUpscale) {
                 ReaderModeIconButton(
-                    selected = readerType == CONTINUOUS,
-                    onClick = { onReaderTypeChange(CONTINUOUS) },
-                    icon = Icons.Rounded.ViewStream,
-                    contentDescription = "Continuous",
+                    selected = ncnnSettings.enabled,
+                    onClick = { ncnnSettingsState.onSettingsChange(ncnnSettings.copy(enabled = !ncnnSettings.enabled)) },
+                    icon = Icons.Rounded.AutoAwesome,
+                    contentDescription = "Upscaling",
                 )
-                if (panelsReaderState != null) {
+            }
+
+            if (LocalPlatform.current == MOBILE) {
+                if (isOcrLoading) {
+                    Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(Modifier.size(24.dp))
+                    }
+                } else {
                     ReaderModeIconButton(
-                        selected = readerType == PANELS,
-                        onClick = { onReaderTypeChange(PANELS) },
-                        icon = Icons.Rounded.GridView,
-                        contentDescription = "Panels",
+                        selected = ocrSettings.enabled,
+                        onClick = { onOcrSettingsChange(ocrSettings.copy(enabled = !ocrSettings.enabled)) },
+                        icon = Icons.Rounded.TextFields,
+                        contentDescription = "Scan Text",
                     )
                 }
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                if (showUpscale) {
-                    ReaderModeIconButton(
-                        selected = ncnnSettings.enabled,
-                        onClick = { ncnnSettingsState.onSettingsChange(ncnnSettings.copy(enabled = !ncnnSettings.enabled)) },
-                        icon = Icons.Rounded.AutoAwesome,
-                        contentDescription = "Upscaling",
-                    )
-                    VerticalDivider(
-                        modifier = Modifier
-                            .height(24.dp)
-                            .padding(horizontal = 4.dp)
-                    )
-                }
+            VerticalDivider(
+                modifier = Modifier
+                    .height(24.dp)
+            )
 
-                ReaderModeIconButton(
-                    selected = false,
-                    onClick = onNotesClick,
-                    icon = Icons.Rounded.EditNote,
-                    contentDescription = "Notes",
+            ReaderModeIconButton(
+                selected = false,
+                onClick = onNotesClick,
+                icon = Icons.Rounded.EditNote,
+                contentDescription = "Notes",
+            )
+
+            IconButton(onClick = onSettingsClick) {
+                Icon(
+                    Icons.Rounded.Tune,
+                    contentDescription = "Settings",
+                    tint = accentColor ?: MaterialTheme.colorScheme.primary
                 )
-
-                if (LocalPlatform.current == MOBILE) {
-                    if (isOcrLoading) {
-                        Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(Modifier.size(24.dp))
-                        }
-                    } else {
-                        ReaderModeIconButton(
-                            selected = false,
-                            onClick = onScanTextClick,
-                            icon = Icons.Rounded.TextFields,
-                            contentDescription = "Scan Text",
-                        )
-                    }
-                }
-
-                IconButton(onClick = onSettingsClick) {
-                    Icon(
-                        Icons.Rounded.Tune,
-                        contentDescription = "Settings",
-                        tint = accentColor ?: MaterialTheme.colorScheme.primary
-                    )
-                }
             }
         }
     }
@@ -1113,5 +1129,40 @@ private fun SamplingModeSettings(
         },
         contentPadding = PaddingValues(horizontal = 10.dp)
     )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun OcrModeSettings(
+    ocrSettings: OcrSettings,
+    onOcrSettingsChange: (OcrSettings) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SwitchWithLabel(
+            checked = ocrSettings.enabled,
+            onCheckedChange = { onOcrSettingsChange(ocrSettings.copy(enabled = it)) },
+            label = { Text("Enable OCR") },
+            supportingText = {
+                Text("Automatically scan pages for text", style = MaterialTheme.typography.labelMedium)
+            },
+            contentPadding = PaddingValues(horizontal = 10.dp)
+        )
+
+        Column {
+            Text("OCR Language")
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OcrLanguage.entries.forEach { language ->
+                    InputChip(
+                        selected = ocrSettings.selectedLanguage == language,
+                        onClick = { onOcrSettingsChange(ocrSettings.copy(selectedLanguage = language)) },
+                        colors = accentInputChipColors(),
+                        label = { Text(language.name) }
+                    )
+                }
+            }
+        }
+    }
 }
 

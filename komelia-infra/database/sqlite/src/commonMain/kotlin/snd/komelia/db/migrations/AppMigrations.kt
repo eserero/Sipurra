@@ -54,6 +54,7 @@ class AppMigrations : MigrationResourcesProvider() {
         "V45__audio_chapter_cache.sql",
         "V46__cache_management_settings.sql",
         "V47__transcription_settings.sql",
+        "V48__ocr_settings.sql",
     )
 
     override suspend fun getMigration(name: String): ByteArray? {
