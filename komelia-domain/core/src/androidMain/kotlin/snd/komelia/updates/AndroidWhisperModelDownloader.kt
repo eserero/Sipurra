@@ -12,7 +12,7 @@ import kotlinx.io.readByteArray
 import java.io.File
 
 private const val MODEL_URL =
-    "https://github.com/eserero/Sipurra/releases/download/model/ggml-base-q5_0.bin"
+    "https://github.com/eserero/Sipurra/releases/download/model/ggml-base-q5_1.bin"
 
 class AndroidWhisperModelDownloader(
     private val updateClient: UpdateClient,
@@ -20,7 +20,7 @@ class AndroidWhisperModelDownloader(
 ) : WhisperModelDownloader {
 
     private val modelsDir = File(filesDir, "whisper_models")
-    private val modelFile = File(modelsDir, "ggml-base-q5_0.bin")
+    private val modelFile = File(modelsDir, "ggml-base-q5_1.bin")
 
     private val _isDownloaded = MutableStateFlow(modelFile.exists() && modelFile.length() > 0)
 

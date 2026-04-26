@@ -3,6 +3,7 @@
 #include <android/log.h>
 #include <string>
 #include <vector>
+#include <thread>
 
 #define LOG_TAG "WhisperJni"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -40,7 +41,12 @@ Java_snd_komelia_transcription_WhisperJni_transcribeChunk(
     params.token_timestamps = true;
     params.max_len = 0;
     params.single_segment = false;
-    params.no_context = true;
+    params.no_context = false;
+    params.n_threads = std::min(4, (int) std::thread::hardware_concurrency());
+    // Limit encoder to actual audio length (whisper default pads to 30s / 1500 frames).
+    // 16kHz audio: 50 mel frames per second (20ms per frame after 2x conv downsampling).
+    int audio_frames = (int)((float)len / 16000.0f * 50.0f);
+    params.audio_ctx = std::max(64, std::min(audio_frames, 1500));
 
     const char *lang = nullptr;
     if (langJ != nullptr) {
@@ -56,8 +62,9 @@ Java_snd_komelia_transcription_WhisperJni_transcribeChunk(
 
     if (rc != 0) {
         LOGE("whisper_full failed: %d", rc);
-        jclass resultClass = env->FindClass("snd/komelia/transcription/WhisperResult");
-        return env->NewObjectArray(0, resultClass, nullptr);
+        jclass exClass = env->FindClass("java/lang/RuntimeException");
+        env->ThrowNew(exClass, ("whisper_full failed: " + std::to_string(rc)).c_str());
+        return nullptr;
     }
 
     int n = whisper_full_n_segments(ctx);

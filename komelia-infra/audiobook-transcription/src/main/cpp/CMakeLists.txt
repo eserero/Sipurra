@@ -29,8 +29,17 @@ target_include_directories(whisper PUBLIC
     ${WHISPER_DIR}/src
 )
 
-if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-    target_compile_options(whisper PRIVATE -O3)
+target_compile_definitions(whisper PUBLIC GGML_USE_CPU)
+
+# Always optimize whisper/ggml — it's a compute library, not a debug target
+target_compile_options(whisper PRIVATE -O3)
+
+# ARM64 only: dot-product + FP16 extensions and llamafile SGEMM kernels
+# sgemm.cpp uses vld1q_f16 which is not available on armeabi-v7a
+if (ANDROID AND ${ANDROID_ABI} STREQUAL "arm64-v8a")
+    target_sources(whisper PRIVATE ${WHISPER_DIR}/ggml/src/ggml-cpu/llamafile/sgemm.cpp)
+    target_compile_definitions(whisper PRIVATE GGML_USE_LLAMAFILE)
+    target_compile_options(whisper PRIVATE -march=armv8.2-a+dotprod+fp16)
 endif ()
 
 # Shared JNI library

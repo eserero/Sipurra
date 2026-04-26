@@ -31,9 +31,10 @@ class LiveTranscriptEngine(
     private var tickerJob: Job? = null
 
     fun start() {
-        scope.launch { backend.start() }
-
         preReaderJob = scope.launch {
+            backend.start()
+            if (backend.state.value !is TranscriptEngineState.Active) return@launch
+
             preReader.run { chunk ->
                 chunksDecoded.incrementAndGet()
                 val resampledBytes = Pcm16MonoResampler.convertTo16kMono(

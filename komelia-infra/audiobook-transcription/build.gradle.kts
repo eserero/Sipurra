@@ -18,6 +18,7 @@ kotlin {
             implementation("androidx.media3:media3-common:1.9.0")
             implementation(libs.mlkit.genai.speech)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlin.logging)
         }
     }
 }
