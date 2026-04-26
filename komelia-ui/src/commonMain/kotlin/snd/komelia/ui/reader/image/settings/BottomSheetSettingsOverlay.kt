@@ -316,35 +316,35 @@ fun BottomSheetSettingsOverlay(
                 SecondaryScrollableTabRow(
                     selectedTabIndex = pagerState.currentPage,
                     containerColor = Color.Transparent,
-                    edgePadding = 0.dp,
+                    edgePadding = 16.dp,
                 ) {
                     Tab(
                         selected = pagerState.currentPage == 0,
                         onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
                         modifier = Modifier.heightIn(min = 40.dp).cursorForHand(),
                     ) {
-                        Text("Reading mode")
+                        Text("Display", modifier = Modifier.padding(horizontal = 12.dp))
                     }
                     Tab(
                         selected = pagerState.currentPage == 1,
                         onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
                         modifier = Modifier.heightIn(min = 40.dp).cursorForHand(),
                     ) {
-                        Text("Navigation")
+                        Text("Navigation", modifier = Modifier.padding(horizontal = 12.dp))
                     }
                     Tab(
                         selected = pagerState.currentPage == 2,
                         onClick = { coroutineScope.launch { pagerState.animateScrollToPage(2) } },
                         modifier = Modifier.heightIn(min = 40.dp).cursorForHand(),
                     ) {
-                        Text("Image settings")
+                        Text("Image", modifier = Modifier.padding(horizontal = 12.dp))
                     }
                     Tab(
                         selected = pagerState.currentPage == 3,
                         onClick = { coroutineScope.launch { pagerState.animateScrollToPage(3) } },
                         modifier = Modifier.heightIn(min = 40.dp).cursorForHand(),
                     ) {
-                        Text("OCR")
+                        Text("Text", modifier = Modifier.padding(horizontal = 12.dp))
                     }
                 }
                 val focusManager = LocalFocusManager.current
@@ -1141,7 +1141,7 @@ private fun OcrModeSettings(
         SwitchWithLabel(
             checked = ocrSettings.enabled,
             onCheckedChange = { onOcrSettingsChange(ocrSettings.copy(enabled = it)) },
-            label = { Text("Enable OCR") },
+            label = { Text("Enable Text Selection") },
             supportingText = {
                 Text("Automatically scan pages for text", style = MaterialTheme.typography.labelMedium)
             },
@@ -1149,7 +1149,7 @@ private fun OcrModeSettings(
         )
 
         Column {
-            Text("OCR Language")
+            Text("Text Detection Language")
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -1163,6 +1163,16 @@ private fun OcrModeSettings(
                 }
             }
         }
+
+        SwitchWithLabel(
+            checked = ocrSettings.mergeBoxes,
+            onCheckedChange = { onOcrSettingsChange(ocrSettings.copy(mergeBoxes = it)) },
+            label = { Text("Merge text segments") },
+            supportingText = {
+                Text("Merge adjacent text blocks into a single block", style = MaterialTheme.typography.labelMedium)
+            },
+            contentPadding = PaddingValues(horizontal = 10.dp)
+        )
     }
 }
 

@@ -45,6 +45,8 @@ import snd.komelia.ui.platform.saveImageToDownloads
 import snd.komelia.color.repository.BookColorCorrectionRepository
 import snd.komelia.image.OcrElementBox
 import snd.komelia.image.OcrService
+import snd.komelia.image.ReadingDirection
+import snd.komelia.image.mergeOcrBoxes
 import snd.komelia.image.ReaderImage
 import snd.komelia.image.ReaderImage.PageId
 import snd.komelia.image.ReduceKernel
@@ -130,6 +132,7 @@ class ReaderState(
     val ocrResults = MutableStateFlow<List<OcrElementBox>>(emptyList())
     val ocrPageId = MutableStateFlow<PageId?>(null)
     val isOcrLoading = MutableStateFlow(false)
+    val readingDirection = MutableStateFlow(ReadingDirection.LTR)
     private val ocrService = OcrService()
 
     val tapNavigationMode = MutableStateFlow(ReaderTapNavigationMode.LEFT_RIGHT)
@@ -413,7 +416,12 @@ fun scanCurrentPageForText(image: ReaderImage) {    stateScope.launch {
         ocrPageId.value = image.pageId
         isOcrLoading.value = true
         try {
-            ocrResults.value = ocrService.recognizeText(image, ocrSettings.value.selectedLanguage)
+            val rawBoxes = ocrService.recognizeText(image, ocrSettings.value.selectedLanguage)
+            ocrResults.value = if (ocrSettings.value.mergeBoxes) {
+                mergeOcrBoxes(rawBoxes, readingDirection.value)
+            } else {
+                rawBoxes
+            }
         } catch (e: Exception) {
             appNotifications.add(AppNotification.Error("OCR failed: ${e.message}"))
         } finally {

@@ -34,6 +34,9 @@ import snd.komelia.komga.api.KomgaSeriesApi
 import snd.komelia.onnxruntime.OnnxRuntime
 import snd.komelia.settings.CommonSettingsRepository
 import snd.komelia.settings.ImageReaderSettingsRepository
+import snd.komelia.image.ReadingDirection
+import snd.komelia.settings.model.ContinuousReadingDirection
+import snd.komelia.settings.model.PagedReadingDirection
 import snd.komelia.settings.model.OcrSettings
 import snd.komelia.settings.model.ReaderType.CONTINUOUS
 import snd.komelia.settings.model.ReaderType.PAGED
@@ -166,6 +169,19 @@ class ReaderViewModel(
     )
 
     init {
+        combine(
+            readerState.readerType,
+            pagedReaderState.readingDirection,
+            continuousReaderState.readingDirection
+        ) { type, pagedDir, continuousDir ->
+            when (type) {
+                PAGED -> if (pagedDir == PagedReadingDirection.RIGHT_TO_LEFT) ReadingDirection.RTL else ReadingDirection.LTR
+                CONTINUOUS -> if (continuousDir == ContinuousReadingDirection.RIGHT_TO_LEFT) ReadingDirection.RTL else ReadingDirection.LTR
+                PANELS -> ReadingDirection.LTR
+            }
+        }.onEach { readerState.readingDirection.value = it }
+            .launchIn(screenModelScope)
+
         readerState.ocrSettings
             .flatMapLatest { ocrSettings ->
                 if (ocrSettings.enabled) {

@@ -55,6 +55,7 @@ object ImageReaderSettingsTable : Table("ImageReaderSettings") {
 
     val ocrEnabled = bool("ocr_enabled").default(false)
     val ocrLanguage = text("ocr_language").default("LATIN")
+    val ocrMergeBoxes = bool("ocr_merge_boxes").default(true)
 
     override val primaryKey = PrimaryKey(bookId)
 }

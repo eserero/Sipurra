@@ -52,6 +52,7 @@ class ExposedImageReaderSettingsRepository(database: Database) : ExposedReposito
                         ocrSettings = OcrSettings(
                             enabled = it[ImageReaderSettingsTable.ocrEnabled],
                             selectedLanguage = OcrLanguage.valueOf(it[ImageReaderSettingsTable.ocrLanguage]),
+                            mergeBoxes = it[ImageReaderSettingsTable.ocrMergeBoxes],
                         ),
                         pagedScaleType = LayoutScaleType.valueOf(it[ImageReaderSettingsTable.pagedScaleType]),
                         pagedReadingDirection = PagedReadingDirection.valueOf(it[ImageReaderSettingsTable.pagedReadingDirection]),
@@ -108,6 +109,7 @@ class ExposedImageReaderSettingsRepository(database: Database) : ExposedReposito
 
                 it[ocrEnabled] = settings.ocrSettings.enabled
                 it[ocrLanguage] = settings.ocrSettings.selectedLanguage.name
+                it[ocrMergeBoxes] = settings.ocrSettings.mergeBoxes
 
                 it[pagedScaleType] = settings.pagedScaleType.name
                 it[pagedReadingDirection] = settings.pagedReadingDirection.name
