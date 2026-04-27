@@ -64,11 +64,12 @@ fun AnnotationDialog(
     onShowList: (() -> Unit)? = null,
     hasPrevious: Boolean = false,
     hasNext: Boolean = false,
+    initialNote: String? = null,
 ) {
     val sheetState = rememberModalBottomSheetState()
     val coroutineScope = rememberCoroutineScope()
 
-    var note by remember(existingAnnotation) { mutableStateOf(existingAnnotation?.note ?: "") }
+    var note by remember(existingAnnotation) { mutableStateOf(existingAnnotation?.note ?: initialNote ?: "") }
     var selectedColor by remember(existingAnnotation) {
         mutableIntStateOf(existingAnnotation?.highlightColor ?: initialColor)
     }

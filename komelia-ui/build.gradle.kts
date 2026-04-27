@@ -117,6 +117,7 @@ kotlin {
             implementation("org.readium.kotlin-toolkit:readium-navigator:3.1.2")
             implementation("com.github.wseemann:FFmpegMediaMetadataRetriever-core:1.0.19")
             implementation("com.github.wseemann:FFmpegMediaMetadataRetriever-native:1.0.19")
+            implementation(projects.komeliaInfra.audiobookTranscription)
         }
 
         jvmMain.dependencies {

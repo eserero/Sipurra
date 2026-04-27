@@ -20,8 +20,10 @@ import snd.komelia.settings.CommonSettingsRepository
 import snd.komelia.settings.ImageReaderSettingsRepository
 import snd.komelia.ui.settings.imagereader.ncnn.NcnnSettingsState
 import snd.komelia.ui.settings.imagereader.onnxruntime.OnnxRuntimeSettingsState
+import snd.komelia.ui.settings.imagereader.rapidocr.RapidOcrSettingsState
 import snd.komelia.updates.OnnxModelDownloader
 import snd.komelia.updates.OnnxRuntimeInstaller
+import snd.komelia.updates.RapidOcrModelDownloader
 
 class ImageReaderSettingsViewModel(
     private val settingsRepository: ImageReaderSettingsRepository,
@@ -32,6 +34,7 @@ class ImageReaderSettingsViewModel(
     private val upscaler: KomeliaUpscaler?,
     private val panelDetector: KomeliaPanelDetector?,
     private val onnxModelDownloader: OnnxModelDownloader?,
+    private val rapidOcrModelDownloader: RapidOcrModelDownloader?,
     private val coilMemoryCache: MemoryCache?,
     private val coilDiskCache: DiskCache?,
     private val readerDiskCache: DiskCache?,
@@ -55,12 +58,19 @@ class ImageReaderSettingsViewModel(
         coroutineScope = screenModelScope
     )
 
+    val rapidOcrSettingsState = RapidOcrSettingsState(
+        rapidOcrModelDownloader = rapidOcrModelDownloader,
+        settingsRepository = settingsRepository,
+        coroutineScope = screenModelScope
+    )
+
     val upsamplingMode = MutableStateFlow(UpsamplingMode.NEAREST)
     val downsamplingKernel = MutableStateFlow(ReduceKernel.NEAREST)
     val linearLightDownsampling = MutableStateFlow(false)
     val loadThumbnailsPreview = MutableStateFlow(false)
     val volumeKeysNavigation = MutableStateFlow(false)
     val keepReaderScreenOn = MutableStateFlow(false)
+    val imageCacheSizeLimitMb = MutableStateFlow(1024L)
     val availableUpsamplingModes = availableUpsamplingModes()
     val availableDownsamplingKernels = availableReduceKernels()
 
@@ -73,8 +83,10 @@ class ImageReaderSettingsViewModel(
         loadThumbnailsPreview.value = settingsRepository.getLoadThumbnailPreviews().first()
         volumeKeysNavigation.value = settingsRepository.getVolumeKeysNavigation().first()
         keepReaderScreenOn.value = commonSettingsRepository.getKeepReaderScreenOn().first()
+        imageCacheSizeLimitMb.value = settingsRepository.getImageCacheSizeLimitMb().first()
         onnxRuntimeSettingsState.initialize()
         ncnnSettingsState.initialize()
+        rapidOcrSettingsState.initialize()
     }
 
     fun onUpsamplingModeChange(mode: UpsamplingMode) {
@@ -105,6 +117,11 @@ class ImageReaderSettingsViewModel(
     fun onKeepReaderScreenOnChange(enabled: Boolean) {
         keepReaderScreenOn.value = enabled
         screenModelScope.launch { commonSettingsRepository.putKeepReaderScreenOn(enabled) }
+    }
+
+    fun onImageCacheSizeLimitMbChange(size: Long) {
+        imageCacheSizeLimitMb.value = size
+        screenModelScope.launch { settingsRepository.putImageCacheSizeLimitMb(size) }
     }
 
     fun onClearImageCache() {

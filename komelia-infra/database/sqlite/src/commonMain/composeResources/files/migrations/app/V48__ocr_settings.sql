@@ -1,0 +1,2 @@
+ALTER TABLE ImageReaderSettings ADD COLUMN ocr_enabled INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE ImageReaderSettings ADD COLUMN ocr_language TEXT NOT NULL DEFAULT 'LATIN';

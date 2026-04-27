@@ -74,6 +74,7 @@ fun BoxScope.PagedReaderContent(
     onLongPress: (Offset) -> Unit = {},
     annotations: List<snd.komelia.annotations.BookAnnotation> = emptyList(),
     onAnnotationTap: (snd.komelia.annotations.BookAnnotation) -> Unit = {},
+    onAddNote: (text: String, page: Int, x: Float, y: Float) -> Unit = { _, _, _, _ -> },
 ) {
     if (showHelpDialog) {
         PagedReaderHelpDialog(onDismissRequest = { onShowHelpDialogChange(false) })
@@ -93,6 +94,9 @@ fun BoxScope.PagedReaderContent(
     val layoutOffset = pagedReaderState.layoutOffset.collectAsState().value
     val tapToZoom = pagedReaderState.tapToZoom.collectAsState().value
     val adaptiveBackground = pagedReaderState.adaptiveBackground.collectAsState().value
+
+    val ocrResults by pagedReaderState.readerState.ocrResults.collectAsState()
+    val ocrPageId by pagedReaderState.readerState.ocrPageId.collectAsState()
 
     val currentContainerSize = screenScaleState.areaSize.collectAsState().value
 
@@ -231,8 +235,24 @@ fun BoxScope.PagedReaderContent(
                                 imageBounds = imageBounds,
                             ) {
                                 when (layout) {
-                                    SINGLE_PAGE -> pages.firstOrNull()?.let { SinglePageLayout(it) }
-                                    DOUBLE_PAGES, DOUBLE_PAGES_NO_COVER -> DoublePageLayout(pages, readingDirection)
+                                    SINGLE_PAGE -> pages.firstOrNull()?.let {
+                                        val ocr = if (ocrPageId == it.metadata.toPageId()) ocrResults else emptyList()
+                                        SinglePageLayout(
+                                            page = it,
+                                            ocrResults = ocr,
+                                            onSelectionChanged = { results -> pagedReaderState.readerState.ocrResults.value = results },
+                                            onAddNote = { text, x, y -> onAddNote(text, it.metadata.pageNumber - 1, x, y) }
+                                        )
+                                    }
+
+                                    DOUBLE_PAGES, DOUBLE_PAGES_NO_COVER -> DoublePageLayout(
+                                        pages = pages,
+                                        readingDirection = readingDirection,
+                                        ocrResults = ocrResults,
+                                        ocrPageId = ocrPageId,
+                                        onSelectionChanged = { results -> pagedReaderState.readerState.ocrResults.value = results },
+                                        onAddNote = { text, page, x, y -> onAddNote(text, page, x, y) }
+                                    )
                                 }
                                 // Annotation pins overlay
                                 val pageAnnotations = annotationsForPage(annotations, pageIdx)
@@ -320,8 +340,20 @@ private fun TransitionPage(page: TransitionPage) {
 }
 
 @Composable
-private fun SinglePageLayout(page: Page) {
-    Layout(content = { ReaderImageContent(page.imageResult) }) { measurable, constraints ->
+private fun SinglePageLayout(
+    page: Page,
+    ocrResults: List<snd.komelia.image.OcrElementBox>,
+    onSelectionChanged: (List<snd.komelia.image.OcrElementBox>) -> Unit,
+    onAddNote: (text: String, x: Float, y: Float) -> Unit,
+) {
+    Layout(content = {
+        ReaderImageContent(
+            imageResult = page.imageResult,
+            ocrResults = ocrResults,
+            onSelectionChanged = onSelectionChanged,
+            onAddNote = onAddNote,
+        )
+    }) { measurable, constraints ->
         val placeable = measurable.first().measure(constraints)
         val startPadding = (constraints.maxWidth - placeable.width) / 2
         val topPadding = ((constraints.maxHeight - placeable.height) / 2).coerceAtLeast(0)
@@ -335,14 +367,43 @@ private fun SinglePageLayout(page: Page) {
 private fun DoublePageLayout(
     pages: List<Page>,
     readingDirection: PagedReadingDirection,
+    ocrResults: List<snd.komelia.image.OcrElementBox>,
+    ocrPageId: snd.komelia.image.ReaderImage.PageId?,
+    onSelectionChanged: (List<snd.komelia.image.OcrElementBox>) -> Unit,
+    onAddNote: (text: String, page: Int, x: Float, y: Float) -> Unit,
 ) {
     Layout(content = {
         when (pages.size) {
             0 -> {}
-            1 -> ReaderImageContent(pages.first().imageResult)
+            1 -> {
+                val page = pages.first()
+                val ocr = if (ocrPageId == page.metadata.toPageId()) ocrResults else emptyList()
+                ReaderImageContent(
+                    imageResult = page.imageResult,
+                    ocrResults = ocr,
+                    onSelectionChanged = onSelectionChanged,
+                    onAddNote = { text, x, y -> onAddNote(text, page.metadata.pageNumber - 1, x, y) }
+                )
+            }
+
             2 -> {
-                ReaderImageContent(pages[0].imageResult)
-                ReaderImageContent(pages[1].imageResult)
+                val page1 = pages[0]
+                val ocr1 = if (ocrPageId == page1.metadata.toPageId()) ocrResults else emptyList()
+                ReaderImageContent(
+                    imageResult = page1.imageResult,
+                    ocrResults = ocr1,
+                    onSelectionChanged = onSelectionChanged,
+                    onAddNote = { text, x, y -> onAddNote(text, page1.metadata.pageNumber - 1, x, y) }
+                )
+
+                val page2 = pages[1]
+                val ocr2 = if (ocrPageId == page2.metadata.toPageId()) ocrResults else emptyList()
+                ReaderImageContent(
+                    imageResult = page2.imageResult,
+                    ocrResults = ocr2,
+                    onSelectionChanged = onSelectionChanged,
+                    onAddNote = { text, x, y -> onAddNote(text, page2.metadata.pageNumber - 1, x, y) }
+                )
             }
 
             else -> error("can't display more than 2 images")

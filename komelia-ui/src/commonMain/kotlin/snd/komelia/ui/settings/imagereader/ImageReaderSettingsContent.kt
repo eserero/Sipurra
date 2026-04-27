@@ -15,6 +15,9 @@ import snd.komelia.ui.settings.imagereader.ncnn.*
 import snd.komelia.ui.settings.imagereader.onnxruntime.OnnxRuntimeSettingsContent
 import snd.komelia.ui.settings.imagereader.onnxruntime.OnnxRuntimeSettingsState
 import snd.komelia.ui.settings.imagereader.onnxruntime.isOnnxRuntimeSupported
+import snd.komelia.ui.settings.imagereader.rapidocr.RapidOcrSettingsContent
+import snd.komelia.ui.settings.imagereader.rapidocr.RapidOcrSettingsState
+import snd.komelia.ui.settings.imagereader.rapidocr.isRapidOcrSupported
 
 @Composable
 fun ImageReaderSettingsContent(
@@ -27,9 +30,13 @@ fun ImageReaderSettingsContent(
     keepReaderScreenOn: Boolean,
     onKeepReaderScreenOnChange: (Boolean) -> Unit,
 
+    imageCacheSizeLimitMb: Long,
+    onImageCacheSizeLimitMbChange: (Long) -> Unit,
+
     onCacheClear: () -> Unit,
     onnxRuntimeSettingsState: OnnxRuntimeSettingsState,
     ncnnSettingsState: NcnnSettingsState,
+    rapidOcrSettingsState: RapidOcrSettingsState,
 ) {
     var showLogs by remember { mutableStateOf(false) }
     var showCrashLogs by remember { mutableStateOf(false) }
@@ -67,6 +74,29 @@ fun ImageReaderSettingsContent(
             } ?: ButtonDefaults.filledTonalButtonColors()
         ) { Text("Clear image cache") }
 
+        Column {
+            Text(
+                "Max Image Cache Size: ${"%.1f".format(imageCacheSizeLimitMb.toDouble() / 1024)} GB",
+                style = MaterialTheme.typography.labelLarge
+            )
+            Slider(
+                value = imageCacheSizeLimitMb.toFloat(),
+                onValueChange = { onImageCacheSizeLimitMbChange(it.toLong()) },
+                valueRange = 500f..5000f,
+                steps = 44, // (5000 - 500) / 100 - 1 = 44 steps for 100MB intervals
+                colors = accentColor?.let {
+                    SliderDefaults.colors(
+                        thumbColor = it,
+                        activeTrackColor = it,
+                    )
+                } ?: SliderDefaults.colors()
+            )
+            Text(
+                "Requires app restart to take effect",
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+
         if (isOnnxRuntimeSupported()) {
             HorizontalDivider(Modifier.padding(vertical = 10.dp))
             OnnxRuntimeSettingsContent(
@@ -96,6 +126,16 @@ fun ImageReaderSettingsContent(
                 settings = ncnnSettingsState.ncnnUpscalerSettings.collectAsState().value,
                 onSettingsChange = ncnnSettingsState::onSettingsChange,
                 onDownloadRequest = ncnnSettingsState::onNcnnDownloadRequest
+            )
+        }
+
+        if (isRapidOcrSupported()) {
+            HorizontalDivider(Modifier.padding(vertical = 10.dp))
+            RapidOcrSettingsContent(
+                isDownloaded = rapidOcrSettingsState.isDownloaded.collectAsState().value,
+                rapidOcrModelsUrl = rapidOcrSettingsState.rapidOcrModelsUrl.collectAsState().value,
+                onRapidOcrModelsUrlChange = rapidOcrSettingsState::onRapidOcrModelsUrlChange,
+                downloadFlow = rapidOcrSettingsState::downloadFlow
             )
         }
 

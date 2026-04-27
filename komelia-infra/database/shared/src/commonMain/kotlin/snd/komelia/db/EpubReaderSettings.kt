@@ -13,4 +13,5 @@ data class EpubReaderSettings(
     val komgaReaderSettings: JsonObject = buildJsonObject { },
     val ttsuReaderSettings: TtsuReaderSettings = TtsuReaderSettings(),
     val epub3NativeSettings: Epub3NativeSettings = Epub3NativeSettings(),
+    val epubCacheSizeLimitMb: Long = 2048L,
 )

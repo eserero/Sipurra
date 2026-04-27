@@ -58,6 +58,7 @@ import snd.komelia.offline.media.repository.OfflineMediaRepository
 import snd.komelia.offline.mediacontainer.BookContentExtractors
 import snd.komelia.offline.mediacontainer.DivinaExtractor
 import snd.komelia.offline.mediacontainer.EpubExtractor
+import snd.komelia.offline.mediacontainer.PdfExtractor
 import snd.komelia.offline.readprogress.OfflineReadProgressRepository
 import snd.komelia.offline.readprogress.actions.ProgressCompleteForBookAction
 import snd.komelia.offline.readprogress.actions.ProgressCompleteForSeriesAction
@@ -184,7 +185,11 @@ abstract class OfflineModule(
             logJournalRepository = repositories.logJournalRepository,
             events = bookDownloadEvents
         )
-        val fileService = BookContentExtractors(createDivinaExtractors(), createEpubExtractor())
+        val fileService = BookContentExtractors(
+            divinaExtractors = createDivinaExtractors(),
+            epubExtractor = createEpubExtractor(),
+            pdfExtractor = createPdfExtractor(),
+        )
 
         val offlineServerFlow = offlineUserId
             .map { repositories.mediaServerRepository.findByUserId(it) }
@@ -500,6 +505,7 @@ abstract class OfflineModule(
 
     protected abstract fun createDivinaExtractors(): List<DivinaExtractor>
     protected abstract fun createEpubExtractor(): EpubExtractor
+    protected abstract fun createPdfExtractor(): PdfExtractor?
     protected abstract fun createPlatformDownloadManager(
         downloadService: BookDownloadService,
         logJournalRepository: LogJournalRepository,

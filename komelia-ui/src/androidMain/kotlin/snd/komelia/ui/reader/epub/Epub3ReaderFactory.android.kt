@@ -40,6 +40,8 @@ actual fun createEpub3ReaderState(
     platformType: PlatformType,
     coroutineScope: CoroutineScope,
     bookSiblingsContext: BookSiblingsContext,
+    transcriptionSettingsRepository: snd.komelia.settings.TranscriptionSettingsRepository,
+    whisperModelDownloader: snd.komelia.updates.WhisperModelDownloader?,
     onExit: (KomeliaBook) -> Unit,
 ): EpubReaderState = Epub3ReaderState(
     bookId = bookId,
@@ -62,5 +64,7 @@ actual fun createEpub3ReaderState(
     platformType = platformType,
     coroutineScope = coroutineScope,
     bookSiblingsContext = bookSiblingsContext,
+    transcriptionSettingsRepository = transcriptionSettingsRepository,
+    whisperModelDownloader = whisperModelDownloader,
     onExit = onExit,
 )

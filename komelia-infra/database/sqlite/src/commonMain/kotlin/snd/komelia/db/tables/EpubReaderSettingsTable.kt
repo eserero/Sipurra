@@ -18,6 +18,7 @@ object EpubReaderSettingsTable : Table("EpubReaderSettings") {
     val showDateTimeOverlay = bool("epub3_show_datetime_overlay").default(true)
     val showLocationOverlay = bool("epub3_show_location_overlay").default(true)
     val epub3RespectPublisherColors = bool("epub3_respect_publisher_colors").default(false)
+    val epubCacheSizeLimitMb = long("epub_cache_size_limit_mb").default(2048L)
 
     override val primaryKey = PrimaryKey(bookId)
 }

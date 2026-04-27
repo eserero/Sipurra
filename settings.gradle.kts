@@ -25,6 +25,7 @@ include(":komelia-domain:offline")
 include(":komelia-domain:komga-api")
 include(":komelia-ui")
 
+include(":komelia-infra:audiobook-transcription")
 include(":komelia-infra:database:transaction")
 include(":komelia-infra:database:shared")
 include(":komelia-infra:database:sqlite")

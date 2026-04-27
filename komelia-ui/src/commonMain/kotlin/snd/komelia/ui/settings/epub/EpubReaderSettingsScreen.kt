@@ -25,8 +25,11 @@ class EpubReaderSettingsScreen : Screen {
                 is LoadState.Error -> ErrorContent(result.exception)
                 LoadState.Uninitialized, LoadState.Loading -> LoadingMaxSizeIndicator()
                 is LoadState.Success<Unit> -> EpubReaderSettingsContent(
-                    vm.selectedEpubReader.collectAsState().value,
-                    vm::onSelectedTypeChange
+                    readerType = vm.selectedEpubReader.collectAsState().value,
+                    onReaderChange = vm::onSelectedTypeChange,
+                    epubCacheSizeLimitMb = vm.epubCacheSizeLimitMb.collectAsState().value,
+                    onEpubCacheSizeLimitMbChange = vm::onEpubCacheSizeLimitMbChange,
+                    onClearEpubCache = vm::onClearEpubCache,
                 )
             }
 

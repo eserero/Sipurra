@@ -66,6 +66,13 @@ kotlin {
         androidMain.dependencies {
             api(libs.androidx.datastore)
             implementation(libs.androidx.appcompat)
+            implementation(libs.mlkit.text.recognition)
+            implementation(libs.mlkit.text.recognition.chinese)
+            implementation(libs.mlkit.text.recognition.devanagari)
+            implementation(libs.mlkit.text.recognition.japanese)
+            implementation(libs.mlkit.text.recognition.korean)
+            implementation(libs.rapidocr.android)
+            implementation(libs.kotlinx.coroutines.play.services)
             implementation(libs.commons.compress)
             api(libs.ktor.client.okhttp)
             api(libs.logback.android)
@@ -94,6 +101,12 @@ kotlin {
             implementation(projects.komeliaInfra.imageDecoder.vips)
             implementation(projects.komeliaInfra.onnxruntime.jvm)
         }
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        force("com.microsoft.onnxruntime:onnxruntime-android:1.23.0")
     }
 }
 

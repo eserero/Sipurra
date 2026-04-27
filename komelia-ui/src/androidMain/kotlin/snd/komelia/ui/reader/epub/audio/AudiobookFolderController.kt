@@ -14,6 +14,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import snd.komelia.audiobook.AudioBookmark
@@ -23,7 +26,17 @@ import snd.komelia.audiobook.AudioChapterRepository
 import snd.komelia.audiobook.AudioFolderTrack
 import snd.komelia.audiobook.AudioPosition
 import snd.komelia.audiobook.AudioPositionRepository
+import snd.komelia.settings.TranscriptionSettingsRepository
 import snd.komelia.settings.model.Epub3NativeSettings
+import snd.komelia.settings.model.TranscriptionEngineType
+import snd.komelia.transcription.AudioTranscriptTrack
+import snd.komelia.transcription.LiveTranscriptEngine
+import snd.komelia.transcription.MlKitTranscriptionBackend
+import snd.komelia.transcription.TranscriptEngineState
+import snd.komelia.transcription.TranscriptSegment
+import snd.komelia.transcription.TranscriptStore
+import snd.komelia.transcription.WhisperTranscriptionBackend
+import snd.komelia.updates.WhisperModelDownloader
 import snd.komga.client.book.KomgaBookId
 import wseemann.media.FFmpegMediaMetadataRetriever
 import java.io.File
@@ -43,6 +56,8 @@ class AudiobookFolderController(
     private val audioBookmarkRepository: AudioBookmarkRepository,
     private val audioChapterRepository: AudioChapterRepository,
     private val onBookmarkChange: () -> Unit = {},
+    private val transcriptionSettingsRepository: TranscriptionSettingsRepository,
+    private val whisperModelDownloader: WhisperModelDownloader?,
 ) : EpubAudioController {
 
     private val _isPlaying = MutableStateFlow(false)
@@ -77,6 +92,13 @@ class AudiobookFolderController(
 
     private var loadedTracks: List<Track> = emptyList()
     private var elapsedTimeJob: Job? = null
+
+    private var transcriptEngine: LiveTranscriptEngine? = null
+    private val _transcriptState = MutableStateFlow<TranscriptEngineState>(TranscriptEngineState.Idle)
+    private val _liveTranscriptSegments = MutableStateFlow<List<TranscriptSegment>>(emptyList())
+
+    override val transcriptState: kotlinx.coroutines.flow.StateFlow<TranscriptEngineState> get() = _transcriptState
+    override val liveTranscriptSegments: kotlinx.coroutines.flow.StateFlow<List<TranscriptSegment>> get() = _liveTranscriptSegments
 
     private val player: AudiobookPlayer = AudiobookPlayer(
         context = context,
@@ -318,10 +340,82 @@ class AudiobookFolderController(
     }
 
     override fun release() {
+        stopTranscription()
         savePosition()
         elapsedTimeJob?.cancel()
         elapsedTimeJob = null
         player.unload()
+    }
+
+    override fun startTranscription() {
+        coroutineScope.launch {
+            val settings = transcriptionSettingsRepository.getSettings().first()
+
+            val store = TranscriptStore()
+
+            val backend: snd.komelia.transcription.TranscriptionBackend = when (settings.engine) {
+                TranscriptionEngineType.ML_KIT ->
+                    MlKitTranscriptionBackend(store, coroutineScope)
+
+                TranscriptionEngineType.WHISPER -> {
+                    val downloader = whisperModelDownloader
+                    if (downloader == null) {
+                        _transcriptState.value = TranscriptEngineState.Error(
+                            "Whisper transcription is not supported on this platform."
+                        )
+                        return@launch
+                    }
+                    val modelPath = downloader.modelFilePath()
+                    if (!java.io.File(modelPath).exists()) {
+                        _transcriptState.value = TranscriptEngineState.Error(
+                            "Whisper model not downloaded. Go to Settings → Transcription to download it."
+                        )
+                        return@launch
+                    }
+                    WhisperTranscriptionBackend(
+                        store = store,
+                        modelPath = modelPath,
+                        language = settings.whisperLanguage,
+                        scope = coroutineScope,
+                    )
+                }
+            }
+
+            val engine = LiveTranscriptEngine(
+                context = context,
+                tracks = buildTranscriptTracks(),
+                getPlaybackMs = { (_elapsedSeconds.value * 1000).toLong() },
+                scope = coroutineScope,
+                backend = backend,
+                store = store,
+            )
+            transcriptEngine = engine
+
+            engine.state.onEach { _transcriptState.value = it }.launchIn(coroutineScope)
+            engine.visibleSegments.onEach { _liveTranscriptSegments.value = it }.launchIn(coroutineScope)
+
+            engine.start()
+        }
+    }
+
+    override fun stopTranscription() {
+        transcriptEngine?.stop()
+        transcriptEngine = null
+    }
+
+    override fun onTranscriptSeek(newPositionMs: Long) {
+        transcriptEngine?.onPlaybackSeeked(newPositionMs)
+    }
+
+    private fun buildTranscriptTracks(): List<AudioTranscriptTrack> {
+        return loadedTracks.mapIndexed { idx, track ->
+            val offsetMs = _tracks.value.take(idx).sumOf { it.durationSeconds * 1000 }.toLong()
+            AudioTranscriptTrack(
+                uri = track.uri,
+                bookOffsetMs = offsetMs,
+                durationMs = track.duration.toLong(),
+            )
+        }
     }
 
     fun seekToTrack(index: Int) {
@@ -342,6 +436,7 @@ class AudiobookFolderController(
         _elapsedSeconds.value = prevDuration + positionSeconds
         _currentTrackIndex.value = index
         updateIsCurrentPositionBookmarked()
+        onTranscriptSeek((_elapsedSeconds.value * 1000).toLong())
     }
 
     fun seekToChapter(chapterIndex: Int) {

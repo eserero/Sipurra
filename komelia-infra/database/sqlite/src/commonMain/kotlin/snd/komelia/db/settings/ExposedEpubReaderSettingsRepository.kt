@@ -29,6 +29,7 @@ class ExposedEpubReaderSettingsRepository(database: Database) : ExposedRepositor
                             showLocationOverlay = it[EpubReaderSettingsTable.showLocationOverlay],
                             respectPublisherColors = it[EpubReaderSettingsTable.epub3RespectPublisherColors],
                         ),
+                        epubCacheSizeLimitMb = it[EpubReaderSettingsTable.epubCacheSizeLimitMb],
                     )
                 }
         }
@@ -47,6 +48,7 @@ class ExposedEpubReaderSettingsRepository(database: Database) : ExposedRepositor
                 it[showDateTimeOverlay] = settings.epub3NativeSettings.showDateTimeOverlay
                 it[showLocationOverlay] = settings.epub3NativeSettings.showLocationOverlay
                 it[epub3RespectPublisherColors] = settings.epub3NativeSettings.respectPublisherColors
+                it[epubCacheSizeLimitMb] = settings.epubCacheSizeLimitMb
             }
         }
     }

@@ -1,5 +1,8 @@
 package snd.komelia.ui.reader.epub
 
+import android.content.Context
+import android.content.Intent
+import android.content.pm.ActivityInfo
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -7,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BorderColor
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -17,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -52,6 +57,7 @@ fun AnnotationContextMenu(
     onDismiss: () -> Unit,
 ) {
     val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
     val theme = LocalTheme.current
     val surfaceColor = if (theme.type == Theme.ThemeType.DARK) Color(43, 43, 43)
     else MaterialTheme.colorScheme.surface
@@ -85,6 +91,16 @@ fun AnnotationContextMenu(
                 },
             )
             DropdownMenuItem(
+                text = { Text("Translate") },
+                leadingIcon = { Icon(Icons.Default.Translate, contentDescription = null) },
+                onClick = {
+                    if (!selectedText.isNullOrBlank()) {
+                        context.openGoogleTranslate(selectedText)
+                    }
+                    onDismiss()
+                },
+            )
+            DropdownMenuItem(
                 text = { Text("Highlight") },
                 leadingIcon = { Icon(Icons.Default.BorderColor, contentDescription = null) },
                 onClick = onHighlight,
@@ -96,4 +112,27 @@ fun AnnotationContextMenu(
             )
         }
     }
+}
+
+private fun Context.findGoogleTranslateActivity(): ActivityInfo? {
+    val intent = Intent(Intent.ACTION_PROCESS_TEXT).apply {
+        type = "text/plain"
+    }
+    return packageManager
+        .queryIntentActivities(intent, 0)
+        .firstOrNull { it.activityInfo.packageName == "com.google.android.apps.translate" }
+        ?.activityInfo
+}
+
+private fun Context.openGoogleTranslate(text: String) {
+    val activity = findGoogleTranslateActivity()
+    val intent = Intent(Intent.ACTION_PROCESS_TEXT).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_PROCESS_TEXT, text)
+        putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true)
+        if (activity != null) {
+            setClassName(activity.packageName, activity.name)
+        }
+    }
+    startActivity(intent)
 }

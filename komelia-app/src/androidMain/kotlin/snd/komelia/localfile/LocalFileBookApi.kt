@@ -27,6 +27,9 @@ import snd.komga.client.library.KomgaLibraryId
 import snd.komga.client.readlist.KomgaReadList
 import snd.komga.client.search.BookConditionBuilder
 import snd.komga.client.series.KomgaSeriesId
+import snd.komelia.offline.mediacontainer.AndroidPdfExtractor
+import com.github.junrar.Archive
+import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 import kotlin.time.Clock
@@ -46,24 +49,51 @@ class LocalFileBookApi(
 
     val isEpub: Boolean = filename.endsWith(".epub", ignoreCase = true)
         || context.contentResolver.getType(uri)?.contains("epub") == true
+    val isPdf: Boolean = filename.endsWith(".pdf", ignoreCase = true)
+        || context.contentResolver.getType(uri)?.contains("pdf") == true
+    val isRar: Boolean = filename.endsWith(".cbr", ignoreCase = true)
+        || filename.endsWith(".rar", ignoreCase = true)
+        || context.contentResolver.getType(uri)?.contains("rar") == true
+        || context.contentResolver.getType(uri)?.contains("x-rar-compressed") == true
+
+    private val pdfExtractor = AndroidPdfExtractor(context)
 
     private val imageEntries: List<String> by lazy {
-        if (isEpub) emptyList()
+        if (isEpub || isPdf) emptyList()
         else {
             val imageExtensions = setOf("jpg", "jpeg", "png", "webp", "gif")
             val entries = mutableListOf<String>()
-            openZip { zip ->
-                var entry = zip.nextEntry
-                while (entry != null) {
-                    val ext = entry.name.substringAfterLast('.', "").lowercase()
-                    if (!entry.isDirectory && ext in imageExtensions) {
-                        entries.add(entry.name)
+
+            if (isRar) {
+                openRar { archive ->
+                    archive.fileHeaders.forEach { header ->
+                        val ext = header.fileName.substringAfterLast('.', "").lowercase()
+                        if (!header.isDirectory && ext in imageExtensions) {
+                            entries.add(header.fileName)
+                        }
                     }
-                    entry = zip.nextEntry
+                }
+            } else {
+                openZip { zip ->
+                    var entry = zip.nextEntry
+                    while (entry != null) {
+                        val ext = entry.name.substringAfterLast('.', "").lowercase()
+                        if (!entry.isDirectory && ext in imageExtensions) {
+                            entries.add(entry.name)
+                        }
+                        entry = zip.nextEntry
+                    }
                 }
             }
             entries.sortedWith(naturalOrder())
         }
+    }
+
+    private val pdfPageCount: Int by lazy {
+        if (isPdf) {
+            val platformFile = io.github.vinceglb.filekit.PlatformFile(uri)
+            pdfExtractor.getPageCount(platformFile)
+        } else 0
     }
 
     override suspend fun getOne(bookId: KomgaBookId): KomeliaBook {
@@ -83,6 +113,22 @@ class LocalFileBookApi(
         } else null
 
         val now = Clock.System.now()
+        val mediaProfile = when {
+            isEpub -> MediaProfile.EPUB
+            isPdf -> MediaProfile.PDF
+            else -> MediaProfile.DIVINA
+        }
+        val mediaType = when {
+            isEpub -> "application/epub+zip"
+            isPdf -> "application/pdf"
+            isRar -> "application/vnd.rar"
+            else -> "application/zip"
+        }
+        val pagesCount = when {
+            isPdf -> pdfPageCount
+            else -> imageEntries.size
+        }
+
         return KomeliaBook(
             id = virtualBookId,
             seriesId = KomgaSeriesId("local"),
@@ -98,12 +144,12 @@ class LocalFileBookApi(
             size = "",
             media = Media(
                 status = KomgaMediaStatus.READY,
-                mediaType = if (isEpub) "application/epub+zip" else "application/zip",
-                pagesCount = imageEntries.size,
+                mediaType = mediaType,
+                pagesCount = pagesCount,
                 comment = "",
                 epubDivinaCompatible = false,
                 epubIsKepub = false,
-                mediaProfile = if (isEpub) MediaProfile.EPUB else MediaProfile.DIVINA,
+                mediaProfile = mediaProfile,
             ),
             metadata = KomgaBookMetadata(
                 title = filename.substringBeforeLast('.'),
@@ -127,6 +173,20 @@ class LocalFileBookApi(
 
     override suspend fun getBookPages(bookId: KomgaBookId): List<KomgaBookPage> {
         require(bookId == virtualBookId)
+        if (isPdf) {
+            return (1..pdfPageCount).map { index ->
+                KomgaBookPage(
+                    number = index,
+                    fileName = "page$index.jpg",
+                    mediaType = "image/jpeg",
+                    width = null,
+                    height = null,
+                    sizeBytes = null,
+                    size = "",
+                )
+            }
+        }
+
         return imageEntries.mapIndexed { index, name ->
             KomgaBookPage(
                 number = index + 1,
@@ -142,20 +202,36 @@ class LocalFileBookApi(
 
     override suspend fun getPage(bookId: KomgaBookId, page: Int): ByteArray {
         require(bookId == virtualBookId)
+        if (isPdf) {
+            val platformFile = io.github.vinceglb.filekit.PlatformFile(uri)
+            return pdfExtractor.getPage(platformFile, page)
+        }
+
         val targetEntry = imageEntries.getOrNull(page - 1)
             ?: throw IllegalArgumentException("Page $page not found (${imageEntries.size} pages total)")
         var result: ByteArray? = null
-        openZip { zip ->
-            var entry = zip.nextEntry
-            while (entry != null) {
-                if (entry.name == targetEntry) {
-                    result = zip.readBytes()
-                    break
+
+        if (isRar) {
+            openRar { archive ->
+                archive.fileHeaders.find { it.fileName == targetEntry }?.let { header ->
+                    val os = ByteArrayOutputStream()
+                    archive.extractFile(header, os)
+                    result = os.toByteArray()
                 }
-                entry = zip.nextEntry
+            }
+        } else {
+            openZip { zip ->
+                var entry = zip.nextEntry
+                while (entry != null) {
+                    if (entry.name == targetEntry) {
+                        result = zip.readBytes()
+                        break
+                    }
+                    entry = zip.nextEntry
+                }
             }
         }
-        return result ?: throw IllegalStateException("Entry $targetEntry not found in zip")
+        return result ?: throw IllegalStateException("Entry $targetEntry not found in archive")
     }
 
     override suspend fun markReadProgress(bookId: KomgaBookId, request: KomgaBookReadProgressUpdateRequest) {
@@ -224,6 +300,12 @@ class LocalFileBookApi(
     private fun openZip(block: (ZipInputStream) -> Unit) {
         context.contentResolver.openInputStream(uri)!!.use { raw ->
             ZipInputStream(raw).use(block)
+        }
+    }
+
+    private fun openRar(block: (Archive) -> Unit) {
+        context.contentResolver.openInputStream(uri)!!.use { raw ->
+            Archive(raw).use(block)
         }
     }
 

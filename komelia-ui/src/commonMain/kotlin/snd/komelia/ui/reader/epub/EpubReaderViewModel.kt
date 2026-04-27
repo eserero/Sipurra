@@ -51,6 +51,8 @@ class EpubReaderViewModel(
     private val platformType: PlatformType,
     private val platformContext: PlatformContext,
     private val bookSiblingsContext: BookSiblingsContext,
+    private val transcriptionSettingsRepository: snd.komelia.settings.TranscriptionSettingsRepository,
+    private val whisperModelDownloader: snd.komelia.updates.WhisperModelDownloader?,
     private val onExit: (KomeliaBook) -> Unit,
 ) : StateScreenModel<LoadState<EpubReaderState>>(LoadState.Uninitialized) {
 
@@ -144,6 +146,8 @@ class EpubReaderViewModel(
                             platformType = platformType,
                             coroutineScope = screenModelScope,
                             bookSiblingsContext = bookSiblingsContext,
+                            transcriptionSettingsRepository = transcriptionSettingsRepository,
+                            whisperModelDownloader = whisperModelDownloader,
                             onExit = onExit,
                         )
                         _pendingReaderState.value = epub3State

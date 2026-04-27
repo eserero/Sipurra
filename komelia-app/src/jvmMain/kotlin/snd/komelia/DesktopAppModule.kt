@@ -52,10 +52,12 @@ import snd.komelia.db.repository.KomfSettingsRepositoryWrapper
 import snd.komelia.db.repository.OfflineSettingsRepositoryWrapper
 import snd.komelia.db.repository.ReaderSettingsRepositoryWrapper
 import snd.komelia.db.repository.SettingsRepositoryWrapper
+import snd.komelia.db.repository.TranscriptionSettingsRepositoryWrapper
 import snd.komelia.db.settings.ExposedEpubReaderSettingsRepository
 import snd.komelia.db.settings.ExposedImageReaderSettingsRepository
 import snd.komelia.db.settings.ExposedKomfSettingsRepository
 import snd.komelia.db.settings.ExposedSettingsRepository
+import snd.komelia.db.settings.ExposedTranscriptionSettingsRepository
 import snd.komelia.homefilters.homeScreenDefaultFilters
 import snd.komelia.http.komeliaUserAgent
 import snd.komelia.image.DesktopOnnxRuntimeUpscaler
@@ -90,7 +92,9 @@ import snd.komelia.updates.DesktopAppUpdater
 import snd.komelia.updates.DesktopOnnxModelDownloader
 import snd.komelia.updates.DesktopOnnxRuntimeInstaller
 import snd.komelia.updates.OnnxModelDownloader
+import snd.komelia.updates.RapidOcrModelDownloader
 import snd.komelia.updates.UpdateClient
+import snd.komelia.updates.WhisperModelDownloader
 import snd.komga.client.KomgaClientFactory
 import snd.komga.client.user.KomgaUser
 import snd.webview.WebviewSharedLibraries
@@ -200,7 +204,15 @@ class DesktopAppModule(
                         saveSettings = repository::putFilters
                     )
                 )
-            }
+            },
+            transcriptionSettingsRepository = ExposedTranscriptionSettingsRepository(databases.app).let { repository ->
+                TranscriptionSettingsRepositoryWrapper(
+                    SettingsStateWrapper(
+                        settings = repository.get() ?: snd.komelia.db.TranscriptionSettings(),
+                        saveSettings = repository::save
+                    )
+                )
+            },
         )
     }
 
@@ -292,6 +304,10 @@ class DesktopAppModule(
 
     override fun createOnnxModelDownloader(updateClient: UpdateClient) =
         DesktopOnnxModelDownloader(updateClient, appNotifications)
+
+    override fun createWhisperModelDownloader(updateClient: UpdateClient): WhisperModelDownloader? = null
+
+    override fun createRapidOcrModelDownloader(updateClient: UpdateClient): RapidOcrModelDownloader? = null
 
     override fun createOnnxRuntime(): OnnxRuntime? {
         if (!OnnxRuntimeSharedLibraries.isAvailable) {

@@ -11,6 +11,7 @@ import snd.komelia.settings.ImageReaderSettingsRepository
 import snd.komelia.settings.model.ContinuousReadingDirection
 import snd.komelia.settings.model.LayoutScaleType
 import snd.komelia.settings.model.NcnnUpscalerSettings
+import snd.komelia.settings.model.OcrSettings
 import snd.komelia.settings.model.PageDisplayLayout
 import snd.komelia.settings.model.PagedReadingDirection
 import snd.komelia.settings.model.PanelsFullPageDisplayMode
@@ -36,6 +37,14 @@ class ReaderSettingsRepositoryWrapper(
 
     override suspend fun putNcnnUpscalerSettings(settings: NcnnUpscalerSettings) {
         wrapper.transform { it.copy(ncnnUpscalerSettings = settings) }
+    }
+
+    override fun getOcrSettings(): Flow<OcrSettings> {
+        return wrapper.mapState { it.ocrSettings }
+    }
+
+    override suspend fun putOcrSettings(settings: OcrSettings) {
+        wrapper.transform { it.copy(ocrSettings = settings) }
     }
 
     override fun getStretchToFit(): Flow<Boolean> {
@@ -260,5 +269,21 @@ class ReaderSettingsRepositoryWrapper(
 
     override suspend fun putPanelDetectionUrl(url: String) {
         wrapper.transform { it.copy(panelDetectionUrl = url) }
+    }
+
+    override fun getRapidOcrModelsUrl(): Flow<String> {
+        return wrapper.mapState { it.rapidOcrModelsUrl }
+    }
+
+    override suspend fun putRapidOcrModelsUrl(url: String) {
+        wrapper.transform { it.copy(rapidOcrModelsUrl = url) }
+    }
+
+    override fun getImageCacheSizeLimitMb(): Flow<Long> {
+        return wrapper.mapState { it.imageCacheSizeLimitMb }
+    }
+
+    override suspend fun putImageCacheSizeLimitMb(size: Long) {
+        wrapper.transform { it.copy(imageCacheSizeLimitMb = size) }
     }
 }

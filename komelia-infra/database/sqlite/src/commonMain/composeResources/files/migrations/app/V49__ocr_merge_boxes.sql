@@ -1,0 +1,1 @@
+ALTER TABLE ImageReaderSettings ADD COLUMN ocr_merge_boxes INTEGER NOT NULL DEFAULT 1;

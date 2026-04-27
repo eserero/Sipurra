@@ -99,6 +99,8 @@ class Epub3ReaderState(
     private val readerSyncService: ReaderSyncService,
     private val komgaEvents: ManagedKomgaEvents,
     private val settingsRepository: snd.komelia.settings.CommonSettingsRepository,
+    private val transcriptionSettingsRepository: snd.komelia.settings.TranscriptionSettingsRepository,
+    private val whisperModelDownloader: snd.komelia.updates.WhisperModelDownloader?,
     override val onExit: (KomeliaBook) -> Unit,
 ) : EpubReaderState {
 
@@ -662,9 +664,21 @@ class Epub3ReaderState(
 
             logger.debug { "[epub3-init] opening publication" }
             startStep("Opening")
-            withContext(Dispatchers.IO) {
-                BookService.openPublication(bookUuid, extractedDir.toURI().toURL(), clips = null)
+            val openResult = runCatching {
+                withContext(Dispatchers.IO) {
+                    BookService.openPublication(bookUuid, extractedDir.toURI().toURL(), clips = null)
+                }
             }
+
+            if (openResult.isFailure) {
+                logger.warn { "[epub3-init] failed to open publication, attempting to clear cache and retry" }
+                val retryDir = prepareEpubDirectory(forceRefresh = true)
+                this.extractedDir = retryDir
+                withContext(Dispatchers.IO) {
+                    BookService.openPublication(bookUuid, retryDir.toURI().toURL(), clips = null)
+                }
+            }
+
             completeLastStep()
             logger.debug { "[epub3-init] publication opened" }
             tableOfContents.value = BookService.getPublication(bookUuid)?.tableOfContents ?: emptyList()
@@ -757,7 +771,9 @@ class Epub3ReaderState(
                                 audioPositionRepository = audioPositionRepository,
                                 audioBookmarkRepository = audioBookmarkRepository,
                                 audioChapterRepository = audioChapterRepository,
-                                onBookmarkChange = { coroutineScope.launch { updateCacheAndPush() } }
+                                onBookmarkChange = { coroutineScope.launch { updateCacheAndPush() } },
+                                transcriptionSettingsRepository = transcriptionSettingsRepository,
+                                whisperModelDownloader = whisperModelDownloader,
                     )
                     controller.initialize()
                             logger.info { "[epub3-init] audiobook folder controller initialize() completed" }
@@ -923,12 +939,23 @@ class Epub3ReaderState(
      * Downloads the EPUB zip (if not already cached) and extracts it to
      * `context.cacheDir/epub3/<bookUuid>/`.
      */
-    private suspend fun prepareEpubDirectory(): File {
+    private suspend fun prepareEpubDirectory(forceRefresh: Boolean = false): File {
+        val epubCacheLimitMb = epubSettingsRepository.getEpubCacheSizeLimitMb().first()
+        withContext(Dispatchers.IO) {
+            trimEpubCache(epubCacheLimitMb * 1024 * 1024, context.cacheDir)
+        }
+
         val extractedDir = File(context.cacheDir, "epub3/$bookUuid").also { it.mkdirs() }
-        if (!extractedDir.list().isNullOrEmpty()) {
+        extractedDir.setLastModified(System.currentTimeMillis())
+        val containerXml = File(extractedDir, "META-INF/container.xml")
+
+        if (containerXml.exists() && !forceRefresh) {
             startStep("Loading from cache")
             completeLastStep()
         } else {
+            withContext(Dispatchers.IO) {
+                extractedDir.listFiles()?.forEach { it.deleteRecursively() }
+            }
             val localPath = bookApi.getBookLocalFilePath(bookId.value)
             if (localPath != null) {
                 // Offline: extract directly from already-local file — zero heap allocation
@@ -962,5 +989,27 @@ class Epub3ReaderState(
             }
         }
         return extractedDir
+    }
+
+    private fun trimEpubCache(limitBytes: Long, cacheDir: File) {
+        val epub3Dir = File(cacheDir, "epub3")
+        if (!epub3Dir.exists()) return
+
+        val bookDirs = epub3Dir.listFiles { file -> file.isDirectory } ?: return
+
+        // Calculate total size
+        val dirSizes = bookDirs.associateWith { dir ->
+            dir.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
+        }
+        var totalSize = dirSizes.values.sum()
+
+        if (totalSize <= limitBytes) return
+
+        val sortedDirs = bookDirs.sortedBy { it.lastModified() }
+        for (dir in sortedDirs) {
+            dir.deleteRecursively()
+            totalSize -= dirSizes[dir] ?: 0L
+            if (totalSize <= limitBytes) break
+        }
     }
 }

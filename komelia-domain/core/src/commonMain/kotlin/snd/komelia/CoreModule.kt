@@ -11,6 +11,7 @@ import snd.komelia.settings.EpubReaderSettingsRepository
 import snd.komelia.settings.ImageReaderSettingsRepository
 import snd.komelia.settings.KomfSettingsRepository
 import snd.komelia.settings.SecretsRepository
+import snd.komelia.settings.TranscriptionSettingsRepository
 
 import snd.komelia.sync.ReaderSyncService
 
@@ -37,4 +38,5 @@ data class AppRepositories(
     val secretsRepository: SecretsRepository,
     val komfSettingsRepository: KomfSettingsRepository,
     val homeScreenFilterRepository: HomeScreenFilterRepository,
+    val transcriptionSettingsRepository: TranscriptionSettingsRepository,
 )

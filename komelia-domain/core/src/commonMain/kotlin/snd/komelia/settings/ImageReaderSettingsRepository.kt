@@ -8,6 +8,7 @@ import snd.komelia.image.UpscaleMode
 import snd.komelia.settings.model.ContinuousReadingDirection
 import snd.komelia.settings.model.LayoutScaleType
 import snd.komelia.settings.model.NcnnUpscalerSettings
+import snd.komelia.settings.model.OcrSettings
 import snd.komelia.settings.model.PageDisplayLayout
 import snd.komelia.settings.model.PagedReadingDirection
 import snd.komelia.settings.model.PanelsFullPageDisplayMode
@@ -21,6 +22,9 @@ interface ImageReaderSettingsRepository {
 
     fun getNcnnUpscalerSettings(): Flow<NcnnUpscalerSettings>
     suspend fun putNcnnUpscalerSettings(settings: NcnnUpscalerSettings)
+
+    fun getOcrSettings(): Flow<OcrSettings>
+    suspend fun putOcrSettings(settings: OcrSettings)
 
     fun getStretchToFit(): Flow<Boolean>
     suspend fun putStretchToFit(stretch: Boolean)
@@ -105,4 +109,10 @@ interface ImageReaderSettingsRepository {
 
     fun getPanelDetectionUrl(): Flow<String>
     suspend fun putPanelDetectionUrl(url: String)
+
+    fun getRapidOcrModelsUrl(): Flow<String>
+    suspend fun putRapidOcrModelsUrl(url: String)
+
+    fun getImageCacheSizeLimitMb(): Flow<Long>
+    suspend fun putImageCacheSizeLimitMb(size: Long)
 }

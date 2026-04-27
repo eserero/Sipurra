@@ -43,8 +43,15 @@ import snd.komelia.ui.platform.imageExtension
 import snd.komelia.ui.platform.sanitizeFilename
 import snd.komelia.ui.platform.saveImageToDownloads
 import snd.komelia.color.repository.BookColorCorrectionRepository
+import snd.komelia.image.OcrElementBox
+import snd.komelia.image.OcrService
+import snd.komelia.image.ReadingDirection
+import snd.komelia.image.mergeOcrBoxes
+import snd.komelia.image.ReaderImage
 import snd.komelia.image.ReaderImage.PageId
 import snd.komelia.image.ReduceKernel
+import snd.komelia.settings.model.OcrLanguage
+import snd.komelia.settings.model.OcrSettings
 import snd.komelia.image.UpsamplingMode
 import snd.komelia.image.availableReduceKernels
 import snd.komelia.image.availableUpsamplingModes
@@ -92,6 +99,7 @@ class ReaderState(
     private val readerSyncService: ReaderSyncService,
     private val komgaEvents: ManagedKomgaEvents,
     val pageChangeFlow: SharedFlow<Unit>,
+    private val ocrService: OcrService,
 ) {
     private val currentSyncBlob = MutableStateFlow<String?>(null)
     private val previewLoadScope = CoroutineScope(Dispatchers.Default.limitedParallelism(1) + SupervisorJob())
@@ -110,17 +118,6 @@ class ReaderState(
     val loadThumbnailPreviews = MutableStateFlow(true)
     val readProgressPage = MutableStateFlow(1)
 
-    init {
-        stateScope.launch(Dispatchers.Main.immediate) {
-            for (page in progressUpdateChannel) {
-                readProgressPage.value = page
-                if (markReadProgress) {
-                    updateCacheAndPush()
-                }
-            }
-        }
-    }
-
     val upsamplingMode = MutableStateFlow(UpsamplingMode.NEAREST)
     val downsamplingKernel = MutableStateFlow(ReduceKernel.NEAREST)
     val linearLightDownsampling = MutableStateFlow(false)
@@ -132,6 +129,12 @@ class ReaderState(
     val flashEveryNPages = MutableStateFlow(1)
     val flashWith = MutableStateFlow(ReaderFlashColor.BLACK)
 
+    val ocrSettings = MutableStateFlow(OcrSettings())
+    val ocrResults = MutableStateFlow<List<OcrElementBox>>(emptyList())
+    val ocrPageId = MutableStateFlow<PageId?>(null)
+    val isOcrLoading = MutableStateFlow(false)
+    val readingDirection = MutableStateFlow(ReadingDirection.LTR)
+
     val tapNavigationMode = MutableStateFlow(ReaderTapNavigationMode.LEFT_RIGHT)
     val volumeKeysNavigation = MutableStateFlow(false)
     val keepReaderScreenOn = MutableStateFlow(false)
@@ -139,10 +142,31 @@ class ReaderState(
 
     val annotations = MutableStateFlow<List<snd.komelia.annotations.BookAnnotation>>(emptyList())
     val showAnnotationDialog = MutableStateFlow(false)
+
+    init {
+        stateScope.launch(Dispatchers.Main.immediate) {
+            for (page in progressUpdateChannel) {
+                readProgressPage.value = page
+                if (markReadProgress) {
+                    updateCacheAndPush()
+                }
+            }
+        }
+
+        pageChangeFlow.onEach {
+            ocrResults.value = emptyList()
+            ocrPageId.value = null
+        }.launchIn(stateScope)
+        stateScope.launch {
+            readerSettingsRepository.getOcrSettings().collect { ocrSettings.value = it }
+        }
+    }
+
     val editingComicAnnotation = MutableStateFlow<snd.komelia.annotations.BookAnnotation?>(null)
     val pendingAnnotationPage = MutableStateFlow(0)
     val pendingAnnotationX = MutableStateFlow(0f)
     val pendingAnnotationY = MutableStateFlow(0f)
+    val pendingAnnotationNote = MutableStateFlow<String?>(null)
     val lastHighlightColor = MutableStateFlow(0xFFFFEB3B.toInt())
 
     suspend fun initialize(bookId: KomgaBookId) {
@@ -384,6 +408,30 @@ class ReaderState(
         linearLightDownsampling.value = linear
         stateScope.launch { readerSettingsRepository.putLinearLightDownsampling(linear) }
     }
+
+    fun onOcrSettingsChange(newSettings: OcrSettings) {
+        ocrSettings.value = newSettings
+        stateScope.launch { readerSettingsRepository.putOcrSettings(newSettings) }
+    }
+
+    fun scanCurrentPageForText(image: ReaderImage) {
+        stateScope.launch {
+            if (isOcrLoading.value) return@launch
+            ocrPageId.value = image.pageId
+            isOcrLoading.value = true
+            try {
+                val rawBoxes = ocrService.recognizeText(image, ocrSettings.value)
+                ocrResults.value = if (ocrSettings.value.mergeBoxes) {
+                    mergeOcrBoxes(rawBoxes, readingDirection.value)
+                } else rawBoxes
+            } catch (e: Exception) {
+                appNotifications.add(AppNotification.Error("OCR failed: ${e.message}"))
+            } finally {
+                isOcrLoading.value = false
+            }
+        }
+    }
+
 
     fun onColorCorrectionDisable() {
         stateScope.launch {

@@ -75,6 +75,7 @@ fun BoxScope.ContinuousReaderContent(
     volumeKeysNavigation: Boolean,
     tapNavigationMode: ReaderTapNavigationMode,
     onLongPress: (Offset) -> Unit = {},
+    onAddNote: (text: String, page: Int, x: Float, y: Float) -> Unit = { _, _, _, _ -> },
 ) {
     val coroutineScope = rememberCoroutineScope()
     val readingDirection = continuousReaderState.readingDirection.collectAsState().value
@@ -159,13 +160,19 @@ fun BoxScope.ContinuousReaderContent(
             scaleState = continuousReaderState.screenScaleState,
             flingSpec = exponentialDecay(frictionMultiplier = 0.4f),
         ) {
-            ReaderPages(state = continuousReaderState)
+            ReaderPages(
+                state = continuousReaderState,
+                onAddNote = onAddNote,
+            )
         }
     }
 }
 
 @Composable
-private fun ReaderPages(state: ContinuousReaderState) {
+private fun ReaderPages(
+    state: ContinuousReaderState,
+    onAddNote: (text: String, page: Int, x: Float, y: Float) -> Unit,
+) {
     val pageIntervals = state.pageIntervals.collectAsState().value
     if (pageIntervals.isEmpty()) return
     val sidePadding = with(LocalDensity.current) { state.sidePaddingPx.collectAsState().value.toDp() }
@@ -174,21 +181,24 @@ private fun ReaderPages(state: ContinuousReaderState) {
         TOP_TO_BOTTOM -> VerticalLayout(
             state = state,
             pageIntervals = pageIntervals,
-            sidePadding = sidePadding
+            sidePadding = sidePadding,
+            onAddNote = onAddNote,
         )
 
         LEFT_TO_RIGHT -> HorizontalLayout(
             state = state,
             pageIntervals = pageIntervals,
             sidePadding = sidePadding,
-            reversed = false
+            reversed = false,
+            onAddNote = onAddNote,
         )
 
         RIGHT_TO_LEFT -> HorizontalLayout(
             state = state,
             pageIntervals = pageIntervals,
             sidePadding = sidePadding,
-            reversed = true
+            reversed = true,
+            onAddNote = onAddNote,
         )
     }
 }
@@ -197,7 +207,8 @@ private fun ReaderPages(state: ContinuousReaderState) {
 private fun VerticalLayout(
     state: ContinuousReaderState,
     pageIntervals: List<BookPagesInterval>,
-    sidePadding: Dp
+    sidePadding: Dp,
+    onAddNote: (text: String, page: Int, x: Float, y: Float) -> Unit,
 ) {
     LazyColumn(
         state = state.lazyListState,
@@ -219,6 +230,7 @@ private fun VerticalLayout(
                 ContinuousReaderImage(
                     state = state,
                     page = page,
+                    onAddNote = onAddNote,
                     modifier = Modifier.height(with(LocalDensity.current) { height.toDp() })
                 )
                 Spacer(Modifier.height(state.pageSpacing.collectAsState().value.dp))
@@ -235,7 +247,8 @@ private fun HorizontalLayout(
     state: ContinuousReaderState,
     pageIntervals: List<BookPagesInterval>,
     sidePadding: Dp,
-    reversed: Boolean
+    reversed: Boolean,
+    onAddNote: (text: String, page: Int, x: Float, y: Float) -> Unit,
 ) {
     LazyRow(
         state = state.lazyListState,
@@ -258,6 +271,7 @@ private fun HorizontalLayout(
                 ContinuousReaderImage(
                     state = state,
                     page = page,
+                    onAddNote = onAddNote,
                     modifier = Modifier.width(with(LocalDensity.current) { width.toDp() })
                 )
                 Spacer(Modifier.width(state.pageSpacing.collectAsState().value.dp))
@@ -356,8 +370,12 @@ private suspend fun handlePageScrollEvents(state: ContinuousReaderState) {
 private fun ContinuousReaderImage(
     state: ContinuousReaderState,
     page: PageMetadata,
+    onAddNote: (text: String, page: Int, x: Float, y: Float) -> Unit,
     modifier: Modifier
 ) {
+    val ocrResults by state.readerState.ocrResults.collectAsState()
+    val ocrPageId by state.readerState.ocrPageId.collectAsState()
+
     val coroutineScope = rememberCoroutineScope()
     var imageResult by remember { mutableStateOf<ReaderImageResult?>(null) }
     DisposableEffect(Unit) {
@@ -374,6 +392,14 @@ private fun ContinuousReaderImage(
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
-    ) { ReaderImageContent(imageResult) }
+    ) {
+        val ocr = if (ocrPageId == page.toPageId()) ocrResults else emptyList()
+        ReaderImageContent(
+            imageResult = imageResult,
+            ocrResults = ocr,
+            onSelectionChanged = { results -> state.readerState.ocrResults.value = results },
+            onAddNote = { text, x, y -> onAddNote(text, page.pageNumber - 1, x, y) }
+        )
+    }
 }
 

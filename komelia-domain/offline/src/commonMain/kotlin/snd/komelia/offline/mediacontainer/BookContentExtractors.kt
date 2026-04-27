@@ -10,7 +10,8 @@ private val logger = KotlinLogging.logger { }
 
 class BookContentExtractors(
     divinaExtractors: List<DivinaExtractor>,
-    private val epubExtractor: EpubExtractor
+    private val epubExtractor: EpubExtractor,
+    private val pdfExtractor: PdfExtractor?,
 ) {
 
     val divinaExtractors = divinaExtractors
@@ -44,7 +45,8 @@ class BookContentExtractors(
             }
 
             MediaProfile.PDF -> {
-                TODO()
+                pdfExtractor?.getPage(book.fileDownloadPath, page)
+                    ?: throw IllegalStateException("PDF extractor is not available on this platform")
             }
 
             null -> throw IllegalStateException("Media is not ready")
@@ -59,7 +61,8 @@ class BookContentExtractors(
             MediaProfile.EPUB -> epubExtractor
                 .getEntryBytes(book.fileDownloadPath, filename)
 
-            MediaProfile.PDF, null -> throw IllegalStateException("Extractor does not support extraction of files")
+            MediaProfile.PDF -> throw IllegalStateException("PDFs are typically treated as single-file books, not containers for other files")
+            null -> throw IllegalStateException("Extractor does not support extraction of files")
         }
     }
 

@@ -25,6 +25,7 @@ import snd.komelia.ui.settings.appearance.AppSettingsScreen
 import snd.komelia.ui.settings.servers.AppServerManagementScreen
 import snd.komelia.ui.settings.authactivity.AuthenticationActivityScreen
 import snd.komelia.ui.settings.epub.EpubReaderSettingsScreen
+import snd.komelia.ui.settings.transcription.TranscriptionSettingsScreen
 import snd.komelia.ui.settings.imagereader.ImageReaderSettingsScreen
 import snd.komelia.ui.settings.komf.general.KomfSettingsScreen
 import snd.komelia.ui.settings.komf.jobs.KomfJobsScreen
@@ -86,6 +87,12 @@ fun SettingsNavigationMenu(
                     isSelected = currentScreen is EpubReaderSettingsScreen,
                 )
             }
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            SettingsListItem(
+                label = "Transcription",
+                onClick = { onNavigation(TranscriptionSettingsScreen()) },
+                isSelected = currentScreen is TranscriptionSettingsScreen,
+            )
             if (updatesEnabled) {
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SettingsListItem(

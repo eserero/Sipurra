@@ -40,5 +40,7 @@ expect fun createEpub3ReaderState(
     platformType: PlatformType,
     coroutineScope: CoroutineScope,
     bookSiblingsContext: BookSiblingsContext,
+    transcriptionSettingsRepository: snd.komelia.settings.TranscriptionSettingsRepository,
+    whisperModelDownloader: snd.komelia.updates.WhisperModelDownloader?,
     onExit: (KomeliaBook) -> Unit,
 ): EpubReaderState

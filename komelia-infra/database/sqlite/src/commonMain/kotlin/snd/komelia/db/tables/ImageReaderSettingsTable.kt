@@ -44,6 +44,7 @@ object ImageReaderSettingsTable : Table("ImageReaderSettings") {
     val ortUpscalerTileSize = integer("onnx_runtime_tile_size")
     val ortUpscalerUserModelPath = text("onnx_runtime_model_path").nullable()
     val panelDetectionUrl = text("panel_detection_url").default("https://github.com/eserero/Sipurra/releases/download/model/rf-detr-med.onnx.zip")
+    val rapidOcrModelsUrl = text("rapid_ocr_models_url").default("https://github.com/eserero/Sipurra/releases/download/model/RapidOcrModels.zip")
 
     val panelsFullPageDisplayMode = text("panels_full_page_display_mode").default("BOTH")
     val pagedReaderTapToZoom = bool("paged_reader_tap_to_zoom").default(true)
@@ -51,6 +52,13 @@ object ImageReaderSettingsTable : Table("ImageReaderSettings") {
     val pagedReaderAdaptiveBackground = bool("paged_reader_adaptive_background").default(true)
     val panelReaderAdaptiveBackground = bool("panel_reader_adaptive_background").default(true)
     val tapNavigationMode = text("tap_navigation_mode").default("LEFT_RIGHT")
+    val imageCacheSizeLimitMb = long("image_cache_size_limit_mb").default(1024L)
+
+    val ocrEnabled = bool("ocr_enabled").default(false)
+    val ocrLanguage = text("ocr_language").default("LATIN")
+    val ocrEngine = text("ocr_engine").default("ML_KIT")
+    val ocrRapidOcrModel = text("ocr_rapid_ocr_model").default("ENGLISH_CHINESE")
+    val ocrMergeBoxes = bool("ocr_merge_boxes").default(true)
 
     override val primaryKey = PrimaryKey(bookId)
 }

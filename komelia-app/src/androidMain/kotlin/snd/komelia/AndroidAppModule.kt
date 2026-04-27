@@ -56,10 +56,12 @@ import snd.komelia.db.repository.KomfSettingsRepositoryWrapper
 import snd.komelia.db.repository.OfflineSettingsRepositoryWrapper
 import snd.komelia.db.repository.ReaderSettingsRepositoryWrapper
 import snd.komelia.db.repository.SettingsRepositoryWrapper
+import snd.komelia.db.repository.TranscriptionSettingsRepositoryWrapper
 import snd.komelia.db.settings.ExposedEpubReaderSettingsRepository
 import snd.komelia.db.settings.ExposedImageReaderSettingsRepository
 import snd.komelia.db.settings.ExposedKomfSettingsRepository
 import snd.komelia.db.settings.ExposedSettingsRepository
+import snd.komelia.db.settings.ExposedTranscriptionSettingsRepository
 import snd.komelia.fonts.fontsDirectory
 import snd.komelia.homefilters.homeScreenDefaultFilters
 import snd.komelia.http.komeliaUserAgent
@@ -90,9 +92,13 @@ import snd.komelia.settings.AppSettingsSerializer
 import snd.komelia.settings.ImageReaderSettingsRepository
 import snd.komelia.updates.AndroidAppUpdater
 import snd.komelia.updates.AndroidOnnxModelDownloader
+import snd.komelia.updates.AndroidRapidOcrModelDownloader
+import snd.komelia.updates.AndroidWhisperModelDownloader
 import snd.komelia.updates.AppUpdater
 import snd.komelia.updates.OnnxModelDownloader
+import snd.komelia.updates.RapidOcrModelDownloader
 import snd.komelia.updates.UpdateClient
+import snd.komelia.updates.WhisperModelDownloader
 import snd.komga.client.KomgaClientFactory
 import snd.komga.client.user.KomgaUser
 import java.util.concurrent.TimeUnit
@@ -140,6 +146,7 @@ class AndroidAppModule(
         }
 
         NcnnSharedLibraries.load()
+        snd.komelia.image.OcrService.context = context
 
         fontsDirectory = Path(context.filesDir.resolve("fonts").absolutePath)
     }
@@ -202,7 +209,15 @@ class AndroidAppModule(
                         saveSettings = repository::putFilters
                     )
                 )
-            }
+            },
+            transcriptionSettingsRepository = ExposedTranscriptionSettingsRepository(databases.app).let { repository ->
+                TranscriptionSettingsRepositoryWrapper(
+                    SettingsStateWrapper(
+                        settings = repository.get() ?: snd.komelia.db.TranscriptionSettings(),
+                        saveSettings = repository::save
+                    )
+                )
+            },
         )
     }
 
@@ -298,6 +313,10 @@ class AndroidAppModule(
 
     override fun createOnBookChange(): () -> Unit = { AndroidNcnnUpscaler.cancelPendingRequests() }
 
+    override fun createOnEpubCacheClear(): () -> Unit = {
+        context.cacheDir.resolve("epub3").deleteRecursively()
+    }
+
     override fun createWindowState() = AndroidWindowState(mainActivity)
 
     override fun createCoilContext() = context
@@ -306,6 +325,19 @@ class AndroidAppModule(
 
     override fun createOnnxModelDownloader(updateClient: UpdateClient) =
         AndroidOnnxModelDownloader(
+            updateClient = updateClient,
+            appNotifications = appNotifications,
+            dataDir = context.filesDir.toPath()
+        )
+
+    override fun createWhisperModelDownloader(updateClient: UpdateClient): WhisperModelDownloader =
+        AndroidWhisperModelDownloader(
+            updateClient = updateClient,
+            filesDir = context.filesDir,
+        )
+
+    override fun createRapidOcrModelDownloader(updateClient: UpdateClient): RapidOcrModelDownloader =
+        AndroidRapidOcrModelDownloader(
             updateClient = updateClient,
             appNotifications = appNotifications,
             dataDir = context.filesDir.toPath()

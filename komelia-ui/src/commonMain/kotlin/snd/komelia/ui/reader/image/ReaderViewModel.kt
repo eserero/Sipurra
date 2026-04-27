@@ -13,7 +13,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.takeWhile
 import snd.komelia.AppNotifications
@@ -29,6 +34,10 @@ import snd.komelia.komga.api.KomgaSeriesApi
 import snd.komelia.onnxruntime.OnnxRuntime
 import snd.komelia.settings.CommonSettingsRepository
 import snd.komelia.settings.ImageReaderSettingsRepository
+import snd.komelia.image.ReadingDirection
+import snd.komelia.settings.model.ContinuousReadingDirection
+import snd.komelia.settings.model.PagedReadingDirection
+import snd.komelia.settings.model.OcrSettings
 import snd.komelia.settings.model.ReaderType.CONTINUOUS
 import snd.komelia.settings.model.ReaderType.PAGED
 import snd.komelia.settings.model.ReaderType.PANELS
@@ -72,6 +81,7 @@ class ReaderViewModel(
     private val panelDetector: KomeliaPanelDetector?,
     private val upscaler: KomeliaUpscaler?,
     private val onnxModelDownloader: OnnxModelDownloader?,
+    private val ocrService: snd.komelia.image.OcrService,
     val colorCorrectionIsActive: Flow<Boolean>,
     onBookChange: () -> Unit = {},
 ) : ScreenModel {
@@ -119,6 +129,7 @@ class ReaderViewModel(
         readerSyncService = readerSyncService,
         komgaEvents = komgaEvents,
         pageChangeFlow = pageChangeFlow,
+        ocrService = ocrService,
     )
 
     val pagedReaderState = PagedReaderState(
@@ -158,6 +169,41 @@ class ReaderViewModel(
         pageChangeFlow = pageChangeFlow,
         screenScaleState = screenScaleState,
     )
+
+    init {
+        combine(
+            readerState.readerType,
+            pagedReaderState.readingDirection,
+            continuousReaderState.readingDirection
+        ) { type, pagedDir, continuousDir ->
+            when (type) {
+                PAGED -> if (pagedDir == PagedReadingDirection.RIGHT_TO_LEFT) ReadingDirection.RTL else ReadingDirection.LTR
+                CONTINUOUS -> if (continuousDir == ContinuousReadingDirection.RIGHT_TO_LEFT) ReadingDirection.RTL else ReadingDirection.LTR
+                PANELS -> ReadingDirection.LTR
+            }
+        }.onEach { readerState.readingDirection.value = it }
+            .launchIn(screenModelScope)
+
+        readerState.ocrSettings
+            .flatMapLatest { ocrSettings ->
+                if (ocrSettings.enabled) {
+                    readerState.readerType.flatMapLatest { readerType ->
+                        when (readerType) {
+                            PAGED -> pagedReaderState.currentSpread.map { it.pages.firstOrNull()?.imageResult?.image }
+                            CONTINUOUS -> flowOf(null) // TODO
+                            PANELS -> panelsReaderState?.currentPage?.map { it?.imageResult?.image } ?: flowOf(null)
+                        }
+                    }.debounce(200)
+                } else {
+                    readerState.ocrResults.value = emptyList()
+                    readerState.ocrPageId.value = null
+                    flowOf(null)
+                }
+            }
+            .onEach { image ->
+                image?.let { readerState.scanCurrentPageForText(it) }
+            }.launchIn(screenModelScope)
+    }
 
     suspend fun initialize(bookId: KomgaBookId) {
         val currentState = readerState.state.value
