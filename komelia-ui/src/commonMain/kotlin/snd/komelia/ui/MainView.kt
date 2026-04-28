@@ -14,6 +14,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
@@ -63,6 +64,7 @@ import snd.komelia.ui.platform.PlatformType.DESKTOP
 import snd.komelia.ui.platform.PlatformType.MOBILE
 import snd.komelia.ui.platform.PlatformType.WEB_KOMF
 import snd.komelia.ui.platform.WindowSizeClass
+import snd.komelia.ui.session.ServerSessionManager
 import snd.komelia.updates.AppRelease
 import snd.komelia.updates.StartupUpdateChecker
 
@@ -71,11 +73,13 @@ private val vmFactory = MutableStateFlow<ViewModelFactory?>(null)
 @Composable
 fun MainView(
     dependencies: DependencyContainer?,
+    sessionManager: ServerSessionManager,
     windowWidth: WindowSizeClass,
     windowHeight: WindowSizeClass,
     platformType: PlatformType,
     keyEvents: SharedFlow<KeyEvent>
 ) {
+    val currentServerProfile by sessionManager.currentServerProfile.collectAsState()
     var theme by rememberSaveable { mutableStateOf(Theme.DARK) }
     var navBarColor by remember { mutableStateOf<Color?>(null) }
     var accentColor by remember { mutableStateOf<Color?>(null) }
@@ -189,9 +193,9 @@ fun MainView(
             }
 
             val viewModelFactory = vmFactory.collectAsState().value
-            LaunchedEffect(Unit) {
-                if (vmFactory.value == null) {
-                    vmFactory.value = ViewModelFactory(dependencies, platformType)
+            LaunchedEffect(dependencies) {
+                if (dependencies != null) {
+                    vmFactory.value = ViewModelFactory(dependencies, platformType, sessionManager)
                 }
             }
 
@@ -246,7 +250,9 @@ fun MainView(
                 LocalCardCornerRadius provides cardCornerRadius,
                 LocalUseFloatingNavigationBar provides useFloatingNavigationBar,
             ) {
-                MainContent(platformType, dependencies.komgaSharedState, dependencies.localFileApiProvider)
+                key(currentServerProfile?.id) {
+                    MainContent(platformType, dependencies.komgaSharedState, dependencies.localFileApiProvider)
+                }
 
                 AppNotifications(dependencies.appNotifications, theme)
                 val updateChecker = remember { viewModelFactory.getStartupUpdateChecker() }

@@ -14,20 +14,26 @@ import snd.komelia.db.migrations.OfflineMigrations
 import javax.sql.DataSource
 
 
-class KomeliaDatabase(databaseDir: String) {
+class KomeliaDatabase(databaseDir: String, serverId: Long? = null) {
     val app: Database
     val offline: Database
     val offlineReadOnly: Database
 
+    private val appDatasource: HikariDataSource
+    private val offlineWriteDatasource: HikariDataSource
+
     init {
-        val appUrl = "jdbc:sqlite:${databaseDir}/komelia.sqlite"
+        val appFileName = if (serverId != null) "server_${serverId}_komelia.sqlite" else "komelia.sqlite"
+        val offlineFileName = if (serverId != null) "server_${serverId}_offline.sqlite" else "offline.sqlite"
+
+        val appUrl = "jdbc:sqlite:${databaseDir}/$appFileName"
         val appConfig = SQLiteConfig().apply {
             setJournalMode(SQLiteConfig.JournalMode.WAL)
             enforceForeignKeys(true)
             busyTimeout = 5_000
         }
         appConfig.newConnectionConfig()
-        val appDatasource = HikariDataSource(
+        appDatasource = HikariDataSource(
             HikariConfig().apply {
                 dataSource = SQLiteDataSource(appConfig).apply { url = appUrl }
                 poolName = "DB app pool"
@@ -35,14 +41,14 @@ class KomeliaDatabase(databaseDir: String) {
             }
         )
 
-        val offlineUrl = "jdbc:sqlite:${databaseDir}/offline.sqlite"
+        val offlineUrl = "jdbc:sqlite:${databaseDir}/$offlineFileName"
         val offlineWriteConfig = SQLiteConfig().apply {
             setJournalMode(SQLiteConfig.JournalMode.WAL)
             enforceForeignKeys(true)
             transactionMode= SQLiteConfig.TransactionMode.IMMEDIATE
             busyTimeout = 5_000
         }
-        val offlineWriteDatasource = HikariDataSource(
+        offlineWriteDatasource = HikariDataSource(
             HikariConfig().apply {
                 dataSource = SQLiteDataSource(offlineWriteConfig)
                     .apply { url = offlineUrl }
@@ -70,6 +76,11 @@ class KomeliaDatabase(databaseDir: String) {
         )
 
         TransactionManager.defaultDatabase = app
+    }
+
+    fun close() {
+        appDatasource.close()
+        offlineWriteDatasource.close()
     }
 
     private fun flywayMigrate(datasource: DataSource, resourcesProvider: MigrationResourcesProvider) {

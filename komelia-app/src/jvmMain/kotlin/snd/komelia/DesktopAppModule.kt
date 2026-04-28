@@ -106,9 +106,10 @@ import kotlin.time.measureTime
 private val logger = KotlinLogging.logger { }
 
 class DesktopAppModule(
-    private val windowState: AwtWindowState
-) : AppModule() {
-    private val databases = KomeliaDatabase(AppDirectories.databaseDirectory.toString())
+    private val windowState: AwtWindowState,
+    serverId: Long? = null
+) : AppModule(serverId) {
+    private val databases = KomeliaDatabase(AppDirectories.databaseDirectory.toString(), serverId)
 
     private val okHttpLogger = KotlinLogging.logger("http.logging")
     private val okHttpClientWithoutCache: OkHttpClient = OkHttpClient.Builder()
@@ -120,7 +121,8 @@ class DesktopAppModule(
         .build()
     private val okHttpClient = okHttpClientWithoutCache.newBuilder().cache(
         Cache(
-            directory = AppDirectories.okHttpCachePath.createDirectories().toFile(),
+            directory = AppDirectories.okHttpCachePath.let { if (serverId != null) it.resolve("server_$serverId") else it }
+                .createDirectories().toFile(),
             maxSize = 64 * 1024L * 1024L // 64 MiB
         )
     ).build()
@@ -357,7 +359,8 @@ class DesktopAppModule(
     }
 
     override fun getCoilCacheDirectory(): Path {
-        return Path(AppDirectories.coilCachePath.toString())
+        val path = AppDirectories.coilCachePath
+        return Path(if (serverId != null) path.resolve("server_$serverId").toString() else path.toString())
     }
 
     override fun createCoilMemoryCache(): MemoryCache {
@@ -367,25 +370,34 @@ class DesktopAppModule(
     }
 
     override fun getReaderCacheDirectory(): Path {
-        return Path(AppDirectories.readerCachePath.toString())
+        val path = AppDirectories.readerCachePath
+        return Path(if (serverId != null) path.resolve("server_$serverId").toString() else path.toString())
     }
-
-    override fun createOfflineModule(
-        repositories: OfflineRepositories,
-        onlineUser: StateFlow<KomgaUser?>,
-        onlineServerUrl: StateFlow<String>,
-        isOffline: StateFlow<Boolean>,
-        komgaClientFactory: KomgaClientFactory
-    ): OfflineModule {
-        return DesktopOfflineModule(
-            repositories = repositories,
-            onlineUser = onlineUser,
-            onlineServerUrl = onlineServerUrl,
-            isOffline = isOffline,
-            komgaClientFactory = komgaClientFactory
-        )
-    }
+override fun createOfflineModule(
+    repositories: OfflineRepositories,
+    onlineUser: StateFlow<KomgaUser?>,
+    onlineServerUrl: StateFlow<String>,
+    isOffline: StateFlow<Boolean>,
+    komgaClientFactory: KomgaClientFactory
+): OfflineModule {
+    return DesktopOfflineModule(
+        okHttpClient = okHttpClient,
+        repositories = repositories,
+        onlineUser = onlineUser,
+        onlineServerUrl = onlineServerUrl,
+        isOffline = isOffline,
+        komgaClientFactory = komgaClientFactory,
+    )
 }
+
+override suspend fun close() {
+    okHttpClient.dispatcher.cancelAll()
+    super.close()
+    databases.close()
+    okHttpClient.connectionPool.evictAll()
+}
+}
+
 
 fun loadWebviewLibraries() {
     measureTime {

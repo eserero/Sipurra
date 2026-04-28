@@ -9,8 +9,11 @@ import io.ktor.http.HttpStatusCode.Companion.NotFound
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -116,6 +119,7 @@ class ReaderState(
     val imageStretchToFit = MutableStateFlow(true)
     val cropBorders = MutableStateFlow(false)
     val loadThumbnailPreviews = MutableStateFlow(true)
+    val showCarousel = MutableStateFlow(false)
     val readProgressPage = MutableStateFlow(1)
 
     val upsamplingMode = MutableStateFlow(UpsamplingMode.NEAREST)
@@ -133,6 +137,7 @@ class ReaderState(
     val ocrResults = MutableStateFlow<List<OcrElementBox>>(emptyList())
     val ocrPageId = MutableStateFlow<PageId?>(null)
     val isOcrLoading = MutableStateFlow(false)
+    private var ocrJob: Job? = null
     val readingDirection = MutableStateFlow(ReadingDirection.LTR)
 
     val tapNavigationMode = MutableStateFlow(ReaderTapNavigationMode.LEFT_RIGHT)
@@ -154,6 +159,8 @@ class ReaderState(
         }
 
         pageChangeFlow.onEach {
+            ocrJob?.cancel()
+            ocrJob = null
             ocrResults.value = emptyList()
             ocrPageId.value = null
         }.launchIn(stateScope)
@@ -369,6 +376,10 @@ class ReaderState(
         stateScope.launch { readerSettingsRepository.putLoadThumbnailPreviews(load) }
     }
 
+    fun onToggleCarousel() {
+        showCarousel.value = !showCarousel.value
+    }
+
     fun onFlashEnabledChange(enabled: Boolean) {
         flashOnPageChange.value = enabled
         stateScope.launch { readerSettingsRepository.putFlashOnPageChange(enabled) }
@@ -415,15 +426,19 @@ class ReaderState(
     }
 
     fun scanCurrentPageForText(image: ReaderImage) {
-        stateScope.launch {
-            if (isOcrLoading.value) return@launch
+        ocrJob?.cancel()
+        ocrJob = stateScope.launch {
             ocrPageId.value = image.pageId
             isOcrLoading.value = true
             try {
-                val rawBoxes = ocrService.recognizeText(image, ocrSettings.value)
+                val rawBoxes = withContext(Dispatchers.Default) {
+                    ocrService.recognizeText(image, ocrSettings.value)
+                }
                 ocrResults.value = if (ocrSettings.value.mergeBoxes) {
                     mergeOcrBoxes(rawBoxes, readingDirection.value)
                 } else rawBoxes
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 appNotifications.add(AppNotification.Error("OCR failed: ${e.message}"))
             } finally {

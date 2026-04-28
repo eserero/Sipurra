@@ -2,10 +2,17 @@ package snd.komelia.ui.reader.image.settings
 
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -115,6 +122,7 @@ import snd.komelia.ui.reader.ReaderControlsCard
 import snd.komelia.ui.reader.image.PageMetadata
 import snd.komelia.ui.reader.image.ReaderState
 import snd.komelia.ui.reader.image.common.ProgressSlider
+import snd.komelia.ui.reader.image.common.ThumbnailCarousel
 import snd.komelia.ui.reader.image.continuous.ContinuousReaderState
 import snd.komelia.ui.reader.image.paged.PagedReaderState
 import snd.komelia.ui.reader.image.panels.PanelsReaderState
@@ -260,6 +268,7 @@ fun BottomSheetSettingsOverlay(
                 CONTINUOUS -> continuousReaderState.currentBookPageIndex.collectAsState(0).value
                 PANELS -> panelsReaderState?.currentPageIndex?.collectAsState()?.value?.page ?: 0
             }
+            val showCarousel by commonReaderState.showCarousel.collectAsState()
 
             Column(
                 modifier = Modifier
@@ -294,7 +303,9 @@ fun BottomSheetSettingsOverlay(
                             PANELS -> panelsReaderState?.currentPage?.value?.imageResult?.image
                         }
                         currentImage?.let { commonReaderState.scanCurrentPageForText(it) }
-                    }
+                    },
+                    showCarousel = showCarousel,
+                    onToggleCarousel = commonReaderState::onToggleCarousel
                 )
             }
         }
@@ -964,6 +975,8 @@ fun ImageReaderControlsCardNewUI(
     onSettingsClick: () -> Unit,
     onNotesClick: () -> Unit = {},
     onScanTextClick: () -> Unit = {},
+    showCarousel: Boolean,
+    onToggleCarousel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val accentColor = LocalAccentColor.current
@@ -971,100 +984,130 @@ fun ImageReaderControlsCardNewUI(
     val showUpscale = isNcnnSupported()
 
     ReaderControlsCard(modifier = modifier) {
-        Text(
-            text = "Page ${currentPageIndex + 1} of ${pages.size}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        ProgressSlider(
-            pages = pages,
-            currentPageIndex = currentPageIndex,
-            onPageNumberChange = onPageNumberChange,
-            loadThumbnailPreviews = loadThumbnailPreviews,
-            show = true,
-            layoutDirection = androidx.compose.ui.unit.LayoutDirection.Ltr, // TODO: handle RTL
-            isBare = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            ReaderModeIconButton(
-                selected = readerType == PAGED,
-                onClick = { onReaderTypeChange(PAGED) },
-                icon = Icons.AutoMirrored.Rounded.MenuBook,
-                contentDescription = "Paged",
-            )
-            ReaderModeIconButton(
-                selected = readerType == CONTINUOUS,
-                onClick = { onReaderTypeChange(CONTINUOUS) },
-                icon = Icons.Rounded.ViewStream,
-                contentDescription = "Continuous",
-            )
-            if (panelsReaderState != null) {
-                ReaderModeIconButton(
-                    selected = readerType == PANELS,
-                    onClick = { onReaderTypeChange(PANELS) },
-                    icon = Icons.Rounded.GridView,
-                    contentDescription = "Panels",
+        AnimatedContent(
+            targetState = showCarousel,
+            transitionSpec = {
+                (slideInVertically(initialOffsetY = { it }) + fadeIn())
+                    .togetherWith(slideOutVertically(targetOffsetY = { it }) + fadeOut())
+            },
+            label = "CarouselTransition"
+        ) { targetShowCarousel ->
+            if (targetShowCarousel) {
+                ThumbnailCarousel(
+                    pages = pages,
+                    currentPageIndex = currentPageIndex,
+                    onPageChange = {
+                        onPageNumberChange(it)
+                        onToggleCarousel()
+                    },
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
-
-            VerticalDivider(
-                modifier = Modifier
-                    .height(24.dp)
-            )
-
-            if (showUpscale) {
-                ReaderModeIconButton(
-                    selected = ncnnSettings.enabled,
-                    onClick = { ncnnSettingsState.onSettingsChange(ncnnSettings.copy(enabled = !ncnnSettings.enabled)) },
-                    icon = Icons.Rounded.AutoAwesome,
-                    contentDescription = "Upscaling",
-                )
-            }
-
-            if (LocalPlatform.current == MOBILE) {
-                if (isOcrLoading) {
-                    Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(Modifier.size(24.dp))
-                    }
-                } else {
-                    ReaderModeIconButton(
-                        selected = ocrSettings.enabled,
-                        onClick = { onOcrSettingsChange(ocrSettings.copy(enabled = !ocrSettings.enabled)) },
-                        icon = Icons.Rounded.TextFields,
-                        contentDescription = "Scan Text",
+            } else {
+                Column {
+                    Text(
+                        text = "Page ${currentPageIndex + 1} of ${pages.size}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().clickable { onToggleCarousel() },
                     )
+
+                    ProgressSlider(
+                        pages = pages,
+                        currentPageIndex = currentPageIndex,
+                        onPageNumberChange = onPageNumberChange,
+                        loadThumbnailPreviews = loadThumbnailPreviews,
+                        show = true,
+                        layoutDirection = androidx.compose.ui.unit.LayoutDirection.Ltr, // TODO: handle RTL
+                        isBare = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        onLabelClick = onToggleCarousel
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                    ) {
+                        ReaderModeIconButton(
+                            selected = readerType == PAGED,
+                            onClick = { onReaderTypeChange(PAGED) },
+                            icon = Icons.AutoMirrored.Rounded.MenuBook,
+                            contentDescription = "Paged",
+                        )
+                        ReaderModeIconButton(
+                            selected = readerType == CONTINUOUS,
+                            onClick = { onReaderTypeChange(CONTINUOUS) },
+                            icon = Icons.Rounded.ViewStream,
+                            contentDescription = "Continuous",
+                        )
+                        if (panelsReaderState != null) {
+                            ReaderModeIconButton(
+                                selected = readerType == PANELS,
+                                onClick = { onReaderTypeChange(PANELS) },
+                                icon = Icons.Rounded.GridView,
+                                contentDescription = "Panels",
+                            )
+                        }
+
+                        VerticalDivider(
+                            modifier = Modifier
+                                .height(24.dp)
+                        )
+
+                        if (showUpscale) {
+                            ReaderModeIconButton(
+                                selected = ncnnSettings.enabled,
+                                onClick = {
+                                    ncnnSettingsState.onSettingsChange(
+                                        ncnnSettings.copy(
+                                            enabled = !ncnnSettings.enabled
+                                        )
+                                    )
+                                },
+                                icon = Icons.Rounded.AutoAwesome,
+                                contentDescription = "Upscaling",
+                            )
+                        }
+
+                        if (LocalPlatform.current == MOBILE) {
+                            if (isOcrLoading) {
+                                Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(Modifier.size(24.dp))
+                                }
+                            } else {
+                                ReaderModeIconButton(
+                                    selected = ocrSettings.enabled,
+                                    onClick = { onOcrSettingsChange(ocrSettings.copy(enabled = !ocrSettings.enabled)) },
+                                    icon = Icons.Rounded.TextFields,
+                                    contentDescription = "Scan Text",
+                                )
+                            }
+                        }
+
+                        VerticalDivider(
+                            modifier = Modifier
+                                .height(24.dp)
+                        )
+
+                        ReaderModeIconButton(
+                            selected = false,
+                            onClick = onNotesClick,
+                            icon = Icons.Rounded.EditNote,
+                            contentDescription = "Notes",
+                        )
+
+                        IconButton(onClick = onSettingsClick) {
+                            Icon(
+                                Icons.Rounded.Tune,
+                                contentDescription = "Settings",
+                                tint = accentColor ?: MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
-            }
-
-            VerticalDivider(
-                modifier = Modifier
-                    .height(24.dp)
-            )
-
-            ReaderModeIconButton(
-                selected = false,
-                onClick = onNotesClick,
-                icon = Icons.Rounded.EditNote,
-                contentDescription = "Notes",
-            )
-
-            IconButton(onClick = onSettingsClick) {
-                Icon(
-                    Icons.Rounded.Tune,
-                    contentDescription = "Settings",
-                    tint = accentColor ?: MaterialTheme.colorScheme.primary
-                )
             }
         }
     }

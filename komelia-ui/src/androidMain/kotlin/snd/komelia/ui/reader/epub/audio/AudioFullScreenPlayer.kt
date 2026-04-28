@@ -46,7 +46,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -191,7 +193,14 @@ private fun TranscriptPanel(
                     reverseLayout = true,
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    items(sorted, key = { it.id }) { seg ->
+                    itemsIndexed(sorted, key = { _, seg -> seg.id }) { index, seg ->
+                        val nextSeg = sorted.getOrNull(index + 1)
+                        if (seg.chunkId != null && nextSeg?.chunkId != null && seg.chunkId != nextSeg.chunkId) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 6.dp),
+                                color = Color.White.copy(alpha = 0.2f),
+                            )
+                        }
                         val alpha = when {
                             !seg.isFinal -> 0.55f
                             seg.startMs <= playbackMs -> 1f

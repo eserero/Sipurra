@@ -6,4 +6,5 @@ data class TranscriptSegment(
     val endMs: Long,
     val text: String,
     val isFinal: Boolean,
+    val chunkId: Long? = null,
 )

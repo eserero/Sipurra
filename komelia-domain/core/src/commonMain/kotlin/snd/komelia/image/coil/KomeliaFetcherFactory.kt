@@ -5,6 +5,9 @@ import coil3.fetch.Fetcher
 import coil3.request.Options
 import kotlinx.coroutines.flow.StateFlow
 import snd.komelia.komga.api.KomgaApi
+import snd.komelia.komga.api.KomgaBookApi
+import snd.komelia.komga.api.LocalFileApiProvider
+import snd.komelia.offline.book.repository.OfflineBookRepository
 import snd.komga.client.book.KomgaBookId
 import snd.komga.client.collection.KomgaCollectionId
 import snd.komga.client.common.KomgaThumbnailId
@@ -15,6 +18,9 @@ import kotlin.random.Random
 class KomeliaFetcherFactory(
     private val komgaApi: StateFlow<KomgaApi>,
     private val decoder: CoilAwareDecoder,
+    private val offlineBookRepository: OfflineBookRepository? = null,
+    private val offlineBookApi: KomgaBookApi? = null,
+    private val localFileApiProvider: LocalFileApiProvider? = null,
 ) : Fetcher.Factory<Any> {
 
     override fun create(
@@ -85,6 +91,9 @@ class KomeliaFetcherFactory(
 
             is BookPageThumbnailRequest -> KomgaBookPageThumbnailFetcher(
                 bookApi = komgaApi.value.bookApi,
+                offlineBookRepository = offlineBookRepository,
+                offlineBookApi = offlineBookApi,
+                localFileApiProvider = localFileApiProvider,
                 bookId = data.bookId,
                 pageNumber = data.pageNumber,
                 decoder = decoder,

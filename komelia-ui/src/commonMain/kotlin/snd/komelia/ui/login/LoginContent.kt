@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,9 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.FocusRequester.Companion.FocusRequesterFactory.component1
-import androidx.compose.ui.focus.FocusRequester.Companion.FocusRequesterFactory.component2
-import androidx.compose.ui.focus.FocusRequester.Companion.FocusRequesterFactory.component3
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalUriHandler
@@ -41,7 +39,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import snd.komelia.settings.model.ServerProfile
 import snd.komelia.ui.LocalPlatform
+import snd.komelia.ui.common.components.DropdownChoiceMenu
+import snd.komelia.ui.common.components.LabeledEntry
 import snd.komelia.ui.common.components.OutlinedHttpTextField
 import snd.komelia.ui.common.components.withTextFieldNavigation
 import snd.komelia.ui.platform.PlatformType
@@ -52,21 +53,13 @@ import snd.komelia.ui.platform.cursorForHand
 
 @Composable
 fun LoginContent(
-    url: String,
-    onUrlChange: (String) -> Unit,
-    user: String,
-    onUserChange: (String) -> Unit,
-    password: String,
-    onPasswordChange: (String) -> Unit,
-    userLoginError: String?,
-    autoLoginError: String?,
-    onAutoLoginRetry: () -> Unit,
-    onLogin: () -> Unit,
-    offlineIsAvailable: Boolean,
+    viewModel: LoginViewModel,
     onOfflineSelect: () -> Unit,
-    canGoOfflineAsCurrentUser: Boolean,
-    goOfflineAsCurrentUser: () -> Unit,
 ) {
+    val autoLoginError = viewModel.autoLoginError
+    val canGoOfflineAsCurrentUser by viewModel.canGoOfflineAsCurrentUser.collectAsState(false)
+    val goOfflineAsCurrentUser = viewModel::offlineLogin
+    val onAutoLoginRetry = viewModel::retryAutoLogin
 
     var showAutoLoginError by remember { mutableStateOf(true) }
     if (autoLoginError != null && showAutoLoginError) {
@@ -98,15 +91,7 @@ fun LoginContent(
             MOBILE, DESKTOP -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Komga Login")
                 LoginForm(
-                    url = url,
-                    onUrlChange = onUrlChange,
-                    user = user,
-                    onUserChange = onUserChange,
-                    password = password,
-                    onPasswordChange = onPasswordChange,
-                    errorMessage = userLoginError,
-                    onLogin = onLogin,
-                    offlineIsAvailable = offlineIsAvailable,
+                    viewModel = viewModel,
                     onOfflineSelect = onOfflineSelect,
                     textFieldsModifier = Modifier
                 )
@@ -130,15 +115,7 @@ fun LoginContent(
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     LoginForm(
-                        url = url,
-                        onUrlChange = onUrlChange,
-                        user = user,
-                        onUserChange = onUserChange,
-                        password = password,
-                        onPasswordChange = onPasswordChange,
-                        errorMessage = userLoginError,
-                        onLogin = onLogin,
-                        offlineIsAvailable = offlineIsAvailable,
+                        viewModel = viewModel,
                         onOfflineSelect = onOfflineSelect,
                         textFieldsModifier = Modifier.fillMaxWidth()
                     )
@@ -152,65 +129,90 @@ fun LoginContent(
 
 @Composable
 fun ColumnScope.LoginForm(
-    url: String,
-    onUrlChange: (String) -> Unit,
-    user: String,
-    onUserChange: (String) -> Unit,
-    password: String,
-    onPasswordChange: (String) -> Unit,
-    errorMessage: String?,
-    onLogin: () -> Unit,
-    offlineIsAvailable: Boolean,
+    viewModel: LoginViewModel,
     onOfflineSelect: () -> Unit,
     textFieldsModifier: Modifier
 ) {
+    val serverProfiles by viewModel.serverProfiles.collectAsState(emptyList())
+    val serverOptions: List<LabeledEntry<ServerProfile?>> = remember(serverProfiles) {
+        serverProfiles.map { LabeledEntry<ServerProfile?>(it, "${it.url} (${it.username})") } +
+                LabeledEntry<ServerProfile?>(null, "Connect to a new server")
+    }
 
-    val coroutineScope = rememberCoroutineScope()
-    val (first, second, third) = remember { FocusRequester.createRefs() }
+    if (serverProfiles.isNotEmpty()) {
+        val selectedOption: LabeledEntry<ServerProfile?> = viewModel.selectedServerProfile?.let {
+            LabeledEntry<ServerProfile?>(it, "${it.url} (${it.username})")
+        } ?: LabeledEntry<ServerProfile?>(null, "Connect to a new server")
 
-    OutlinedHttpTextField(
-        value = url,
-        onValueChange = onUrlChange,
-        label = { Text("Server Url") },
-        modifier = textFieldsModifier
-            .withTextFieldNavigation()
-            .focusRequester(first)
-            .focusProperties { next = second },
-        placeholder = { Text("localhost:25600") }
-    )
+        DropdownChoiceMenu(
+            selectedOption = selectedOption,
+            options = serverOptions,
+            onOptionChange = { viewModel.onServerProfileSelect(it.value) },
+            label = { Text("Server") },
+            inputFieldModifier = textFieldsModifier
+        )
+        Spacer(Modifier.height(10.dp))
+    }
 
-    OutlinedTextField(
-        value = user,
-        onValueChange = onUserChange,
-        label = { Text("Username") },
-        modifier = textFieldsModifier
-            .withTextFieldNavigation()
-            .focusRequester(second)
-            .focusProperties { next = third }
-    )
+    if (viewModel.showNewServerFields) {
+        val coroutineScope = rememberCoroutineScope()
+        val (first, second, third) = remember { FocusRequester.createRefs() }
 
-    OutlinedTextField(
-        value = password,
-        onValueChange = onPasswordChange,
-        visualTransformation = PasswordVisualTransformation(),
-        label = { Text("Password") },
-        modifier = textFieldsModifier
-            .withTextFieldNavigation(
-                onEnterPress = { coroutineScope.launch { onLogin() } }
-            )
-            .focusRequester(third),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
-    )
+        OutlinedHttpTextField(
+            value = viewModel.url,
+            onValueChange = { viewModel.url = it },
+            label = { Text("Server Url") },
+            modifier = textFieldsModifier
+                .withTextFieldNavigation()
+                .focusRequester(first)
+                .focusProperties { next = second },
+            placeholder = { Text("localhost:25600") }
+        )
 
-    if (errorMessage != null) {
-        Text(errorMessage, style = TextStyle(color = MaterialTheme.colorScheme.error))
+        OutlinedTextField(
+            value = viewModel.user,
+            onValueChange = { viewModel.user = it },
+            label = { Text("Username") },
+            modifier = textFieldsModifier
+                .withTextFieldNavigation()
+                .focusRequester(second)
+                .focusProperties { next = third }
+        )
+
+        OutlinedTextField(
+            value = viewModel.password,
+            onValueChange = { viewModel.password = it },
+            visualTransformation = PasswordVisualTransformation(),
+            label = { Text("Password") },
+            modifier = textFieldsModifier
+                .withTextFieldNavigation(
+                    onEnterPress = { coroutineScope.launch { viewModel.loginWithCredentials() } }
+                )
+                .focusRequester(third),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+        )
+    } else {
+        OutlinedTextField(
+            value = viewModel.password,
+            onValueChange = { viewModel.password = it },
+            visualTransformation = PasswordVisualTransformation(),
+            label = { Text("Password") },
+            modifier = textFieldsModifier.withTextFieldNavigation(
+                onEnterPress = { viewModel.loginWithCredentials() }
+            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+        )
+    }
+
+    if (viewModel.userLoginError != null) {
+        Text(viewModel.userLoginError!!, style = TextStyle(color = MaterialTheme.colorScheme.error))
     }
 
     Row(horizontalArrangement = Arrangement.spacedBy(50.dp)) {
-        if (offlineIsAvailable) {
+        if (viewModel.offlineIsAvailable.collectAsState().value) {
             TextButton(onClick = onOfflineSelect) { Text("Offline mode") }
         }
-        Button(onClick = { onLogin() }) { Text("Login") }
+        Button(onClick = { viewModel.loginWithCredentials() }) { Text("Login") }
     }
 
     Spacer(Modifier.imePadding())

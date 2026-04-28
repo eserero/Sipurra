@@ -6,10 +6,14 @@ import coil3.fetch.Fetcher
 import coil3.fetch.ImageFetchResult
 import coil3.request.Options
 import coil3.size.isOriginal
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import snd.komelia.komga.api.KomgaBookApi
 import snd.komelia.komga.api.KomgaCollectionsApi
 import snd.komelia.komga.api.KomgaReadListApi
 import snd.komelia.komga.api.KomgaSeriesApi
+import snd.komelia.komga.api.LocalFileApiProvider
+import snd.komelia.offline.book.repository.OfflineBookRepository
 import snd.komga.client.book.KomgaBookId
 import snd.komga.client.collection.KomgaCollectionId
 import snd.komga.client.common.KomgaThumbnailId
@@ -114,10 +118,27 @@ class KomgaReadListThumbnailFetcher(
 
 class KomgaBookPageThumbnailFetcher(
     private val bookApi: KomgaBookApi,
+    private val offlineBookRepository: OfflineBookRepository?,
+    private val offlineBookApi: KomgaBookApi?,
+    private val localFileApiProvider: LocalFileApiProvider?,
     private val bookId: KomgaBookId,
     private val pageNumber: Int,
     decoder: CoilAwareDecoder,
     options: Options,
 ) : CoilFetcher(decoder, options) {
-    override suspend fun fetchBytes() = bookApi.getPageThumbnail(bookId, pageNumber)
+
+    override suspend fun fetchBytes(): ByteArray? {
+        localFileApiProvider?.getApiForBook(bookId)?.let {
+            return it.getPageThumbnail(bookId, pageNumber)
+        }
+        if (offlineBookRepository?.find(bookId) != null && offlineBookApi != null) {
+            return try {
+                offlineBookApi.getPageThumbnail(bookId, pageNumber)
+            } catch (e: Exception) {
+                currentCoroutineContext().ensureActive()
+                bookApi.getPageThumbnail(bookId, pageNumber)
+            }
+        }
+        return bookApi.getPageThumbnail(bookId, pageNumber)
+    }
 }

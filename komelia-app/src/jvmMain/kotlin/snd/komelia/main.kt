@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger.ROOT_LOGGER_NAME
 import org.slf4j.LoggerFactory
 import snd.komelia.AppDirectories.projectDirectories
@@ -68,6 +69,7 @@ import snd.komelia.ui.platform.PlatformType
 import snd.komelia.ui.platform.WindowSizeClass
 import snd.komelia.ui.platform.canIntegrateWithSystemBar
 import snd.komelia.ui.windowBorder
+import snd.komelia.session.DefaultServerSessionManager
 import java.awt.Dimension
 import java.awt.event.WindowEvent
 import java.nio.file.Path
@@ -100,10 +102,25 @@ fun main() {
     val dependencies = MutableStateFlow<DependencyContainer?>(null)
     val initError = MutableStateFlow<Throwable?>(null)
 
+    runBlocking {
+        try {
+            LegacyDatabaseMigration(AppDirectories.databaseDirectory.toString()).runMigrationIfNeeded()
+        } catch (e: Throwable) {
+            initError.value = e
+        }
+    }
+
+    val sessionManager = DefaultServerSessionManager(
+        globalDatabaseDir = AppDirectories.databaseDirectory.toString(),
+        appDatabaseDir = AppDirectories.databaseDirectory.toString(),
+        cacheDir = AppDirectories.cacheDirectory.toString(),
+        appModuleFactory = { serverId -> DesktopAppModule(windowState, serverId) }
+    )
+
     initScope.launch {
         try {
-            val module = DesktopAppModule(windowState)
-            dependencies.value = module.initDependencies()
+            sessionManager.loadLastActiveServer()
+            sessionManager.dependencies.collect { dependencies.value = it }
         } catch (e: Throwable) {
             ensureActive()
             initError.value = e
@@ -134,6 +151,7 @@ fun main() {
                 MainAppContent(
                     windowState = windowState,
                     dependencies = dependencies.collectAsState().value,
+                    sessionManager = sessionManager,
                     onCloseRequest = { shouldRestart = false }
                 )
             }
@@ -156,11 +174,14 @@ fun main() {
     exitProcess(0)
 }
 
+import snd.komelia.ui.session.ServerSessionManager
+
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun ApplicationScope.MainAppContent(
     windowState: AwtWindowState,
     dependencies: DependencyContainer?,
+    sessionManager: ServerSessionManager,
     onCloseRequest: () -> Unit,
 ) {
     var showLogWindow by remember { mutableStateOf(false) }
@@ -222,6 +243,7 @@ private fun ApplicationScope.MainAppContent(
             Box(borderModifier.value) {
                 MainView(
                     dependencies = dependencies,
+                    sessionManager = sessionManager,
                     windowWidth = widthClass,
                     windowHeight = heightClass,
                     platformType = PlatformType.DESKTOP,

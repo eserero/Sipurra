@@ -173,7 +173,11 @@ class RemoteBookApi(
         bookId: KomgaBookId,
         page: Int
     ): ByteArray {
-        return bookClient.getPageThumbnail(bookId, page)
+        return try {
+            bookClient.getPageThumbnail(bookId, page)
+        } catch (e: Exception) {
+            bookClient.getPage(bookId, page)
+        }
     }
 
     override suspend fun getReadiumProgression(bookId: KomgaBookId): R2Progression? {

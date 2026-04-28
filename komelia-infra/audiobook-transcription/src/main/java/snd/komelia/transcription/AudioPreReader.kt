@@ -4,11 +4,15 @@ import android.content.Context
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
+import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
+
+private val logger = KotlinLogging.logger {}
 
 data class PcmChunk(
     val bytes: ByteArray,
@@ -24,8 +28,8 @@ class AudioPreReader(
     private val getPlaybackMs: () -> Long,
 ) {
     companion object {
-        const val PRE_READ_AHEAD_MS = 7_000L
-        const val MAX_AHEAD_MS = 8_000L
+        const val PRE_READ_AHEAD_MS = 11_000L
+        const val MAX_AHEAD_MS = 12_000L
         const val CHUNK_TARGET_MS = 2_000L
     }
 
@@ -47,8 +51,16 @@ class AudioPreReader(
                     readHeadMs = playbackMs + PRE_READ_AHEAD_MS
                 }
                 else -> {
-                    val chunk = withContext(Dispatchers.IO) {
-                        decodeChunkAt(readHeadMs, CHUNK_TARGET_MS)
+                    val chunk = try {
+                        withContext(Dispatchers.IO) {
+                            decodeChunkAt(readHeadMs, CHUNK_TARGET_MS)
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        logger.warn(e) { "AudioPreReader: decode failed at readHead=${readHeadMs}ms — skipping ${CHUNK_TARGET_MS}ms ahead" }
+                        readHeadMs += CHUNK_TARGET_MS
+                        null
                     }
                     if (chunk == null) {
                         delay(1000)

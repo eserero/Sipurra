@@ -43,6 +43,7 @@ import snd.komelia.ui.login.LoginViewModel
 import snd.komelia.ui.login.offline.OfflineLoginViewModel
 import snd.komelia.ui.oneshot.OneshotViewModel
 import snd.komelia.ui.platform.PlatformType
+import snd.komelia.ui.session.ServerSessionManager
 import snd.komelia.ui.reader.epub.EpubReaderViewModel
 import snd.komelia.ui.reader.image.ReaderViewModel
 import snd.komelia.ui.readlist.ReadListViewModel
@@ -65,6 +66,7 @@ import snd.komelia.ui.settings.komf.processing.KomfProcessingSettingsViewModel
 import snd.komelia.ui.settings.komf.providers.KomfProvidersSettingsViewModel
 import snd.komelia.ui.settings.navigation.SettingsNavigationViewModel
 import snd.komelia.ui.settings.offline.OfflineSettingsViewModel
+import snd.komelia.ui.settings.servers.AppServerManagementViewModel
 import snd.komelia.ui.settings.server.ServerSettingsViewModel
 import snd.komelia.ui.settings.updates.AppUpdatesViewModel
 import snd.komelia.ui.settings.users.UsersViewModel
@@ -91,6 +93,7 @@ import snd.komga.client.user.KomgaUser
 class ViewModelFactory(
     private val dependencies: DependencyContainer,
     private val platformType: PlatformType,
+    private val sessionManager: ServerSessionManager,
 ) {
     private val appRepositories = dependencies.appRepositories
     private val komgaApi
@@ -291,6 +294,7 @@ class ViewModelFactory(
             komgaAuthState = dependencies.komgaSharedState,
             notifications = dependencies.appNotifications,
             platform = platformType,
+            sessionManager = sessionManager,
             offlineUserRepository = dependencies.offlineDependencies.repositories.userRepository,
             offlineServerRepository = dependencies.offlineDependencies.repositories.mediaServerRepository,
             offlineSettingsRepository = dependencies.offlineDependencies.repositories.offlineSettingsRepository,
@@ -751,6 +755,10 @@ class ViewModelFactory(
             serverDeleteAction = dependencies.offlineDependencies.actions.get(),
             userDeleteAction = dependencies.offlineDependencies.actions.get(),
         )
+    }
+
+    fun getAppServerManagementViewModel(): AppServerManagementViewModel {
+        return AppServerManagementViewModel(sessionManager)
     }
 
     fun getStartupUpdateChecker() = startupUpdateChecker

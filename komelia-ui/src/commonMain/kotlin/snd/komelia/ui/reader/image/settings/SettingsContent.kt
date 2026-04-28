@@ -1,7 +1,15 @@
 package snd.komelia.ui.reader.image.settings
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.HorizontalDivider
@@ -40,6 +48,7 @@ import snd.komelia.ui.reader.image.ReaderState
 import snd.komelia.ui.reader.image.ScreenScaleState
 import snd.komelia.ui.reader.image.common.PageSpreadProgressSlider
 import snd.komelia.ui.reader.image.common.ProgressSlider
+import snd.komelia.ui.reader.image.common.ThumbnailCarousel
 import snd.komelia.ui.reader.image.continuous.ContinuousReaderState
 import snd.komelia.ui.reader.image.paged.PagedReaderState
 import snd.komelia.ui.reader.image.panels.PanelsReaderState
@@ -176,69 +185,110 @@ fun BoxScope.SettingsOverlay(
 
     if (useNewUI2) return
 
-    when (readerType) {
-        PAGED -> {
-            val readingDirection = pagedReaderState.readingDirection.collectAsState().value
-            val layoutDirection = remember(readingDirection) {
-                when (readingDirection) {
-                    PagedReadingDirection.LEFT_TO_RIGHT -> Ltr
-                    PagedReadingDirection.RIGHT_TO_LEFT -> Rtl
-                }
-            }
-            PageSpreadProgressSlider(
-                pageSpreads = pagedReaderState.pageSpreads.collectAsState().value,
-                currentSpreadIndex = pagedReaderState.currentSpreadIndex.collectAsState().value,
-                onPageNumberChange = pagedReaderState::onPageChange,
-                loadThumbnailPreviews = loadThumbnailPreviews,
-                show = show,
-                layoutDirection = layoutDirection,
-                modifier = Modifier.align(Alignment.BottomStart)
-            )
-        }
-
-        PANELS -> {
-            check(panelsReaderState != null) { "panels reader is not initialized" }
-            val readingDirection = panelsReaderState.readingDirection.collectAsState().value
-            val layoutDirection = remember(readingDirection) {
-                when (readingDirection) {
-                    PagedReadingDirection.LEFT_TO_RIGHT -> Ltr
-                    PagedReadingDirection.RIGHT_TO_LEFT -> Rtl
-                }
-            }
-            val pages = panelsReaderState.pageMetadata.collectAsState().value
-            val currentIndex = panelsReaderState.currentPageIndex.collectAsState().value
-            PageSpreadProgressSlider(
-                pageSpreads = pages.map { listOf(it) },
-                currentSpreadIndex = currentIndex.page,
-                onPageNumberChange = panelsReaderState::onPageChange,
-                loadThumbnailPreviews = loadThumbnailPreviews,
-                show = show,
-                layoutDirection = layoutDirection,
-                modifier = Modifier.align(Alignment.BottomStart)
-            )
-
-        }
-
-        CONTINUOUS -> {
-            val readingDirection = continuousReaderState.readingDirection.collectAsState().value
-            val layoutDirection = remember(readingDirection) {
-                when (readingDirection) {
-                    ContinuousReadingDirection.TOP_TO_BOTTOM -> Ltr
-                    ContinuousReadingDirection.LEFT_TO_RIGHT -> Ltr
-                    ContinuousReadingDirection.RIGHT_TO_LEFT -> Rtl
-                }
+    val showCarousel by commonReaderState.showCarousel.collectAsState()
+    AnimatedContent(
+        targetState = showCarousel,
+        transitionSpec = {
+            (slideInVertically(initialOffsetY = { it }) + fadeIn())
+                .togetherWith(slideOutVertically(targetOffsetY = { it }) + fadeOut())
+        },
+        label = "CarouselTransition",
+        modifier = Modifier.align(Alignment.BottomStart)
+    ) { targetShowCarousel ->
+        if (targetShowCarousel) {
+            val bookPages = commonReaderState.booksState.collectAsState().value?.currentBookPages ?: emptyList()
+            val currentPageIndex = when (readerType) {
+                PAGED -> pagedReaderState.currentSpreadIndex.collectAsState().value
+                CONTINUOUS -> continuousReaderState.currentBookPageIndex.collectAsState(0).value
+                PANELS -> panelsReaderState?.currentPageIndex?.collectAsState()?.value?.page ?: 0
             }
 
-            ProgressSlider(
-                pages = continuousReaderState.currentBookPages.collectAsState(emptyList()).value,
-                currentPageIndex = continuousReaderState.currentBookPageIndex.collectAsState(0).value,
-                onPageNumberChange = { coroutineScope.launch { continuousReaderState.scrollToBookPage(it + 1) } },
-                loadThumbnailPreviews = loadThumbnailPreviews,
-                show = show,
-                layoutDirection = layoutDirection,
-                modifier = Modifier.align(Alignment.BottomStart)
+            ThumbnailCarousel(
+                pages = bookPages,
+                currentPageIndex = currentPageIndex,
+                onPageChange = {
+                    when (readerType) {
+                        PAGED -> pagedReaderState.onPageChange(it)
+                        PANELS -> panelsReaderState?.onPageChange(it)
+                        CONTINUOUS -> coroutineScope.launch { continuousReaderState.scrollToBookPage(it + 1) }
+                    }
+                    commonReaderState.onToggleCarousel()
+                },
+                modifier = Modifier.fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
             )
+        } else {
+            when (readerType) {
+                PAGED -> {
+                    val readingDirection = pagedReaderState.readingDirection.collectAsState().value
+                    val layoutDirection = remember(readingDirection) {
+                        when (readingDirection) {
+                            PagedReadingDirection.LEFT_TO_RIGHT -> Ltr
+                            PagedReadingDirection.RIGHT_TO_LEFT -> Rtl
+                        }
+                    }
+                    PageSpreadProgressSlider(
+                        pageSpreads = pagedReaderState.pageSpreads.collectAsState().value,
+                        currentSpreadIndex = pagedReaderState.currentSpreadIndex.collectAsState().value,
+                        onPageNumberChange = pagedReaderState::onPageChange,
+                        loadThumbnailPreviews = loadThumbnailPreviews,
+                        show = show,
+                        layoutDirection = layoutDirection,
+                        onLabelClick = commonReaderState::onToggleCarousel
+                    )
+                }
 
+                PANELS -> {
+                    check(panelsReaderState != null) { "panels reader is not initialized" }
+                    val readingDirection = panelsReaderState.readingDirection.collectAsState().value
+                    val layoutDirection = remember(readingDirection) {
+                        when (readingDirection) {
+                            PagedReadingDirection.LEFT_TO_RIGHT -> Ltr
+                            PagedReadingDirection.RIGHT_TO_LEFT -> Rtl
+                        }
+                    }
+                    val pages = panelsReaderState.pageMetadata.collectAsState().value
+                    val currentIndex = panelsReaderState.currentPageIndex.collectAsState().value
+                    PageSpreadProgressSlider(
+                        pageSpreads = pages.map { listOf(it) },
+                        currentSpreadIndex = currentIndex.page,
+                        onPageNumberChange = panelsReaderState::onPageChange,
+                        loadThumbnailPreviews = loadThumbnailPreviews,
+                        show = show,
+                        layoutDirection = layoutDirection,
+                        onLabelClick = commonReaderState::onToggleCarousel
+                    )
+
+                }
+
+                CONTINUOUS -> {
+                    val readingDirection = continuousReaderState.readingDirection.collectAsState().value
+                    val layoutDirection = remember(readingDirection) {
+                        when (readingDirection) {
+                            ContinuousReadingDirection.TOP_TO_BOTTOM -> Ltr
+                            ContinuousReadingDirection.LEFT_TO_RIGHT -> Ltr
+                            ContinuousReadingDirection.RIGHT_TO_LEFT -> Rtl
+                        }
+                    }
+
+                    ProgressSlider(
+                        pages = continuousReaderState.currentBookPages.collectAsState(emptyList()).value,
+                        currentPageIndex = continuousReaderState.currentBookPageIndex.collectAsState(0).value,
+                        onPageNumberChange = {
+                            coroutineScope.launch {
+                                continuousReaderState.scrollToBookPage(
+                                    it + 1
+                                )
+                            }
+                        },
+                        loadThumbnailPreviews = loadThumbnailPreviews,
+                        show = show,
+                        layoutDirection = layoutDirection,
+                        onLabelClick = commonReaderState::onToggleCarousel
+                    )
+
+                }
+            }
         }
     }
 }

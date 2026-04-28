@@ -33,9 +33,13 @@ import snd.komelia.ui.MainView
 import snd.komelia.ui.platform.PlatformType
 import snd.komelia.ui.platform.WindowSizeClass
 
+import snd.komelia.session.DefaultServerSessionManager
+import snd.komelia.ui.session.ServerSessionManager
+
 private val initScope = CoroutineScope(Dispatchers.Default)
 private val initMutex = Mutex()
 private val mainActivity = MutableStateFlow<MainActivity?>(null)
+private val sessionManager = MutableStateFlow<ServerSessionManager?>(null)
 private val _incomingFileUriFlow = MutableSharedFlow<String>(replay = 1)
 val incomingFileUriFlow: SharedFlow<String> = _incomingFileUriFlow.asSharedFlow()
 
@@ -49,13 +53,23 @@ class MainActivity : AppCompatActivity() {
 
         initScope.launch {
             initMutex.withLock {
-                if (dependencies.value == null) {
-                    val module = AndroidAppModule(
-                        context = applicationContext,
-                        mainActivity = mainActivity
+                if (sessionManager.value == null) {
+                    LegacyDatabaseMigration(applicationContext.filesDir.absolutePath).runMigrationIfNeeded()
+                    val manager = DefaultServerSessionManager(
+                        globalDatabaseDir = applicationContext.filesDir.absolutePath,
+                        appDatabaseDir = applicationContext.filesDir.absolutePath,
+                        cacheDir = applicationContext.cacheDir.absolutePath,
+                        appModuleFactory = { serverId ->
+                            AndroidAppModule(
+                                context = applicationContext,
+                                mainActivity = mainActivity,
+                                serverId = serverId
+                            )
+                        }
                     )
-                    val deps = module.initDependencies()
-                    dependencies.value = deps
+                    manager.loadLastActiveServer()
+                    sessionManager.value = manager
+                    manager.dependencies.collect { dependencies.value = it }
                 }
             }
         }
@@ -70,13 +84,17 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             val windowSize = rememberWindowSize()
-            MainView(
-                dependencies = dependencies.collectAsState().value,
-                windowWidth = WindowSizeClass.fromDp(windowSize.width),
-                windowHeight = WindowSizeClass.fromDp(windowSize.height),
-                platformType = PlatformType.MOBILE,
-                keyEvents = MutableSharedFlow()
-            )
+            val manager = sessionManager.collectAsState().value
+            if (manager != null) {
+                MainView(
+                    dependencies = dependencies.collectAsState().value,
+                    sessionManager = manager,
+                    windowWidth = WindowSizeClass.fromDp(windowSize.width),
+                    windowHeight = WindowSizeClass.fromDp(windowSize.height),
+                    platformType = PlatformType.MOBILE,
+                    keyEvents = MutableSharedFlow()
+                )
+            }
         }
     }
     override fun onNewIntent(intent: Intent) {

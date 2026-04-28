@@ -5,6 +5,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
@@ -78,6 +79,7 @@ fun ProgressSlider(
     modifier: Modifier = Modifier,
     isBare: Boolean = false,
     loadThumbnailPreviews: Boolean = true,
+    onLabelClick: () -> Unit = {},
 ) {
     PageSpreadProgressSlider(
         pageSpreads = pages.map { listOf(it) },
@@ -88,6 +90,7 @@ fun ProgressSlider(
         modifier = modifier,
         isBare = isBare,
         loadThumbnailPreviews = loadThumbnailPreviews,
+        onLabelClick = onLabelClick,
     )
 }
 
@@ -101,6 +104,7 @@ fun PageSpreadProgressSlider(
     modifier: Modifier = Modifier,
     isBare: Boolean = false,
     loadThumbnailPreviews: Boolean = true,
+    onLabelClick: () -> Unit = {},
 ) {
     if (pageSpreads.isEmpty()) return
 
@@ -128,6 +132,7 @@ fun PageSpreadProgressSlider(
                         interactionSource = interactionSource,
                         isBare = isBare,
                         loadThumbnailPreviews = loadThumbnailPreviews,
+                        onLabelClick = onLabelClick,
                     )
                 }
             }
@@ -145,6 +150,7 @@ private fun Slider(
     interactionSource: MutableInteractionSource,
     isBare: Boolean,
     loadThumbnailPreviews: Boolean,
+    onLabelClick: () -> Unit,
 ) {
     var currentPos by remember(currentSpreadIndex) { mutableStateOf(currentSpreadIndex) }
     val currentSpread = remember(pageSpreads, currentPos) { pageSpreads.getOrElse(currentPos) { pageSpreads.last() } }
@@ -203,6 +209,7 @@ private fun Slider(
                         color = labelBackground,
                         shape = RoundedCornerShape(20.dp)
                     )
+                    .clickable { onLabelClick() }
                     .padding(horizontal = 12.dp, vertical = 4.dp)
                     .defaultMinSize(minWidth = 40.dp)
             )
@@ -288,7 +295,7 @@ private fun Slider(
 }
 
 @Composable
-private fun BookPageThumbnail(
+fun BookPageThumbnail(
     page: PageMetadata,
 //    image: ImageResult?,
     modifier: Modifier,
@@ -345,4 +352,3 @@ private fun rememberSliderState(
     state.value = value
     return state
 }
-

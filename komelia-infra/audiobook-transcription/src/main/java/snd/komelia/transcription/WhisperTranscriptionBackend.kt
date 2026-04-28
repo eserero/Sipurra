@@ -100,6 +100,7 @@ class WhisperTranscriptionBackend(
                 endMs = r.endMs,
                 text = r.text.trim(),
                 isFinal = true,
+                chunkId = offsetMs,
             )
         }.filter { it.text.isNotBlank() }
 
