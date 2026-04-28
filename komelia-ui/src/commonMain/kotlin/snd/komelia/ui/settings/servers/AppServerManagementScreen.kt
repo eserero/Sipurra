@@ -10,15 +10,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import snd.komelia.settings.model.ServerProfile
 import snd.komelia.ui.LocalViewModelFactory
 import snd.komelia.ui.dialogs.ConfirmationDialog
+import snd.komelia.ui.login.LoginScreen
 import snd.komelia.ui.settings.SettingsScreenContainer
 
 class AppServerManagementScreen : Screen {
 
     @Composable
     override fun Content() {
+        val rootNavigator = LocalNavigator.currentOrThrow.parent ?: LocalNavigator.currentOrThrow
         val viewModelFactory = LocalViewModelFactory.current
         val vm = rememberScreenModel { viewModelFactory.getAppServerManagementViewModel() }
         val serverProfiles by vm.serverProfiles.collectAsState(emptyList())
@@ -34,6 +38,14 @@ class AppServerManagementScreen : Screen {
                         onSwitch = { vm.switchServer(profile) }
                     )
                     HorizontalDivider()
+                }
+
+                Spacer(Modifier.height(20.dp))
+                Button(
+                    onClick = { vm.addNewServer() },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text("Connect to a new server")
                 }
             }
         }
@@ -67,7 +79,7 @@ class AppServerManagementScreen : Screen {
                 )
             } else {
                 Button(onClick = onSwitch) {
-                    Text("Switch")
+                    Text("Switch to this server")
                 }
             }
 

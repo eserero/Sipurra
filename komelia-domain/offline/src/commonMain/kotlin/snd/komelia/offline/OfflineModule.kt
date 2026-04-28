@@ -4,6 +4,7 @@ import io.github.vinceglb.filekit.PlatformFile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -136,6 +137,12 @@ abstract class OfflineModule(
     val komgaClientFactory: KomgaClientFactory,
 ) {
     private val moduleScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private var taskProcessor: TaskProcessor? = null
+
+    fun close() {
+        taskProcessor?.close()
+        moduleScope.cancel()
+    }
 
     fun initDependencies(): OfflineDependencies {
 
@@ -254,6 +261,7 @@ abstract class OfflineModule(
             taskAddedEvents = taskAddedEventFlow,
             logJournalRepository = repositories.logJournalRepository,
         )
+        this.taskProcessor = taskProcessor
 
         val syncManager = SyncManager(
             onlineUser = authenticatedUser,

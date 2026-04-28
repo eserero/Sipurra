@@ -16,10 +16,9 @@ class LegacyDatabaseMigration(
     private val databaseDir: String
 ) {
     suspend fun runMigrationIfNeeded() {
-        val globalDbFile = File(databaseDir, "global.sqlite")
         val legacyAppDbFile = File(databaseDir, "komelia.sqlite")
 
-        if (!globalDbFile.exists() && legacyAppDbFile.exists()) {
+        if (legacyAppDbFile.exists()) {
             logger.info { "Legacy database found, migrating to multi-server support" }
             migrate()
         }
@@ -50,6 +49,11 @@ class LegacyDatabaseMigration(
             renameFile(File(databaseDir, "offline.sqlite"), File(databaseDir, "server_${serverId}_offline.sqlite"))
             renameFile(File(databaseDir, "offline.sqlite-wal"), File(databaseDir, "server_${serverId}_offline.sqlite-wal"))
             renameFile(File(databaseDir, "offline.sqlite-shm"), File(databaseDir, "server_${serverId}_offline.sqlite-shm"))
+
+            val datastoreDir = File(databaseDir, "datastore")
+            if (datastoreDir.exists()) {
+                renameFile(File(datastoreDir, "settings.pb"), File(datastoreDir, "server_${serverId}_settings.pb"))
+            }
         }
     }
 

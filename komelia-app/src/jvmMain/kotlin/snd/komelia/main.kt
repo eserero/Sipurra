@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger.ROOT_LOGGER_NAME
 import org.slf4j.LoggerFactory
 import snd.komelia.AppDirectories.projectDirectories
@@ -101,6 +102,14 @@ fun main() {
     val dependencies = MutableStateFlow<DependencyContainer?>(null)
     val initError = MutableStateFlow<Throwable?>(null)
 
+    runBlocking {
+        try {
+            LegacyDatabaseMigration(AppDirectories.databaseDirectory.toString()).runMigrationIfNeeded()
+        } catch (e: Throwable) {
+            initError.value = e
+        }
+    }
+
     val sessionManager = DefaultServerSessionManager(
         globalDatabaseDir = AppDirectories.databaseDirectory.toString(),
         appDatabaseDir = AppDirectories.databaseDirectory.toString(),
@@ -110,7 +119,6 @@ fun main() {
 
     initScope.launch {
         try {
-            LegacyDatabaseMigration(AppDirectories.databaseDirectory.toString()).runMigrationIfNeeded()
             sessionManager.loadLastActiveServer()
             sessionManager.dependencies.collect { dependencies.value = it }
         } catch (e: Throwable) {

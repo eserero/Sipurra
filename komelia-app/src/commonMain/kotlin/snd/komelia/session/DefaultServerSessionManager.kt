@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import snd.komelia.AppModule
 import snd.komelia.db.GlobalDatabase
 import snd.komelia.db.settings.ExposedServerProfileRepository
@@ -22,6 +24,7 @@ class DefaultServerSessionManager(
     private val appModuleFactory: (serverId: Long?) -> AppModule,
 ) : ServerSessionManager {
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private val switchMutex = Mutex()
     private val globalDatabase = GlobalDatabase(globalDatabaseDir)
     private val serverProfileRepository = ExposedServerProfileRepository(globalDatabase.database)
     private var currentModule: AppModule? = null
@@ -45,32 +48,35 @@ class DefaultServerSessionManager(
 
     fun loadLastActiveServer() {
         scope.launch {
-            val profiles = serverProfileRepository.getAll()
-            val lastActive = profiles.maxByOrNull { it.lastActive ?: kotlinx.datetime.Instant.DISTANT_PAST }
-            if (lastActive != null) {
-                switchServer(lastActive)
-            } else {
-                // No servers, load empty app module for login
-                switchServer(null)
+            switchMutex.withLock {
+                val profiles = serverProfileRepository.getAll()
+                val lastActive = profiles.maxByOrNull { it.lastActive ?: kotlinx.datetime.Instant.DISTANT_PAST }
+                doSwitch(lastActive)
             }
         }
     }
 
     override fun switchServer(profile: ServerProfile?) {
         scope.launch {
-            _dependencies.value = null
-            currentModule?.close()
-            val module = appModuleFactory(profile?.id)
-            currentModule = module
-            val container = module.initDependencies()
-            _dependencies.value = container
-            _currentServerProfile.value = profile
-
-            if (profile != null) {
-                val updatedProfile = profile.copy(lastActive = kotlinx.datetime.Clock.System.now())
-                serverProfileRepository.update(updatedProfile)
-                refreshServerProfiles()
+            switchMutex.withLock {
+                doSwitch(profile)
             }
+        }
+    }
+
+    private suspend fun doSwitch(profile: ServerProfile?) {
+        _dependencies.value = null
+        currentModule?.close()
+        val module = appModuleFactory(profile?.id)
+        currentModule = module
+        val container = module.initDependencies()
+        _dependencies.value = container
+        _currentServerProfile.value = profile
+
+        if (profile != null) {
+            val updatedProfile = profile.copy(lastActive = kotlinx.datetime.Clock.System.now())
+            serverProfileRepository.update(updatedProfile)
+            refreshServerProfiles()
         }
     }
 
@@ -83,7 +89,44 @@ class DefaultServerSessionManager(
         )
         val inserted = serverProfileRepository.insert(newProfile)
         refreshServerProfiles()
-        switchServer(inserted)
+
+        scope.launch {
+            switchMutex.withLock {
+                _dependencies.value = null
+                currentModule?.close()
+
+                renameNullProfileFiles(inserted.id)
+
+                val module = appModuleFactory(inserted.id)
+                currentModule = module
+                val container = module.initDependencies()
+                _dependencies.value = container
+                _currentServerProfile.value = inserted
+            }
+        }
+    }
+
+    private fun renameNullProfileFiles(serverId: Long) {
+        val filesToRename = listOf(
+            "komelia.sqlite" to "server_${serverId}_komelia.sqlite",
+            "komelia.sqlite-wal" to "server_${serverId}_komelia.sqlite-wal",
+            "komelia.sqlite-shm" to "server_${serverId}_komelia.sqlite-shm",
+            "offline.sqlite" to "server_${serverId}_offline.sqlite",
+            "offline.sqlite-wal" to "server_${serverId}_offline.sqlite-wal",
+            "offline.sqlite-shm" to "server_${serverId}_offline.sqlite-shm",
+        )
+        filesToRename.forEach { (oldName, newName) ->
+            val from = File(appDatabaseDir, oldName)
+            val to = File(appDatabaseDir, newName)
+            if (from.exists()) from.renameTo(to)
+        }
+
+        val datastoreDir = File(appDatabaseDir, "datastore")
+        if (datastoreDir.exists()) {
+            val from = File(datastoreDir, "settings.pb")
+            val to = File(datastoreDir, "server_${serverId}_settings.pb")
+            if (from.exists()) from.renameTo(to)
+        }
     }
 
     override suspend fun deleteServer(profile: ServerProfile) {

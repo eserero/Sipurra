@@ -73,13 +73,12 @@ class LoginViewModel(
             val profiles = serverProfiles.first()
             val currentProfile = sessionManager.currentServerProfile.value
             selectedServerProfile = currentProfile
-            if (currentProfile == null && profiles.isNotEmpty()) {
-                selectedServerProfile = profiles.maxByOrNull { it.lastActive ?: kotlinx.datetime.Instant.DISTANT_PAST }
-            }
-            showNewServerFields = profiles.isEmpty()
+            showNewServerFields = currentProfile == null
 
-            url = settingsRepository.getServerUrl().first()
-            user = settingsRepository.getCurrentUser().first()
+            val initialUrl = selectedServerProfile?.url ?: settingsRepository.getServerUrl().first()
+            val initialUser = selectedServerProfile?.username ?: settingsRepository.getCurrentUser().first()
+            url = initialUrl
+            user = initialUser
             val offlineUsers = offlineUserRepository.findAll()
             val offlineServer = offlineServerRepository.findByUrl(url)
 
@@ -118,6 +117,8 @@ class LoginViewModel(
         selectedServerProfile = profile
         if (profile != null) {
             showNewServerFields = false
+            url = profile.url
+            user = profile.username
             sessionManager.switchServer(profile)
         } else {
             showNewServerFields = true
@@ -153,6 +154,7 @@ class LoginViewModel(
     private suspend fun tryAutologin() {
         try {
             tryLogin()
+            mutableState.value = LoadState.Success(Unit)
         } catch (e: CancellationException) {
             throw e
         } catch (e: NoTransformationFoundException) {
@@ -184,6 +186,7 @@ class LoginViewModel(
         try {
             tryLogin(username, password)
             onSuccess()
+            mutableState.value = LoadState.Success(Unit)
         } catch (e: CancellationException) {
             throw e
         } catch (e: NoTransformationFoundException) {
@@ -212,7 +215,6 @@ class LoginViewModel(
 
         val libraries = libraryApi.getLibraries()
         komgaAuthState.setStateValues(user, libraries)
-        mutableState.value = LoadState.Success(Unit)
     }
 }
 

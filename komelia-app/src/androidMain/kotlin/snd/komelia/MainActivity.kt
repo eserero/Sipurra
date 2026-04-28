@@ -54,6 +54,7 @@ class MainActivity : AppCompatActivity() {
         initScope.launch {
             initMutex.withLock {
                 if (sessionManager.value == null) {
+                    LegacyDatabaseMigration(applicationContext.filesDir.absolutePath).runMigrationIfNeeded()
                     val manager = DefaultServerSessionManager(
                         globalDatabaseDir = applicationContext.filesDir.absolutePath,
                         appDatabaseDir = applicationContext.filesDir.absolutePath,
@@ -66,7 +67,6 @@ class MainActivity : AppCompatActivity() {
                             )
                         }
                     )
-                    LegacyDatabaseMigration(applicationContext.filesDir.absolutePath).runMigrationIfNeeded()
                     manager.loadLastActiveServer()
                     sessionManager.value = manager
                     manager.dependencies.collect { dependencies.value = it }

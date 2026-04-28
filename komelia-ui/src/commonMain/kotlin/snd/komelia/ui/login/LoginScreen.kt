@@ -42,7 +42,9 @@ class LoginScreen : Screen {
         val isOffline = LocalOfflineMode.current
         val vm = rememberScreenModel(isOffline.value.toString()) { viewModelFactory.getLoginViewModel() }
 
-        LaunchedEffect(Unit) { vm.initialize() }
+        LaunchedEffect(Unit) {
+            vm.initialize()
+        }
         Column {
             PlatformTitleBar { }
             when (platform) {

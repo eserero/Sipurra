@@ -12,7 +12,9 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -82,6 +84,10 @@ abstract class AppModule(
     protected val initScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     protected val appNotifications = AppNotifications()
     protected val readerSyncService = ReaderSyncService()
+    protected var ktor: HttpClient? = null
+    protected var ktorWithoutCache: HttpClient? = null
+    protected var coil: ImageLoader? = null
+    private var offlineModuleRef: OfflineModule? = null
 
     suspend fun initDependencies(): DependencyContainer {
         beforeInit()
@@ -89,6 +95,8 @@ abstract class AppModule(
         val offlineRepositories = createOfflineRepositories()
         val ktor = createKtorClient()
         val ktorWithoutCache = createKtorClientWithoutCache()
+        this.ktor = ktor
+        this.ktorWithoutCache = ktorWithoutCache
 
         val updateClient = UpdateClient(
             ktor = ktor.config {
@@ -132,7 +140,7 @@ abstract class AppModule(
         val currentServerUrl = appRepositories.settingsRepository.getServerUrl().stateIn(initScope)
 
         val androidContext = createCoilContext()
-        val offlineModule: OfflineDependencies = createOfflineModule(
+        val offlineModuleInstance = createOfflineModule(
             repositories = offlineRepositories,
             komgaClientFactory = komgaClientFactory,
             onlineUser = currentUserFlow
@@ -140,7 +148,9 @@ abstract class AppModule(
                 .stateIn(initScope),
             onlineServerUrl = appRepositories.settingsRepository.getServerUrl().stateIn(initScope),
             isOffline = isOffline,
-        ).initDependencies()
+        )
+        offlineModuleRef = offlineModuleInstance
+        val offlineModule: OfflineDependencies = offlineModuleInstance.initDependencies()
 
         val komgaApi = isOffline.map { offline ->
             if (offline) offlineModule.komgaApi
@@ -195,11 +205,17 @@ abstract class AppModule(
             )
         } else null
 
+        val localFileApiProvider = createLocalFileApiProvider()
+
         val coil = createCoil(
             komgaApi = komgaApi,
             context = androidContext,
             decoder = imageDecoder,
+            offlineBookRepository = offlineRepositories.bookRepository,
+            offlineBookApi = offlineModule.komgaApi.bookApi,
+            localFileApiProvider = localFileApiProvider,
         )
+        this.coil = coil
 
         val komgaEvents = ManagedKomgaEvents(
             komgaApi = komgaApi,
@@ -216,8 +232,6 @@ abstract class AppModule(
             onnxRuntimeUpscaler = upscaler,
             onnxModelDownloader = onnxModelDownloader
         )
-
-        val localFileApiProvider = createLocalFileApiProvider()
 
         return DependencyContainer(
             appStrings = MutableStateFlow(EnStrings),
@@ -301,6 +315,9 @@ abstract class AppModule(
         komgaApi: StateFlow<KomgaApi>,
         context: PlatformContext,
         decoder: KomeliaImageDecoder,
+        offlineBookRepository: OfflineBookRepository? = null,
+        offlineBookApi: KomgaBookApi? = null,
+        localFileApiProvider: LocalFileApiProvider? = null,
     ): ImageLoader {
 
         val timed = measureTimedValue {
@@ -317,12 +334,18 @@ abstract class AppModule(
                 .components {
                     add(FileMapper())
                     add(CoilDecoder.Factory(coilAwareDecoder))
-                    add(KomeliaFetcherFactory(komgaApi, coilAwareDecoder))
+                    add(KomeliaFetcherFactory(
+                        komgaApi,
+                        coilAwareDecoder,
+                        offlineBookRepository = offlineBookRepository,
+                        offlineBookApi = offlineBookApi,
+                        localFileApiProvider = localFileApiProvider,
+                    ))
                 }
                 .memoryCache(createCoilMemoryCache())
                 .diskCache { diskCache }
                 .build()
-                .also { loader -> SingletonImageLoader.setSafe { loader } }
+                .also { loader -> SingletonImageLoader.setUnsafe(loader) }
         }
         logger.info { "initialized Coil in ${timed.duration}" }
         return timed.value
@@ -413,6 +436,12 @@ abstract class AppModule(
         komgaClientFactory: KomgaClientFactory,
     ): OfflineModule
 
-    open fun close() {}
+    open suspend fun close() {
+        offlineModuleRef?.close()
+        initScope.cancel()
+        initScope.coroutineContext[Job]?.join()
+        ktor?.close()
+        ktorWithoutCache?.close()
+        coil?.shutdown()
     }
-
+    }

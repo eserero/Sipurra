@@ -14,6 +14,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
@@ -78,6 +79,7 @@ fun MainView(
     platformType: PlatformType,
     keyEvents: SharedFlow<KeyEvent>
 ) {
+    val currentServerProfile by sessionManager.currentServerProfile.collectAsState()
     var theme by rememberSaveable { mutableStateOf(Theme.DARK) }
     var navBarColor by remember { mutableStateOf<Color?>(null) }
     var accentColor by remember { mutableStateOf<Color?>(null) }
@@ -248,7 +250,9 @@ fun MainView(
                 LocalCardCornerRadius provides cardCornerRadius,
                 LocalUseFloatingNavigationBar provides useFloatingNavigationBar,
             ) {
-                MainContent(platformType, dependencies.komgaSharedState, dependencies.localFileApiProvider)
+                key(currentServerProfile?.id) {
+                    MainContent(platformType, dependencies.komgaSharedState, dependencies.localFileApiProvider)
+                }
 
                 AppNotifications(dependencies.appNotifications, theme)
                 val updateChecker = remember { viewModelFactory.getStartupUpdateChecker() }

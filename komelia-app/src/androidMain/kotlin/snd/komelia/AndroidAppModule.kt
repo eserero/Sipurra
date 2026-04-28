@@ -155,8 +155,9 @@ class AndroidAppModule(
     override suspend fun createAppRepositories(): AppRepositories {
         val datastore = DataStoreFactory.create(
             serializer = AppSettingsSerializer,
-            produceFile = { context.dataStoreFile("settings.pb") },
+            produceFile = { context.dataStoreFile(if (serverId != null) "server_${serverId}_settings.pb" else "settings.pb") },
             corruptionHandler = null,
+            scope = initScope,
         )
 
         return AppRepositories(
@@ -418,11 +419,11 @@ override fun createOfflineModule(
     )
 }
 
-override fun close() {
+override suspend fun close() {
+    okHttpClient.dispatcher.cancelAll()
+    super.close()
     databases.close()
-    okHttpClient.dispatcher.executorService.shutdown()
     okHttpClient.connectionPool.evictAll()
-    okHttpClient.cache?.close()
 }
 }
 

@@ -390,11 +390,11 @@ override fun createOfflineModule(
     )
 }
 
-override fun close() {
+override suspend fun close() {
+    okHttpClient.dispatcher.cancelAll()
+    super.close()
     databases.close()
-    okHttpClient.dispatcher.executorService.shutdown()
     okHttpClient.connectionPool.evictAll()
-    okHttpClient.cache?.close()
 }
 }
 

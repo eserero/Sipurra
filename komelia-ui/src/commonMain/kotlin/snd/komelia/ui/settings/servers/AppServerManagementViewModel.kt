@@ -21,4 +21,8 @@ class AppServerManagementViewModel(
     fun switchServer(profile: ServerProfile) {
         sessionManager.switchServer(profile)
     }
+
+    fun addNewServer() {
+        sessionManager.switchServer(null)
+    }
 }
