@@ -236,7 +236,6 @@ fun PosterEditContent(
     val coroutineScope = rememberCoroutineScope()
     val launcher = rememberFilePickerLauncher(
         mode = FileKitMode.Multiple(),
-        title = "Choose a file",
     ) { files ->
         files?.let { posterState.onThumbnailUpload(it) }
     }

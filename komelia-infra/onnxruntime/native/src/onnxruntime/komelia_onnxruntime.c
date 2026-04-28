@@ -138,11 +138,24 @@ void enable_webGpu(
     OrtSessionOptions *options,
     GError **error
 ) {
-    OrtStatus *ort_status =
-        ort_api->SessionOptionsAppendExecutionProvider(options, "WebGPU", nullptr, nullptr, 0);
+    char *device_id_str = g_strdup_printf("%i", device_id);
+    const char *option_keys[] = {
+        "ep.webgpuexecutionprovider.deviceId",
+    };
+    const char *option_values[] = {device_id_str};
+    constexpr size_t options_size = sizeof(option_keys) / sizeof(char *);
+
+    OrtStatus *ort_status = ort_api->SessionOptionsAppendExecutionProvider(
+        options,
+        "WebGPU",
+        option_keys,
+        option_values,
+        options_size
+    );
     if (ort_status != nullptr) {
         wrap_ort_error(ort_api, ort_status, KOMELIA_ORT_ERROR_EXECUTION_PROVIDER_INIT, error);
     }
+    g_free(device_id_str);
 }
 
 #ifdef USE_DML
@@ -198,7 +211,7 @@ SessionData *komelia_ort_create_session(
     }
 
     ort_status =
-        ort_api->SetSessionGraphOptimizationLevel(session->session_options, ORT_ENABLE_BASIC);
+        ort_api->SetSessionGraphOptimizationLevel(session->session_options, ORT_ENABLE_ALL);
 
     if (ort_status != nullptr) {
         goto on_error;

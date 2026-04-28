@@ -124,6 +124,12 @@ class LoginViewModel(
             showNewServerFields = true
             sessionManager.switchServer(null)
         }
+
+        screenModelScope.launch {
+            val offlineUsers = offlineUserRepository.findAll()
+            val offlineServer = offlineServerRepository.findByUrl(url)
+            offlineUser.value = offlineServer?.let { server -> offlineUsers.firstOrNull { it.serverId == server.id } }
+        }
     }
 
     fun loginWithCredentials() {

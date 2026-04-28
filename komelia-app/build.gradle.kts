@@ -135,6 +135,7 @@ android {
         jniLibs {
             pickFirsts += "lib/*/libc++_shared.so"
             pickFirsts += "lib/*/libonnxruntime.so"
+            pickFirsts += "**/libdatastore_shared_counter.so"
         }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1,README.txt}"

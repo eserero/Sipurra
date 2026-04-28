@@ -156,8 +156,8 @@ class DesktopOnnxRuntimeInstaller(private val updateClient: UpdateClient) : Onnx
             Linux -> {
                 val basePath = Path("runtimes/linux-x64/native")
                 OnnxRuntimeDownloadInfo(
-                    "microsoft.ml.onnxruntime.gpu.linux.1.23.0.nupkg",
-                    "https://globalcdn.nuget.org/packages/microsoft.ml.onnxruntime.gpu.linux.1.23.0.nupkg",
+                    "microsoft.ml.onnxruntime.gpu.linux.1.25.0.nupkg",
+                    "https://globalcdn.nuget.org/packages/microsoft.ml.onnxruntime.gpu.linux.1.25.0.nupkg",
                     listOfNotNull(
                         "libonnxruntime.so",
                         "libonnxruntime.so",
@@ -171,8 +171,8 @@ class DesktopOnnxRuntimeInstaller(private val updateClient: UpdateClient) : Onnx
             Windows -> {
                 val basePath = Path("runtimes/win-x64/native")
                 OnnxRuntimeDownloadInfo(
-                    "microsoft.ml.onnxruntime.gpu.windows.1.23.0.nupkg",
-                    "https://globalcdn.nuget.org/packages/microsoft.ml.onnxruntime.gpu.windows.1.23.0.nupkg",
+                    "microsoft.ml.onnxruntime.gpu.windows.1.25.0.nupkg",
+                    "https://globalcdn.nuget.org/packages/microsoft.ml.onnxruntime.gpu.windows.1.25.0.nupkg",
                     listOfNotNull(
                         "onnxruntime.dll",
                         "onnxruntime_providers_cuda.dll",
@@ -187,8 +187,8 @@ class DesktopOnnxRuntimeInstaller(private val updateClient: UpdateClient) : Onnx
     }
 
     private fun getDirectMlDownloadInfo() = OnnxRuntimeDownloadInfo(
-        "microsoft.ml.onnxruntime.directml.1.23.0.nupkg",
-        "https://globalcdn.nuget.org/packages/microsoft.ml.onnxruntime.directml.1.23.0.nupkg",
+        "microsoft.ml.onnxruntime.directml.1.25.0.nupkg",
+        "https://globalcdn.nuget.org/packages/microsoft.ml.onnxruntime.directml.1.25.0.nupkg",
         listOf(
             Path("runtimes/win-x64/native/onnxruntime.dll"),
             Path("runtimes/win-x64/native/onnxruntime_providers_shared.dll"),
